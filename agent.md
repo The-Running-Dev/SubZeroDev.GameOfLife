@@ -80,13 +80,13 @@ This project burns tokens fast. The sinks, largest first:
 ## Orientation in one paragraph
 
 This repo = **Life in the Fast Lane** (`docs/docs/games/`, a Jones-clone life-sim = the
-`simulation` kind) + the **engine implementation** (`src/engine/`, Phase 1 core started).
-The **platform specs** are the companion repo
-[SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine):
-a game-agnostic **core** + **kinds** (engine-owned code) + **campaigns** (data); v1 ships
-two kinds, `story-graph` (flagship, the MVP) and `simulation`. A "campaign" is a kind + its
-data; a "culture pack" reskins a simulation campaign. Bulgaria is *two different games* — a
-culture pack on Jones, and a story-graph make-your-own-adventure — not one thing. Build
-order: core → story-graph kind → minimal Bulgaria adventure → text client + MCP = MVP.
-Then depth (Jones). Hosting/SaaS deferred. Contracts (companion repo): `04-core.md`
-(types), `02-architecture.md` (decisions).
+`simulation` kind) — **game specs only**. The **engine** (source + specs) is the companion
+repo [SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine): a
+game-agnostic **core** + **kinds** (engine-owned code) + **campaigns** (data); v1 ships two
+kinds, `story-graph` (flagship, the MVP) and `simulation`. Hosting/NEaaS is a third repo,
+[SubZeroDev.Platform](https://github.com/The-Running-Dev/SubZeroDev.Platform). A "campaign"
+is a kind + its data; a "culture pack" reskins a simulation campaign. Bulgaria is *two
+different games* — a culture pack on Jones, and a story-graph make-your-own-adventure — not
+one thing. Build order: core → story-graph kind → minimal Bulgaria adventure → text client
++ MCP = MVP. Then depth (Jones). Contracts (engine repo): `04-core.md` (types),
+`02-architecture.md` (decisions).
