@@ -109,9 +109,10 @@ graph with community detection.
 
 **It is expensive.** A full rebuild on this corpus is ~200K input tokens. Four
 runs in one session consumed 880K and contributed to hitting a session limit.
-Do not run it casually. There is **no current graph** — the old `graphify-out/` was
-deleted after the `docs/` reorg; run `/graphify` to build a fresh one when you need it
-(worth it once TypeScript exists — AST extraction is free).
+Do not run it casually. There is **no current graph** — run `/graphify` to build one. This
+repo is **docs-only** (the engine code lives in the companion GameEngine repo), so graphify
+here is always the expensive prose path — no free AST extraction. Prefer `--cluster-only`
+or `query` over full rebuilds.
 
 | Command | Cost | Use when |
 |---|---|---|
@@ -154,8 +155,9 @@ lifecycles were found. It also confirms whether newly-added mechanisms wired in
 or landed disconnected — an audit you cannot perform on your own work by reading
 it.
 
-Once TypeScript exists, code is extracted structurally via AST with **no LLM and
-no token cost**. Graphing a codebase is nearly free; graphing prose is not.
+The engine **code** (in the companion GameEngine repo) is extracted structurally via AST —
+no LLM, nearly free — so graph *that* repo when you need code structure. Graphing prose
+(here) is not free.
 
 ### claude-mem
 
