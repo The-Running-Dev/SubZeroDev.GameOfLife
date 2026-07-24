@@ -1,7 +1,9 @@
 # narrative-engine (implementation)
 
-The code for the deterministic narrative game engine. The design lives in
-[`../../docs/docs/engine/`](../../docs/docs/engine/02-architecture.md); this is the build.
+The code for the deterministic narrative game engine. The design lives in the companion
+platform-specs project,
+[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine);
+this is the build.
 
 **Status:** Phase 1 in progress — the deterministic core. No game is playable yet.
 
@@ -18,14 +20,13 @@ src/
   mcp/                  MCP server (pending)
 ```
 
-Structure mirrors the architecture's dependency layering
-([`../../docs/docs/engine/02-architecture.md`](../../docs/docs/engine/02-architecture.md) §1):
-clients → kinds → core. The core never imports a kind or client.
+Structure mirrors the architecture's dependency layering (platform specs
+`02-architecture.md` §1): clients → kinds → core. The core never imports a kind or client.
 
 ## Determinism is enforced, not hoped for
 
-The whole engine must replay byte-for-byte from a seed and inputs
-([`MVP.md`](../../docs/docs/engine/MVP.md)). Two mechanisms hold the line:
+The whole engine must replay byte-for-byte from a seed and inputs (the platform MVP
+spec). Two mechanisms hold the line:
 
 - **Seeded RNG only.** `src/core/rng/pcg32.ts` is the sole source of randomness.
   It is verified bit-identical to the reference PCG32 (seed 42, 54 →

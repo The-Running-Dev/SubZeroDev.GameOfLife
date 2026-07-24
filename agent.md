@@ -49,9 +49,9 @@ This project burns tokens fast. The sinks, largest first:
 
 ## Drift hazards specific to this project
 
-- **`docs/docs/games/03` ↔ `docs/docs/games/04` and `docs/docs/engine/03` ↔ `04`** drift most: one is an
-  implementation-of the other. When a type changes, update the prose, the examples, the
-  projection, and the test list too.
+- **`docs/docs/games/03` ↔ `docs/docs/games/04`** drift most (the engine `03`↔`04` pair
+  is in the companion platform repo): one is an implementation-of the other. When a type
+  changes, update the prose, the examples, the projection, and the test list too.
 - **Envelope-duplication drift recurs.** The `kindState` reconciliation (03 §8.1) had a
   twin found later: `StoryGraphCampaign` (03 §1) duplicated `id`/`version`/`titleKey`/
   `strings` that belong on the core `Campaign`/registry (04-core §10.1). When a
@@ -66,7 +66,8 @@ This project burns tokens fast. The sinks, largest first:
 
 ## Open concerns & assumptions
 
-- **Spec-level unknowns** live in [`docs/docs/engine/OPEN-QUESTIONS.md`](docs/docs/engine/OPEN-QUESTIONS.md).
+- **Spec-level unknowns** live in the companion platform repo's `OPEN-QUESTIONS.md`
+  ([SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine)).
   The sharpest: `PlayerProfile` — needed by the MVP achievement DoD — is defined only in
   the simulation kind, not the core. Resolve before Phase 2 achievements.
 - **The docs-site base image is unverified.** `docs.ps1` builds on
@@ -78,13 +79,14 @@ This project burns tokens fast. The sinks, largest first:
 
 ## Orientation in one paragraph
 
-Two specs, no code yet except `src/engine/` (Phase 1 core started). **Life in the Fast
-Lane** (`docs/docs/games/`) is a Jones-clone life-sim = the `simulation` kind. The **Narrative
-Engine** (`docs/docs/engine/`) is the platform: a game-agnostic **core** + **kinds**
-(engine-owned code) + **campaigns** (data). v1 ships two kinds: `story-graph` (flagship,
-the MVP) and `simulation`. A "campaign" is a kind + its data; a "culture pack" is content
-that reskins a simulation campaign. Bulgaria is *two different games* — a culture pack on
-Jones, and a story-graph make-your-own-adventure — not one thing. Build order: core
-→ story-graph kind → minimal Bulgaria adventure → text client + MCP = MVP. Then depth
-(Jones). Hosting/SaaS is deferred. Contracts: `docs/docs/engine/04-core.md` (types)
-and `docs/docs/engine/02-architecture.md` (decisions).
+This repo = **Life in the Fast Lane** (`docs/docs/games/`, a Jones-clone life-sim = the
+`simulation` kind) + the **engine implementation** (`src/engine/`, Phase 1 core started).
+The **platform specs** are the companion repo
+[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine):
+a game-agnostic **core** + **kinds** (engine-owned code) + **campaigns** (data); v1 ships
+two kinds, `story-graph` (flagship, the MVP) and `simulation`. A "campaign" is a kind + its
+data; a "culture pack" reskins a simulation campaign. Bulgaria is *two different games* — a
+culture pack on Jones, and a story-graph make-your-own-adventure — not one thing. Build
+order: core → story-graph kind → minimal Bulgaria adventure → text client + MCP = MVP.
+Then depth (Jones). Hosting/SaaS deferred. Contracts (companion repo): `04-core.md`
+(types), `02-architecture.md` (decisions).

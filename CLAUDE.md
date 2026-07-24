@@ -2,33 +2,32 @@
 
 ## What this project is
 
-Two related specification sets, plus a **nascent implementation**. The specs came first
-and still lead; code has begun under `src/engine/` — a TypeScript package (strict mode,
-vitest, eslint with the determinism guard) carrying the Phase 1 core (seeded RNG,
-canonical serialization). Everything else is still spec.
+This repo holds **Life in the Fast Lane** — the flagship game spec — and the **engine
+implementation** code. The platform (engine) *specs* are a **separate companion project**.
 
 1. **Life in the Fast Lane** (`docs/docs/games/`) — a satirical life-simulation game in the
-   lineage of *Jones in the Fast Lane* (Sierra, 1990). This is the older, far more
-   detailed spec (~105 KB engine doc).
-2. **Narrative Engine** (`docs/docs/engine/`) — a deterministic narrative game
-   *platform*. The engine is a game-agnostic core; a game is a *kind*
-   (engine-owned code) plus *campaign* data; v1 ships two kinds, `story-graph`
-   (flagship) and `simulation`.
+   lineage of *Jones in the Fast Lane* (Sierra, 1990). The detailed spec set (~105 KB
+   engine doc); it is the flagship `simulation`-kind game of the Narrative Engine.
+2. **Engine implementation** (`src/engine/`) — a TypeScript package (strict mode, vitest,
+   eslint with the determinism guard) carrying the Phase 1 core (seeded RNG, canonical
+   serialization). The rest is still spec.
 
-**How they relate:** the narrative engine is the platform; **Life in the Fast Lane
-is its flagship `simulation`-kind campaign.** Much of what the narrative engine calls
-"the core" (projection boundary, condition DSL, seeded RNG, tiered validation,
-determinism harness, save/migration) was first designed in the Life in the Fast Lane
-engine spec. The docs are a **Docusaurus site rooted at `docs/`** (see Tooling → Docs
-site); the markdown lives under `docs/docs/` — the **games in `docs/docs/games/`** (the
-full Life spec `01`–`05`, the two game-catalog entries, and the shared `bulgaria.md`
-source scenes) and the **platform in `docs/docs/engine/`** — with the engine
-implementation in `src/engine/`. Merging the two sets' *numbering* schemes (both still
-start at `01-`) stays deferred (see `docs/docs/engine/02-architecture.md` §12).
+**The platform (engine) specs are a separate project:**
+[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine)
+— the architecture, the core/API (`04-core`), the story-graph kind, MVP, TODO,
+open-questions, and hosting vision. Much of what that platform calls "the core"
+(projection boundary, condition DSL, seeded RNG, tiered validation, determinism harness,
+save/migration) was first designed in the Life in the Fast Lane engine spec here. The two
+repos reference each other by name (`games/…` there, `engine/…` here). **When building the
+engine code in `src/engine/`, the companion repo's `04-core` / `03-story-graph-kind` are
+the contracts.**
 
-The build strategy for both is engine-first: a deterministic, interface-independent
-engine, proven by automated tests and a plain text client before any UI. Once the
-API is proven, UI is presentation.
+The game docs are a **Docusaurus site rooted at `docs/`** (see Tooling → Docs site); the
+markdown lives under `docs/docs/games/`.
+
+The build strategy is engine-first: a deterministic, interface-independent engine, proven
+by automated tests and a plain text client before any UI. Once the API is proven, UI is
+presentation.
 
 ## The document sets
 
@@ -48,18 +47,14 @@ number.
 | `docs/docs/games/bulgaria-adventure.md` | **Game 2** — the `story-graph` kind (make-your-own-adventure). The MVP vehicle |
 | `docs/docs/games/bulgaria.md` | Shared Bulgarian **source scenes** — used by both games, committed to neither's mechanics |
 
-**Narrative Engine (platform) — `docs/docs/engine/`**
+**Narrative Engine (platform) specs — separate repo**
 
-| File | Holds |
-|---|---|
-| `docs/docs/engine/01-vision.md` | Why the platform exists; the core/kind/campaign model |
-| `docs/docs/engine/02-architecture.md` | Every settled architecture decision with rationale. **The contract (decisions)** |
-| `docs/docs/engine/04-core.md` | The platform core as **types**: the Kind interface (the seam), `GameState` envelope, engine API, session store, projection, validation, reason codes, MCP schemas, determinism harness. **The contract (types)** |
-| `docs/docs/engine/03-story-graph-kind.md` | The flagship kind's content types: nodes, choices, typed variables, consequences, endings, achievements, turn/settle semantics + worked Bureaucracy-arc example. `kindState` plugs into 04's envelope |
-| `docs/docs/engine/MVP.md` | The minimum viable product: smallest slice that proves the platform, + Definition of Done |
-| `docs/docs/engine/TODO.md` | Ordered task list; the MVP boundary is marked |
-| `docs/docs/engine/OPEN-QUESTIONS.md` | Living register of unknowns, gaps, deferred decisions. Start here for "what isn't settled" (e.g. `PlayerProfile` missing from the core) |
-| `docs/docs/engine/neaas-platform-vision.md` | Deferred hosting/SaaS/business layer |
+The platform/API/hosting specs moved to
+[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine):
+`01-vision`, `02-architecture`, `04-core` (the API/types contract), `03-story-graph-kind`,
+`MVP`, `TODO`, `OPEN-QUESTIONS`, `neaas-platform-vision`. When working the engine code
+here (`src/engine/`), those are the contracts to build against — clone the companion repo
+alongside this one.
 
 **Code — `src/engine/`**
 
@@ -74,11 +69,11 @@ appending unless position genuinely matters.
 
 ### Where drift happens
 
-The `03`↔`04` pair drifts in **both** sets: `04` is largely an implementation-of
-`03`, and an edit to one that isn't mirrored in the other is the most common
-defect in this project. Every time a type changes in `04`, check whether `03`
-describes it in prose. (The examples below are from the Life spec, `docs/docs/games/`;
-`docs/docs/engine/03`↔`04` has the same hazard.)
+The `docs/docs/games/03` ↔ `docs/docs/games/04` pair drifts: `04` (engine spec) is
+largely an implementation-of `03` (design), and an edit to one that isn't mirrored in the
+other is the most common defect here. Every time a type changes in `04`, check whether
+`03` describes it in prose. (The platform specs have the same `03`↔`04` hazard — in the
+companion repo.)
 
 Real examples already caught: `wisdom` added to `AttributeState` but missing
 from the design doc's attribute list; `finalized` removed from

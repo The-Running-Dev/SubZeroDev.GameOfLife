@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 /**
  * Local Docusaurus config — overrides the base image's default when this
  * directory is copied over /template (see ./Dockerfile). Content lives in
- * ./docs (engine/ + games/); the sidebar is ./sidebar.ts.
+ * ./docs (games/); the sidebar is ./sidebar.ts.
  *
  * Placeholder title/url/tagline — edit to taste. Broken-link checks are 'warn'
  * (not 'throw') to keep authoring frictionless; flip to 'throw' to gate builds.
