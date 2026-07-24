@@ -39,6 +39,10 @@ harness. Code lives in `src/engine/`.
 
 - [x] Project scaffold: `src/engine/` package, TypeScript (strict), vitest, eslint with the
       determinism guard (bans `Math.random`, `Math.pow/exp/log/sin/cos/tan`, `Date.now`).
+- [x] Version control: private GitHub repo
+      [`The-Running-Dev/SubZeroDev.GameOfLife`](https://github.com/The-Running-Dev/SubZeroDev.GameOfLife)
+      — initial import committed and pushed; working tree clean, `main` synced with `origin`.
+      Root `README.md`, `.gitignore`, and `.gitattributes` (LF) in place.
 - [x] Seeded PRNG (PCG32) + named substreams; serializable RNG state.
       `src/core/rng/pcg32.ts` — **verified bit-identical to the reference vectors.**
 - [x] Canonical serialization (sorted keys, rejects non-finite) + `serialize` /
