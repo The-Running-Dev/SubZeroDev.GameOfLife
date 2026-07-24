@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Deterministic narrative game engine — core + kinds. Specs: companion repo SubZeroDev.NarrativeEngine.",
+  "description": "Deterministic narrative game engine — core + kinds. Specs: companion repo SubZeroDev.GameEngine.",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",

@@ -67,7 +67,7 @@ This project burns tokens fast. The sinks, largest first:
 ## Open concerns & assumptions
 
 - **Spec-level unknowns** live in the companion platform repo's `OPEN-QUESTIONS.md`
-  ([SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine)).
+  ([SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine)).
   The sharpest: `PlayerProfile` — needed by the MVP achievement DoD — is defined only in
   the simulation kind, not the core. Resolve before Phase 2 achievements.
 - **The docs-site base image is unverified.** `docs.ps1` builds on
@@ -82,7 +82,7 @@ This project burns tokens fast. The sinks, largest first:
 This repo = **Life in the Fast Lane** (`docs/docs/games/`, a Jones-clone life-sim = the
 `simulation` kind) + the **engine implementation** (`src/engine/`, Phase 1 core started).
 The **platform specs** are the companion repo
-[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine):
+[SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine):
 a game-agnostic **core** + **kinds** (engine-owned code) + **campaigns** (data); v1 ships
 two kinds, `story-graph` (flagship, the MVP) and `simulation`. A "campaign" is a kind + its
 data; a "culture pack" reskins a simulation campaign. Bulgaria is *two different games* — a

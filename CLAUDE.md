@@ -13,7 +13,7 @@ implementation** code. The platform (engine) *specs* are a **separate companion 
    serialization). The rest is still spec.
 
 **The platform (engine) specs are a separate project:**
-[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine)
+[SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine)
 — the architecture, the core/API (`04-core`), the story-graph kind, MVP, TODO,
 open-questions, and hosting vision. Much of what that platform calls "the core"
 (projection boundary, condition DSL, seeded RNG, tiered validation, determinism harness,
@@ -50,7 +50,7 @@ number.
 **Narrative Engine (platform) specs — separate repo**
 
 The platform/API/hosting specs moved to
-[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine):
+[SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine):
 `01-vision`, `02-architecture`, `04-core` (the API/types contract), `03-story-graph-kind`,
 `MVP`, `TODO`, `OPEN-QUESTIONS`, `neaas-platform-vision`. When working the engine code
 here (`src/engine/`), those are the contracts to build against — clone the companion repo

@@ -9,7 +9,7 @@ strategy is **engine-first**: a deterministic, interface-independent engine, pro
 automated tests and a plain text client before any UI.
 
 > **The platform (engine) *specs* live in the companion project,**
-> [SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine)
+> [SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine)
 > — architecture, the core/API, the story-graph kind, MVP, hosting. This repo holds the
 > **game** and the **engine code**.
 
@@ -58,7 +58,7 @@ byte-for-byte from a seed and its inputs.
 5. [Text client](docs/docs/games/05-text-client.md) — the first client, the API's proving ground
 
 For the platform itself, see the companion
-[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine).
+[SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine).
 
 ---
 

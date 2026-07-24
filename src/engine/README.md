@@ -2,7 +2,7 @@
 
 The code for the deterministic narrative game engine. The design lives in the companion
 platform-specs project,
-[SubZeroDev.NarrativeEngine](https://github.com/The-Running-Dev/SubZeroDev.NarrativeEngine);
+[SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine);
 this is the build.
 
 **Status:** Phase 1 in progress — the deterministic core. No game is playable yet.
