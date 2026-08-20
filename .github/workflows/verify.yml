@@ -1,0 +1,54 @@
+name: Verify
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+
+      # verification: true
+      - name: Parse-check PowerShell scripts
+        shell: pwsh
+        run: |
+          $parseErrors = Get-ChildItem -Path . -Recurse -Filter '*.ps1' | ForEach-Object {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref] $tokens, [ref] $errors) | Out-Null
+            $errors
+          }
+          if ($parseErrors) {
+            $parseErrors | Format-List | Out-String | Write-Error
+            exit 1
+          }
+
+      # verification: true
+      - name: Run Pester tests
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: Invoke-Pester -Path tools -Output Detailed
+
+      # verification: true
+      - name: Validate the core/companion split
+        shell: pwsh
+        run: ./tools/Test-Companion.ps1
+
+      # verification: true
+      - name: Check the design state against the tree
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./tools/Test-DesignState.ps1
+
+      # verification: true
+      - name: Check the spec set
+        shell: pwsh
+        run: ./tools/Test-SpecSet.ps1
