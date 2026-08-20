@@ -26,42 +26,7 @@ can, which is why only the authored ones are checked for well-formedness.
 Recomputed on every run from the markdown and discarded when the run ends. They have no
 persisted form, no identity across runs, and no serialisation. Nothing may write them anywhere.
 
-*Scaffold — `tools/Read-SpecSet.ps1`:*
-
-```powershell
-class SpecDocument {
-    [string]   $Path              # repo-relative, always set
-    [nullable[int]] $Ordinal      # numeric filename prefix; $null for an unprefixed document
-    [string]   $Title             # first H1; empty string when the document has none
-}
-
-class SpecDeclaration {
-    [string]   $QualifiedName     # 'AttributeState.wisdom'; unique across the corpus
-    [string]   $Owner             # qualified name of the enclosing declaration; empty at top level
-    [string]   $Form              # 'Interface' | 'TypeAlias' | 'Enum' | 'UnionMember' | 'Field'
-    [bool]     $IsClosed          # derived; see Closure below
-    [string]   $DocumentPath      # the SpecDocument it was extracted from
-    [int]      $Line              # 1-based line of the opening token
-    [string[]] $Members           # member names when IsClosed; empty array when open
-}
-
-class SpecReference {
-    [string]   $SourcePath        # the SpecDocument holding the reference
-    [int]      $Line
-    [string]   $Kind              # 'Section' | 'Document' | 'CrossRepository'
-    [string]   $RawTarget         # the reference exactly as written
-    [string]   $Resolution        # 'Resolved' | 'Unresolved' | 'NotEvaluable'
-    [nullable[string]] $PinnedSha # required and non-null when Kind is 'CrossRepository'
-}
-
-class SpecFinding {
-    [string]   $CheckId           # 'mirror' | 'provisional' | 'concept' | 'reference'
-    [string]   $Subject           # the record identity the finding is about
-    [string]   $DocumentPath
-    [int]      $Line
-    [string]   $Detail            # what disagrees; never which side is wrong
-}
-```
+The five derived record classes are declared in [`tools/Read-SpecSet.ps1`](../tools/Read-SpecSet.ps1).
 
 **Closure** is a derived property of `SpecDeclaration`, not a record of its own and not a field
 anyone may author. A declaration is **closed** when its membership is fixed by its own form — an
@@ -155,16 +120,7 @@ and an exit code; what consumes them is not its concern.
 
 ### `tools/Read-SpecSet.ps1` — Corpus access and Index
 
-*Scaffold:*
-
-```powershell
-function Read-SpecSetIndex {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory)][string] $CorpusPath
-    )
-}
-```
+`Read-SpecSetIndex` is declared in [`tools/Read-SpecSet.ps1`](../tools/Read-SpecSet.ps1).
 
 Returns an index object carrying `SpecDocument[]`, `SpecDeclaration[]`, `SpecReference[]`, the four
 authored record collections, and a `State` of `Indexed` or `NotEvaluated` with a `Reason`.
