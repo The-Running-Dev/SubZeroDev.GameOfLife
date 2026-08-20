@@ -161,8 +161,7 @@ and an exit code; what consumes them is not its concern.
 function Read-SpecSetIndex {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][string] $CorpusPath,
-        [string] $EnginePath
+        [Parameter(Mandatory)][string] $CorpusPath
     )
 }
 ```
@@ -179,7 +178,11 @@ four checks has four failure modes instead of one.
 working directory is not, because a run against the wrong tree reports a clean corpus that was
 never examined.
 
-`-EnginePath` is unresolved — see `## Unresolved`.
+**No parameter may make a cross-repository reference resolvable** (SS9). There is no
+`-EnginePath`, and adding one is a contract amendment rather than a slice's call. A checker whose
+answer depends on whether a second working copy happens to be checked out beside this one gives two
+authors different results on the same commit, and `SpecReference.PinnedSha` is the guarantee
+carried instead.
 
 ### `tools/Test-SpecSet.ps1` — Checks, Report, Runner
 
@@ -189,7 +192,6 @@ never examined.
 [CmdletBinding()]
 param(
     [string] $CorpusPath,
-    [string] $EnginePath,
     [switch] $Quiet
 )
 
@@ -287,7 +289,7 @@ run to `NotEvaluated` and exit 2:
 
 | Reason | Raised when | Caller does |
 |---|---|---|
-| `CrossRepositoryUnresolvable` | A reference targets SubZeroDev.GameEngine and no checkout is available | Nothing; this is the expected steady state |
+| `CrossRepositoryUnresolvable` | A reference targets SubZeroDev.GameEngine | Nothing; this is the permanent steady state, not a degraded one |
 | `RegisterAbsent` | No `provisional-register` region exists | Author it, or accept that the third brief condition is unchecked |
 
 **A cross-repository reference is never reported as passed and never as broken** (SS9). Absent
@@ -319,7 +321,7 @@ means a test fails when it is broken; those are the only ones a reader may trust
 | **SS6** | Every obligation, register row, concept, and reference is in exactly one of held, failed, or unchecked | Report | Code — the three counts sum to the index's totals |
 | **SS7** | An unrecognised construct stops the run; nothing partial is reported as complete | Index | Code — the grammar's fallback branch raises, and a test feeds it an unknown form |
 | **SS8** | Closure is derived from a declaration's form and can be set by nothing else | Index | Code — no marker id, parameter, or config key names closure |
-| **SS9** | A cross-repository reference is reported unchecked, never passed, never broken | Checks | Code |
+| **SS9** | A cross-repository reference is reported unchecked, never passed, never broken, and no parameter can change that | Checks | Code — asserted alongside SS1's no-write-parameter check |
 | **SS10** | The report names the commit it ran against and whether the tree was clean | Report | Code |
 | **SS11** | A finding states that two documents disagree and never which is stale | Checks | Instruction — `SpecFinding` has no field for it, which is the enforcement available |
 | **SS12** | Every marker is an HTML comment; removing the checker leaves the corpus valid, publishable markdown | Corpus | Code — the docs build has no dependency on the checker, and a test asserts markers render nothing |
@@ -340,14 +342,3 @@ the reading.
 can tell whether a `Detail` string editorialises. Removing the field would make findings useless.
 The structural mitigation is that `SpecFinding` carries no `Culprit`, `Stale`, or `Correct` field
 for anyone to populate.
-
-## Unresolved
-
-**`Read-SpecSetIndex`'s `-EnginePath` parameter, and whether the checker may read
-SubZeroDev.GameEngine.** `10-design.md` § *Open questions* 3. The semantics are determined either
-way by SS9 — an unresolvable cross-repository reference is unchecked, never passed, never broken —
-so the checker is fully specified without it. What is undetermined is whether the parameter exists
-at all, which is a public interface and therefore not something a slice may add. Resolving it to
-"no" deletes the parameter from the scaffold above; resolving it to "yes" requires stating what
-happens when the path is supplied but stale, which is a harder question than it looks and is why
-this is not being defaulted.

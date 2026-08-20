@@ -7,6 +7,12 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-20 — No `-EnginePath`; cross-repository references are permanently unchecked
+Context: `10-design.md` § *Open questions* 3, the last signature `20-contract.md` left open. SS9 already fixed the semantics — a reference into SubZeroDev.GameEngine is unchecked, never passed, never broken — so the only question was whether a parameter exists to resolve them against a checkout sitting beside this repository. A public interface, so not a slice's to add later without an amendment.
+Chosen: No parameter. `Read-SpecSetIndex` takes `-CorpusPath` only. Cross-repository references contribute to the did-not-run list and status 2, permanently, and `SpecReference.PinnedSha` (SS17) is the whole guarantee they carry.
+Rejected: Adding `-EnginePath` and treating a pin that is not an ancestor of the checkout's HEAD as unchecked — verifies a class of reference currently taken on trust, and mirrors the ancestry check `Test-DesignDrift.ps1` already performs, but makes the checker's result depend on a second working copy's state, so two authors get different answers on the same commit. Also rejected: the same, but treating a stale pin as a finding — the strongest guarantee against the corpus asserting something that stopped being true, and the one whose findings depend on how recently someone pulled the other repository, which is exactly what trains people to ignore a check.
+Reversibility: cheap in mechanism, ceremonious by design — adding the parameter is a contract amendment, which is the point.
+
 ### 2026-08-20 — Tooling is in scope; the checker is PowerShell in `tools/`
 Context: `10-design.md` § *Open questions* 5. The brief's environment says "no runtime", and this design's central mechanism is a program. If the exclusion applied, the data model and the module boundaries both fell with it and the answer became a documented full-read discipline instead.
 Chosen: In scope. The brief's non-goals name exactly three things — engine source, hosting, base-image changes — and tooling is not among them; `tools/` already carries 27 PowerShell files with Pester tests beside them; `AGENTS.md` § *What should stop being model work* classifies counting and set arithmetic over files as red, belonging in code. "No runtime" is read as describing the absence of a game or server, not a prohibition on scripts.
