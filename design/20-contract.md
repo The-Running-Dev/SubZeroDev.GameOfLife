@@ -142,19 +142,8 @@ carried instead.
 
 ### `tools/Test-SpecSet.ps1` — Checks, Report, Runner
 
-*Scaffold:*
-
-```powershell
-[CmdletBinding()]
-param(
-    [string] $CorpusPath,
-    [switch] $Quiet
-)
-
-function Invoke-SpecSetCheck   { param([Parameter(Mandatory)][object] $Index) }
-function Get-SpecSetExitCode   { param([string] $State) }
-function Write-SpecSetReport   { param([Parameter(Mandatory)][object] $Result) }
-```
+The runner and its check/report functions are declared in
+[`tools/Test-SpecSet.ps1`](../tools/Test-SpecSet.ps1).
 
 The entry point emits a result object and then exits, guarded by
 `if ($MyInvocation.InvocationName -ne '.')` so the Pester file can dot-source it — the structure

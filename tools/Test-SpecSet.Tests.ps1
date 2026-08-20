@@ -10,9 +10,11 @@ Describe 'Test-SpecSet runner' {
         Get-SpecSetExitCode NotEvaluated | Should -Be 2
         { Get-SpecSetExitCode Other } | Should -Throw
     }
-    It 'keeps a result object available when quiet' {
+    It 'fails closed when the provisional register is absent and keeps the result available when quiet' {
         $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
-        $result.State | Should -Be 'Valid'
+        $result.State | Should -Be 'NotEvaluated'
+        $result.Reason | Should -Be 'RegisterAbsent'
+        $result.Unchecked.Reason | Should -Contain 'RegisterAbsent'
         $result.Counts.Documents | Should -Be 8
     }
 }
