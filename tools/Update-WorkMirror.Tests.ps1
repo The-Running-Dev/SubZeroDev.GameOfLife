@@ -204,6 +204,72 @@ Describe 'Update-WorkMirror' {
         }
     }
 
+    Context 'refreshing a WorkRef after its issue closes (#29)' {
+        It 'rewrites an existing record to State: CLOSED once its issue drops out of the open list' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $workDir '10.md') -Value "# work/10`nIssue: 10`nTitle: S3 - old title`nState: OPEN`nRank: 10`nMirroredAt: oldsha`nCriteria: S3.1`n"
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
+            Mock Get-ProjectItemPositions { $null }
+            Mock Get-CurrentWorkMirrorSha { 'newsha' }
+            Mock Get-IssuesByNumber { @((New-Issue -Number 10 -Title 'S3 - old title' -State 'CLOSED' -Body "- [x] **S3.1** done")) }
+
+            $r = Invoke-WorkMirrorUpdate -RepoPath $repo
+
+            $r.State | Should -Be 'Clean'
+            $text = Get-Content -LiteralPath (Join-Path $workDir '10.md') -Raw
+            $text | Should -Match 'State: CLOSED'
+            $text | Should -Match 'MirroredAt: newsha'
+        }
+
+        It 'only re-fetches issue numbers that already have an on-disk WorkRef, not the whole tracker' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $workDir '10.md') -Value "# work/10`nIssue: 10`nTitle: t`nState: OPEN`nRank: 10`nMirroredAt: oldsha`nCriteria:`n"
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
+            Mock Get-ProjectItemPositions { $null }
+            Mock Get-CurrentWorkMirrorSha { 'newsha' }
+            Mock Get-IssuesByNumber { @() }
+
+            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
+
+            Should -Invoke Get-IssuesByNumber -Times 1 -ParameterFilter { @($Numbers) -join ',' -eq '10' }
+        }
+
+        It 'leaves an existing record untouched when the closed-issue re-fetch itself cannot resolve it' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            $original = "# work/10`nIssue: 10`nTitle: t`nState: OPEN`nRank: 10`nMirroredAt: oldsha`nCriteria:`n"
+            Set-Content -LiteralPath (Join-Path $workDir '10.md') -Value $original -NoNewline
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
+            Mock Get-ProjectItemPositions { $null }
+            Mock Get-CurrentWorkMirrorSha { 'newsha' }
+            Mock Get-IssuesByNumber { @() }
+
+            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
+
+            (Get-Content -LiteralPath (Join-Path $workDir '10.md') -Raw) | Should -Be $original
+        }
+
+        It 'does not re-fetch an open issue that already came back from Get-OpenIssueList' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $workDir '9.md') -Value "# work/9`nIssue: 9`nTitle: t`nState: OPEN`nRank: 9`nMirroredAt: oldsha`nCriteria:`n"
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @((New-Issue -Number 9 -Title 't')); Failure = $null } }
+            Mock Get-ProjectItemPositions { $null }
+            Mock Get-CurrentWorkMirrorSha { 'newsha' }
+            Mock Get-IssuesByNumber { throw 'must not be called for a still-open issue' }
+
+            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
+
+            (Get-Content -LiteralPath (Join-Path $workDir '9.md') -Raw) | Should -Match 'MirroredAt: newsha'
+        }
+    }
+
     Context 'invocation shape (S14.6)' {
         It 'is the only script under tools/ that invokes gh issue create, gh label, gh milestone, or git commit' {
             $text = Get-Content -LiteralPath $script:ScriptPath -Raw
