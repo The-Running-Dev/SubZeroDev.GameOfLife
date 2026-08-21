@@ -1043,6 +1043,71 @@ Binds: I999
     }
 }
 
+Describe 'S8 command-state migration against this repository' {
+
+    BeforeAll {
+        $script:S8RepoRoot = Split-Path $PSScriptRoot -Parent
+        $script:S8Graph = Read-DesignStateGraph -Path $script:S8RepoRoot
+        $script:S8ById = @{}
+        foreach ($record in $script:S8Graph.Records) { $script:S8ById[$record.Id] = $record }
+        $script:S8Result = Invoke-DesignStateCheck -RepoPath $script:S8RepoRoot
+    }
+
+    It 'S8.1/S8.2: every command artifact has one complete, anchored command record' {
+        $expected = @(
+            Get-CommandGlobFiles -RepoPath $script:S8RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } } |
+                Sort-Object
+        )
+        $commands = @($script:S8Graph.Records | Where-Object { $_.Kind -eq 'Unit' -and $_.Scalars['Kind'] -eq 'command' -and $_.Scalars['Status'] -eq 'active' })
+        $actual = @($commands | ForEach-Object { $_.Scalars['Anchor'] } | Sort-Object)
+
+        @($expected | Where-Object { $_ -notin $actual }) | Should -BeNullOrEmpty
+        @($actual | Where-Object { $_ -notin $expected }) | Should -BeNullOrEmpty
+        foreach ($command in $commands) {
+            foreach ($field in 'Consumes', 'Exposes', 'Binds', 'Live', 'Archival', 'Questions', 'Work', 'Evidence') {
+                $command.Lists.ContainsKey($field) | Should -BeTrue -Because "$($command.Id) must carry the complete unit shape"
+            }
+        }
+        (@($script:S8Result.Findings | Where-Object { $_.Class -in 'AnchorMissing', 'UnresolvedId', 'RecordUnparseable' -and $_.Subject -like 'unit/command/*' })).Count | Should -Be 0
+    }
+
+    It 'S8.3/S8.4: command-facing contracts have unique owners and the required consumption edges' {
+        $required = @(
+            'contract/fix', 'contract/resolve', 'contract/test-companion',
+            'contract/test-designdrift', 'contract/test-designstate',
+            'contract/update-workmirror', 'contract/wait-pullrequestcheck'
+        )
+        foreach ($id in $required) { $script:S8ById.ContainsKey($id) | Should -BeTrue }
+        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'OwnerMismatch' -and $_.Subject -in $required })).Count | Should -Be 0
+
+        $script:S8ById['unit/command/resolve'].Lists['Consumes'] | Should -Contain 'contract/wait-pullrequestcheck'
+        $script:S8ById['unit/command/track'].Lists['Consumes'] | Should -Contain 'contract/test-designdrift'
+        $script:S8ById['unit/command/track'].Lists['Consumes'] | Should -Contain 'contract/update-workmirror'
+    }
+
+    It 'S8.5: every invariant or decision named by a command is a local record' {
+        $commands = @($script:S8Graph.Records | Where-Object { $_.Kind -eq 'Unit' -and $_.Scalars['Kind'] -eq 'command' })
+        foreach ($command in $commands) {
+            foreach ($field in 'Binds', 'Live', 'Archival') {
+                foreach ($id in @($command.Lists[$field])) {
+                    $script:S8ById.ContainsKey($id) | Should -BeTrue -Because "$($command.Id) names local $field id $id"
+                }
+            }
+        }
+    }
+
+    It 'S8.7: the partial migration stays non-zero and names every remaining work class' {
+        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -like 'tools/*' })).Count | Should -BeGreaterThan 0
+        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -like '*.md' -and $_.Subject -notlike '.claude/commands/*' })).Count | Should -BeGreaterThan 0
+        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -like 'I*' })).Count | Should -BeGreaterThan 0
+        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'LogEntryUnrecorded' })).Count | Should -BeGreaterThan 0
+        (@($script:S8Result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'ProjectorFailed' })).Count | Should -Be 1
+        $script:S8Result.ExitCode | Should -Not -Be 0
+        $script:S8Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
+    }
+}
+
 Describe 'Test-DesignState against this repository''s own tree' {
 
     BeforeAll {
