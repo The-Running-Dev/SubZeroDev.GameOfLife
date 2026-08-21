@@ -1085,7 +1085,9 @@ function Test-TrackerClasses {
         foreach ($ref in $workRefs) {
             $number = $ref.Scalars['Issue']
             if ([string]::IsNullOrWhiteSpace($number)) { continue }
-            $json = & gh issue view $number --json title, state 2>$null
+            $ghArgs = @('issue', 'view', $number, '--json', 'title,state')
+            if ($Repository) { $ghArgs += @('-R', $Repository) }
+            $json = & gh @ghArgs 2>$null
             if ($LASTEXITCODE -ne 0 -or -not $json) {
                 $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'TrackerUnavailable' -Detail "could not read issue #$number for $($ref.Id)"))
                 continue

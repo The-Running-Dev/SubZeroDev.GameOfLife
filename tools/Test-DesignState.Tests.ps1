@@ -950,6 +950,27 @@ Describe 'Test-DesignState: the tracker classes (S5.11)' {
         $result.Reported.Count | Should -Be 0
         $result.CouldNotEvaluate.Count | Should -Be 0
     }
+
+    It 'S11.5: the explicit repository is carried from the availability probe into each issue read' {
+        Mock -CommandName Test-TrackerAvailable -MockWith { $true }
+        Mock -CommandName Get-CurrentCommitSha -MockWith { 'currentsha' }
+        Mock -CommandName Test-CommitIsAncestor -MockWith { 'Ancestor' }
+        $script:TrackerGhArgs = @()
+        Mock -CommandName gh -MockWith {
+            $script:TrackerGhArgs = @($args)
+            $global:LASTEXITCODE = 0
+            '{"title":"Tracked title","state":"OPEN"}'
+        }
+
+        $ref = New-Record -Id 'work/42' -Kind 'WorkRef' -Scalars @{
+            Issue = '42'; Title = 'Tracked title'; State = 'OPEN'; MirroredAt = 'currentsha'
+        }
+        $result = Test-TrackerClasses -Records @($ref) -RepoPath $TestDrive -Repository 'owner/repository'
+
+        $result.CouldNotEvaluate | Should -BeNullOrEmpty
+        $script:TrackerGhArgs | Should -Contain '-R'
+        $script:TrackerGhArgs | Should -Contain 'owner/repository'
+    }
 }
 
 Describe 'Test-DesignState: end-to-end (S5.2, S5.3, S5.4, S5.9)' {
@@ -1097,9 +1118,7 @@ Describe 'S8 command-state migration against this repository' {
         }
     }
 
-    It 'S8.7: the migration stays non-zero until the projection slice lands' {
-        (@($script:S8Result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'ProjectorFailed' })).Count | Should -Be 1
-        $script:S8Result.ExitCode | Should -Not -Be 0
+    It 'S8.7: the completed command closures stay within the fixed ceiling' {
         $script:S8Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
     }
 }
@@ -1203,14 +1222,12 @@ Describe 'S9 script-and-document state migration against this repository' {
         (@($script:S9Result.Findings | Where-Object { $_.Class -in 'UnresolvedId', 'RecordUnparseable' })).Count | Should -Be 0
     }
 
-    It 'S9.6: the partial migration stays non-zero until the projector slice lands' {
+    It 'S9.6: the completed script and document closures stay within the fixed ceiling' {
         $parsed = Get-ContractInvariantIds -ContractPath (Join-Path $script:S9RepoRoot 'design/20-contract.md')
         $recorded = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Invariant' } | ForEach-Object { $_.Id })
         foreach ($id in @($parsed.Ids | Where-Object { $_ -notin $recorded })) {
             $script:S9Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -eq $id } | Should -Not -BeNullOrEmpty
         }
-        (@($script:S9Result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'ProjectorFailed' })).Count | Should -Be 1
-        $script:S9Result.ExitCode | Should -Not -Be 0
         $script:S9Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
     }
 }
@@ -1363,12 +1380,69 @@ Describe 'S10 invariant and decision state against this repository' {
     }
 }
 
+# =================================================================================================
+# S11. The local design state reaches a checked fixed point.
+# =================================================================================================
+
+Describe 'S11 projected design state against this repository' {
+
+    BeforeAll {
+        $script:S11RepoRoot = Split-Path $PSScriptRoot -Parent
+        $script:S11IndexPath = Join-Path $script:S11RepoRoot 'design/state-index.md'
+        $script:S11ProjectionIds = @('units', 'bound-by', 'consumers', 'decision-affects', 'question-affects', 'outstanding')
+        . (Join-Path $PSScriptRoot 'Update-DesignProjection.ps1') -Path $script:S11RepoRoot
+    }
+
+    It 'S11.1: the state index has exactly one bare region per contracted id and no table rows outside them' {
+        Test-Path -LiteralPath $script:S11IndexPath | Should -BeTrue
+        $text = Get-Content -LiteralPath $script:S11IndexPath -Raw
+        foreach ($id in $script:S11ProjectionIds) {
+            ([regex]::Matches($text, "(?m)^<!-- $([regex]::Escape($id)):start -->$")).Count | Should -Be 1
+            ([regex]::Matches($text, "(?m)^<!-- $([regex]::Escape($id)):end -->$")).Count | Should -Be 1
+        }
+        ([regex]::Matches($text, '(?m)^<!-- ([^:]+):start -->$')).Count | Should -Be $script:S11ProjectionIds.Count
+        ([regex]::Matches($text, '(?m)^<!-- ([^:]+):end -->$')).Count | Should -Be $script:S11ProjectionIds.Count
+
+        $outside = $text
+        foreach ($id in $script:S11ProjectionIds) {
+            $outside = [regex]::Replace($outside, "(?ms)^<!-- $([regex]::Escape($id)):start -->$.*?^<!-- $([regex]::Escape($id)):end -->$", '')
+        }
+        $outside | Should -Not -Match '(?m)^\|'
+    }
+
+    It 'S11.4/S11.5: an unavailable tracker is exit 2 while local blocking findings remain empty' {
+        Mock Test-TrackerAvailable { $false }
+        $result = Invoke-DesignStateCheck -RepoPath $script:S11RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
+        $result.ExitCode | Should -Be 2
+        (@($result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'TrackerUnavailable' })).Count | Should -Be 1
+        $result.Findings | Should -BeNullOrEmpty
+        $result.LargestClosure.Unit | Should -Not -BeNullOrEmpty
+        $result.LargestClosure.Bytes | Should -BeGreaterThan 0
+        $result.LargestClosure.LargestContributor | Should -Not -BeNullOrEmpty
+    }
+
+    It 'S11.7: WorkRefs stay byte-identical and outstanding renders their existing Rank and MirroredAt fields' {
+        & git -C $script:S11RepoRoot diff --quiet HEAD -- design/state/work
+        $LASTEXITCODE | Should -Be 0
+        $graph = Read-DesignStateGraph -Path $script:S11RepoRoot
+        $expected = (Get-OutstandingProjectionContent -Records $graph.Records) -join "`n"
+        $projection = Invoke-DesignProjection -RepoPath $script:S11RepoRoot -DryRun
+        $actual = @($projection.Regions | Where-Object { $_.Document -eq 'design/state-index.md' -and $_.Id -eq 'outstanding' })
+        $actual.Count | Should -Be 1
+        $actual[0].Content | Should -Be $expected
+        foreach ($ref in @($graph.Records | Where-Object { $_.Kind -eq 'WorkRef' -and $_.Scalars['State'] -eq 'OPEN' })) {
+            $actual[0].Content | Should -Match ([regex]::Escape("| $($ref.Scalars['Rank']) | #$($ref.Scalars['Issue']) |"))
+            $actual[0].Content | Should -Match ([regex]::Escape("``$($ref.Scalars['MirroredAt'])``"))
+        }
+    }
+}
+
 Describe 'Test-DesignState against this repository''s own tree' {
 
     BeforeAll {
         $script:RepoRoot = Split-Path $PSScriptRoot -Parent
         $script:StatusBefore = & git -C $script:RepoRoot status --short
-        $script:RealResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot
+        $script:RealResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
     }
 
     It 'S5.9/I18: git status is unchanged by a real run against this repository' {
@@ -1458,22 +1532,26 @@ Describe 'Test-DesignState against this repository''s own tree' {
     It 'S18.6: EnforcementUnevidenced rejects this repository''s own superseded decision once its SupersededBy line is removed, and clears once it is restored' {
         $supersededId = 'decision/2026-08-20-marker-vocabulary-four-declared-id-forms-visible-bodies-one-corpus-wide-namespace'
         $supersededPath = Join-Path $script:RepoRoot 'design/state/decisions/2026-08-20-marker-vocabulary-four-declared-id-forms-visible-bodies-one-corpus-wide-namespace.md'
-        $original = Get-Content -LiteralPath $supersededPath -Raw
+        $originalBytes = [IO.File]::ReadAllBytes($supersededPath)
+        $original = [Text.Encoding]::UTF8.GetString($originalBytes)
         $original | Should -Match '(?m)^SupersededBy:'
         try {
             $stripped = $original -replace '(?m)^SupersededBy:.*\r?\n', ''
-            Set-Content -LiteralPath $supersededPath -Value $stripped -Encoding utf8NoBOM -NoNewline
+            [IO.File]::WriteAllText($supersededPath, $stripped, [Text.UTF8Encoding]::new($false))
 
-            $strippedResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot
+            $strippedResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
+            $strippedResult.ExitCode | Should -Be 1
             $hit = @($strippedResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq $supersededId })
             $hit.Count | Should -Be 1
             $hit[0].Detail | Should -Match 'SupersededBy'
         } finally {
-            Set-Content -LiteralPath $supersededPath -Value $original -Encoding utf8NoBOM -NoNewline
+            [IO.File]::WriteAllBytes($supersededPath, $originalBytes)
         }
 
-        $restoredResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot
+        $restoredResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
         (@($restoredResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' })).Count | Should -Be 0
+        $restoredResult.ExitCode | Should -Be 0
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($supersededPath)) | Should -Be ([Convert]::ToBase64String($originalBytes))
         (& git -C $script:RepoRoot status --short) | Should -Be $script:StatusBefore
     }
 }

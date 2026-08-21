@@ -374,14 +374,26 @@ Describe 'Update-DesignProjection against this repository''s own tree' {
         $after = & git -C $script:RepoRoot status --short
         $after | Should -Be $before
         $result.Refusals.Count | Should -Be 0
+        @($result.Regions | Where-Object { $_.Document } | ForEach-Object { $_.Id } | Sort-Object) | Should -Be @(
+            'bound-by', 'consumers', 'decision-affects', 'invariants', 'outstanding', 'question-affects', 'units'
+        )
     }
 
     It 'S7.3: a real, non-DryRun run against this repository is already at its fixed point (idempotent)' {
         $before = & git -C $script:RepoRoot status --short
-        $null = Invoke-DesignProjection -RepoPath $script:RepoRoot
+        $pass1 = Invoke-DesignProjection -RepoPath $script:RepoRoot
+        $index1 = [IO.File]::ReadAllBytes((Join-Path $script:RepoRoot 'design/state-index.md'))
+        $contract1 = [IO.File]::ReadAllBytes((Join-Path $script:RepoRoot 'design/20-contract.md'))
+        $pass2 = Invoke-DesignProjection -RepoPath $script:RepoRoot
+        $index2 = [IO.File]::ReadAllBytes((Join-Path $script:RepoRoot 'design/state-index.md'))
+        $contract2 = [IO.File]::ReadAllBytes((Join-Path $script:RepoRoot 'design/20-contract.md'))
         $after = & git -C $script:RepoRoot status --short
         # The real design/20-contract.md and design/state-index.md are committed already
         # regenerated - a real run must not find anything to change.
+        $pass1.Refusals.Count | Should -Be 0
+        $pass2.Refusals.Count | Should -Be 0
+        [Convert]::ToBase64String($index2) | Should -Be ([Convert]::ToBase64String($index1))
+        [Convert]::ToBase64String($contract2) | Should -Be ([Convert]::ToBase64String($contract1))
         $after | Should -Be $before
     }
 }
