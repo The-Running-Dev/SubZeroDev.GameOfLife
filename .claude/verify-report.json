@@ -2,26 +2,28 @@
   "gates": [
     {
       "name": "Parse-check PowerShell scripts",
-      "status": "Passed"
+      "status": "Passed",
+      "detail": "Parsed every *.ps1 under the repository with [System.Management.Automation.Language.Parser]::ParseFile. No parse errors."
     },
     {
       "name": "Run Pester tests",
-      "status": "Failed",
-      "detail": "Tests completed in 74.17s. Tests Passed: 249, Failed: 9, Skipped: 0, Inconclusive: 0, NotRun: 0. Failed: Read-DesignState.Tests.ps1 S4.6 and GlobDisagreement; Test-DesignState.Tests.ps1 S12.5, S7.9, S16.1/S16.2, S16.5, S17.2, S18.6; Update-DesignProjection.Tests.ps1 S7.2."
+      "status": "Passed",
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru\nTests completed in 110.75s\nTests Passed: 280, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0"
     },
     {
       "name": "Validate the core/companion split",
-      "status": "Passed"
+      "status": "Passed",
+      "detail": "./tools/Test-Companion.ps1\nCompanion split OK - 21 core(s) checked, 0 companion file(s) present, 21 core(s) with no companion.\nState: Valid, Findings: {}, CoreCount: 21, CompanionCount: 0, AbsentCount: 21. Exit 0."
     },
     {
       "name": "Check the design state against the tree",
-      "status": "DidNotRun",
-      "reason": "Exit code 2: ContractListUnreadable (SectionNotFound and GlobTableNotFound), ProjectorFailed (exited 1), and TrackerUnavailable for issues #8 through #14."
+      "status": "Passed",
+      "detail": "./tools/Test-DesignState.ps1\nFindings (0):\nReported (8, all non-blocking): [MirrorStale] work/8..work/14 - MirroredAt '394505aae8cdd82a2375a4956fc7ba93090db469' is not the current commit '66fb48a7f411a4bdbecbb6b3a846da80a95586f2'; [WorkStateDivergence] work/8: mirrored State 'OPEN' disagrees with tracker's 'CLOSED'.\nCould not evaluate (0):\nLargest closure: unit/script/test-designstate, 6122 bytes (ceiling 16384), largest contributor contract/test-designstate.\nExit code: 0."
     },
     {
       "name": "Check the spec set",
       "status": "DidNotRun",
-      "reason": "Exit code 2: RegisterAbsent — No provisional-register region exists, so provisional-number checks could not run."
+      "reason": "./tools/Test-SpecSet.ps1 exited 2, State=NotEvaluated, Reason=RegisterAbsent, Detail='No provisional-register region exists, so provisional-number checks could not run.' Documents=8, Declarations=936, Unchecked=1."
     }
   ]
 }
