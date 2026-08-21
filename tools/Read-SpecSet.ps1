@@ -52,6 +52,20 @@ function Get-SpecDocumentOrdinal {
     return $null
 }
 
+function Get-SpecSetRepositoryRoot {
+    param([Parameter(Mandatory)][string] $CorpusRoot)
+
+    $candidate = $CorpusRoot
+    for ($i = 0; $i -lt 3; $i++) {
+        $parent = Split-Path -Parent $candidate
+        if ([string]::IsNullOrWhiteSpace($parent) -or $parent -eq $candidate) {
+            return $CorpusRoot
+        }
+        $candidate = $parent
+    }
+    $candidate
+}
+
 function Get-FenceDeclarations {
     param([string[]] $Lines, [string] $DocumentPath, [int] $StartLine)
 
@@ -110,7 +124,7 @@ function Read-SpecSetIndex {
 
     if (-not (Test-Path -LiteralPath $CorpusPath -PathType Container)) { return New-SpecSetIndexFailure -Reason 'CorpusNotFound' -Path $CorpusPath }
     $root = (Resolve-Path -LiteralPath $CorpusPath).Path
-    $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $root))
+    $repoRoot = Get-SpecSetRepositoryRoot -CorpusRoot $root
     $documents = [System.Collections.Generic.List[object]]::new(); $declarations = [System.Collections.Generic.List[object]]::new()
     foreach ($file in @(Get-ChildItem -LiteralPath $root -File -Filter '*.md' | Sort-Object Name)) {
         try { $text = [System.IO.File]::ReadAllText($file.FullName, [System.Text.UTF8Encoding]::new($false)) } catch { return New-SpecSetIndexFailure -Reason 'UnreadableDocument' -Path $file.FullName }
