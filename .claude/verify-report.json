@@ -1,29 +1,29 @@
 {
   "gates": [
-    {
-      "name": "Parse-check PowerShell scripts",
-      "status": "Passed",
-      "detail": "Parsed every *.ps1 under the repository with [System.Management.Automation.Language.Parser]::ParseFile. No parse errors."
-    },
-    {
-      "name": "Run Pester tests",
-      "status": "Passed",
-      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru\nTests completed in 110.75s\nTests Passed: 280, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0"
-    },
-    {
-      "name": "Validate the core/companion split",
-      "status": "Passed",
-      "detail": "./tools/Test-Companion.ps1\nCompanion split OK - 21 core(s) checked, 0 companion file(s) present, 21 core(s) with no companion.\nState: Valid, Findings: {}, CoreCount: 21, CompanionCount: 0, AbsentCount: 21. Exit 0."
-    },
-    {
-      "name": "Check the design state against the tree",
-      "status": "Passed",
-      "detail": "./tools/Test-DesignState.ps1\nFindings (0):\nReported (8, all non-blocking): [MirrorStale] work/8..work/14 - MirroredAt '394505aae8cdd82a2375a4956fc7ba93090db469' is not the current commit '66fb48a7f411a4bdbecbb6b3a846da80a95586f2'; [WorkStateDivergence] work/8: mirrored State 'OPEN' disagrees with tracker's 'CLOSED'.\nCould not evaluate (0):\nLargest closure: unit/script/test-designstate, 6122 bytes (ceiling 16384), largest contributor contract/test-designstate.\nExit code: 0."
-    },
-    {
-      "name": "Check the spec set",
-      "status": "DidNotRun",
-      "reason": "./tools/Test-SpecSet.ps1 exited 2, State=NotEvaluated, Reason=RegisterAbsent, Detail='No provisional-register region exists, so provisional-number checks could not run.' Documents=8, Declarations=936, Unchecked=1."
-    }
+  {
+    "name": "Parse-check PowerShell scripts",
+    "status": "Passed",
+    "detail": "Every *.ps1 under the repository parsed with [System.Management.Automation.Language.Parser]::ParseFile with zero parse errors returned."
+  },
+  {
+    "name": "Run Pester tests",
+    "status": "Failed",
+    "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 276, Failed: 5, Skipped: 0, Inconclusive: 0, NotRun: 0.\n\nAll 5 failures trace to one pre-existing cause unrelated to this PR: design/state-index.md's `outstanding` region is stale against the live tracker state (rank numbers shifted and issues #19/#26 are missing from the committed table), which Test-DesignState.ps1 reports as a blocking ProjectionStale finding when run against this repository's real tree. Failing tests:\n\n- S11.4/S11.5 (Test-DesignState.Tests.ps1:1418): Expected $null or empty, but got @{Class=ProjectionStale; Subject=design/state-index.md#outstanding; Detail=the tree's copy of this region differs from its regeneration; Blocking=True}.\n- S12.5 (Test-DesignState.Tests.ps1:1479): Expected 0, because findings: [ProjectionStale] design/state-index.md#outstanding: the tree's copy of this region differs from its regeneration; could not evaluate:, but got 1.\n- S7.9 (Test-DesignState.Tests.ps1:1486): Expected 0, but got 1 (ProjectionStale finding count).\n- S18.6 (Test-DesignState.Tests.ps1:1553): Expected 0, but got 1 (same ProjectionStale cause surfacing through the EnforcementUnevidenced restore path).\n- S7.3 (Update-DesignProjection.Tests.ps1:397): Expected '?? .claude/session-costs.tsv', but got @(' M design/state-index.md', '?? .claude/session-costs.tsv') — running the real (non-DryRun) projector against this repository rewrites design/state-index.md's outstanding region, which is the same staleness the other four failures detect.\n\nThe rewrite this last test performs was reverted from the working tree both times it was reproduced (git checkout -- design/state-index.md); it is not part of this PR's diff."
+  },
+  {
+    "name": "Validate the core/companion split",
+    "status": "Passed",
+    "detail": "./tools/Test-Companion.ps1: Companion split OK - 21 core(s) checked, 0 companion file(s) present, 21 core(s) with no companion. State: Valid. Exit code 0."
+  },
+  {
+    "name": "Check the design state against the tree",
+    "status": "Failed",
+    "detail": "./tools/Test-DesignState.ps1 exit code 1.\n\nFindings (1):\n  [ProjectionStale] design/state-index.md#outstanding: the tree's copy of this region differs from its regeneration\n\nThis is the same pre-existing tracker/projection drift as the Pester failures above — design/state-index.md's outstanding table has not been regenerated since GitHub project ranks moved and issues #19/#26 were opened. It also reports 10 non-blocking MirrorStale/WorkStateDivergence findings (work/8 through work/26) for the same reason: WorkRef mirrors were last stamped at an earlier commit. None of this touches .github/workflows/verify.yml, the file this PR (S2) changes."
+  },
+  {
+    "name": "Check the spec set",
+    "status": "DidNotRun",
+    "reason": "./tools/Test-SpecSet.ps1 returned State: NotEvaluated, Reason: RegisterAbsent, Detail: 'No provisional-register region exists, so provisional-number checks could not run.' Exit code 2. Pre-existing — the provisional-register region is later slices' (S5's) territory, not S2's."
+  }
   ]
 }
