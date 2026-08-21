@@ -36,6 +36,13 @@ class SpecFinding {
     [string] $Detail
 }
 
+class MirrorObligation {
+    [string] $QualifiedName
+    [string] $DocumentPath
+    [int] $Line
+    [string[]] $BodyMembers = @()
+}
+
 function New-SpecSetIndexFailure {
     param([string] $Reason, [string] $Path, [int] $Line = 0)
     [pscustomobject]@{
@@ -118,6 +125,51 @@ function Get-FenceDeclarations {
     [pscustomobject]@{ Declarations = @($rows); Failure = $null; Line = 0 }
 }
 
+function Get-SpecSetLineNumber {
+    param([string] $Text, [int] $Index)
+    1 + ([regex]::Matches($Text.Substring(0, $Index), "`n")).Count
+}
+
+function Get-DeclaredRegions {
+    param([string] $Text, [string] $DocumentPath)
+
+    $pattern = '<!--\s*(?<sid>[A-Za-z][\w.-]*):declared:start\s*-->|<!--\s*(?<eid>[A-Za-z][\w.-]*):declared:end\s*-->'
+    $regions = [System.Collections.Generic.List[object]]::new()
+    $seenIds = [System.Collections.Generic.HashSet[string]]::new()
+    $openId = $null; $openLine = 0; $openBodyStart = 0
+
+    foreach ($m in [regex]::Matches($Text, $pattern)) {
+        $line = Get-SpecSetLineNumber -Text $Text -Index $m.Index
+        if ($m.Groups['sid'].Success) {
+            if ($openId) { return [pscustomobject]@{ Failure = 'MalformedRegion'; Line = $line } }
+            $openId = $m.Groups['sid'].Value; $openLine = $line; $openBodyStart = $m.Index + $m.Length
+            continue
+        }
+        $eid = $m.Groups['eid'].Value
+        if (-not $openId -or $eid -ne $openId) { return [pscustomobject]@{ Failure = 'MalformedRegion'; Line = $line } }
+        if (-not $seenIds.Add($openId)) { return [pscustomobject]@{ Failure = 'DuplicateRegionId'; Line = $openLine } }
+        $body = $Text.Substring($openBodyStart, $m.Index - $openBodyStart).Trim()
+        $regions.Add([pscustomobject]@{ Id = $openId; Line = $openLine; Body = $body; DocumentPath = $DocumentPath })
+        $openId = $null
+    }
+    if ($openId) { return [pscustomobject]@{ Failure = 'MalformedRegion'; Line = $openLine } }
+    [pscustomobject]@{ Regions = @($regions); Failure = $null }
+}
+
+function Get-MirrorObligationFromRegion {
+    param([Parameter(Mandatory)][object] $Region)
+
+    if ($Region.Id -notlike 'mirror-*') { return $null }
+    $afterColon = if ($Region.Body -match ':') { $Region.Body.Substring($Region.Body.IndexOf(':') + 1) } else { $Region.Body }
+    $members = @([regex]::Matches($afterColon, '[A-Za-z_][A-Za-z0-9_]*') | ForEach-Object { $_.Value } | Select-Object -Unique)
+    $obligation = [MirrorObligation]::new()
+    $obligation.QualifiedName = $Region.Id.Substring('mirror-'.Length)
+    $obligation.DocumentPath = $Region.DocumentPath
+    $obligation.Line = $Region.Line
+    $obligation.BodyMembers = $members
+    $obligation
+}
+
 function Read-SpecSetIndex {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string] $CorpusPath)
@@ -126,11 +178,18 @@ function Read-SpecSetIndex {
     $root = (Resolve-Path -LiteralPath $CorpusPath).Path
     $repoRoot = Get-SpecSetRepositoryRoot -CorpusRoot $root
     $documents = [System.Collections.Generic.List[object]]::new(); $declarations = [System.Collections.Generic.List[object]]::new()
+    $mirrorObligations = [System.Collections.Generic.List[object]]::new()
     foreach ($file in @(Get-ChildItem -LiteralPath $root -File -Filter '*.md' | Sort-Object Name)) {
         try { $text = [System.IO.File]::ReadAllText($file.FullName, [System.Text.UTF8Encoding]::new($false)) } catch { return New-SpecSetIndexFailure -Reason 'UnreadableDocument' -Path $file.FullName }
         $relative = [System.IO.Path]::GetRelativePath($repoRoot, $file.FullName).Replace('\', '/')
         $doc = [SpecDocument]::new(); $doc.Path = $relative; $doc.Ordinal = Get-SpecDocumentOrdinal -Name $file.Name
         $h1 = [regex]::Match($text, '(?m)^#\s+(.+?)\s*$'); $doc.Title = if ($h1.Success) { $h1.Groups[1].Value } else { '' }; $documents.Add($doc)
+        $regionResult = Get-DeclaredRegions -Text $text -DocumentPath $relative
+        if ($regionResult.Failure) { return New-SpecSetIndexFailure -Reason $regionResult.Failure -Path $relative -Line $regionResult.Line }
+        foreach ($region in $regionResult.Regions) {
+            $obligation = Get-MirrorObligationFromRegion -Region $region
+            if ($obligation) { $mirrorObligations.Add($obligation) }
+        }
         $lines = $text -replace "`r`n", "`n" -split "`n"; $inFence = $false; $fence = @(); $start = 0
         for ($i = 0; $i -lt $lines.Count; $i++) {
             if (-not $inFence -and $lines[$i] -eq '```typescript') { $inFence = $true; $fence = @(); $start = $i + 2; continue }
@@ -162,5 +221,5 @@ function Read-SpecSetIndex {
             $declarations.Add($aliasField)
         }
     }
-    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @(); MirrorObligations = @(); ProvisionalEntries = @(); ProvisionalSites = @(); Lifecycles = @() }
+    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @(); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @(); ProvisionalSites = @(); Lifecycles = @() }
 }

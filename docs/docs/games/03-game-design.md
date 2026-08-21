@@ -138,8 +138,8 @@ Any action plan whose total time cost exceeds available time is rejected.
 
 - Identity: name, age, background.
 - Finances: cash, savings, debt, weekly income, weekly expenses, overdue balance, credit score, accounts.
-- Needs: health, energy, happiness, stress, satiety.
-- Attributes: intelligence, discipline, charisma, creativity, resilience, wisdom, luck.
+- Needs: <!-- mirror-NeedState:declared:start -->health, energy, happiness, stress, satiety.<!-- mirror-NeedState:declared:end -->
+- Attributes: <!-- mirror-AttributeState:declared:start -->intelligence, discipline, charisma, creativity, resilience, wisdom, luck.<!-- mirror-AttributeState:declared:end -->
 - Education, career, housing.
 - Inventory and relationships.
 - Skills, traits, reputation, flags.
