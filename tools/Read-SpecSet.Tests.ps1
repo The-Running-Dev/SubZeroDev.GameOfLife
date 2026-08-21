@@ -4,6 +4,12 @@
 BeforeAll { . (Join-Path $PSScriptRoot 'Read-SpecSet.ps1') }
 
 Describe 'Read-SpecSetIndex' {
+    It 'keeps a shallow corpus as the relative-path base' {
+        $root = [System.IO.Path]::GetPathRoot($PSScriptRoot)
+        $shallowCorpus = Join-Path $root 'games'
+
+        Get-SpecSetRepositoryRoot -CorpusRoot $shallowCorpus | Should -Be $shallowCorpus
+    }
     It 'indexes the real corpus and derives closure from declaration form' {
         $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
         $index.State | Should -Be 'Indexed'

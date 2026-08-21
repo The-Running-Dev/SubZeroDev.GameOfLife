@@ -950,6 +950,27 @@ Describe 'Test-DesignState: the tracker classes (S5.11)' {
         $result.Reported.Count | Should -Be 0
         $result.CouldNotEvaluate.Count | Should -Be 0
     }
+
+    It 'S11.5: the explicit repository is carried from the availability probe into each issue read' {
+        Mock -CommandName Test-TrackerAvailable -MockWith { $true }
+        Mock -CommandName Get-CurrentCommitSha -MockWith { 'currentsha' }
+        Mock -CommandName Test-CommitIsAncestor -MockWith { 'Ancestor' }
+        $script:TrackerGhArgs = @()
+        Mock -CommandName gh -MockWith {
+            $script:TrackerGhArgs = @($args)
+            $global:LASTEXITCODE = 0
+            '{"title":"Tracked title","state":"OPEN"}'
+        }
+
+        $ref = New-Record -Id 'work/42' -Kind 'WorkRef' -Scalars @{
+            Issue = '42'; Title = 'Tracked title'; State = 'OPEN'; MirroredAt = 'currentsha'
+        }
+        $result = Test-TrackerClasses -Records @($ref) -RepoPath $TestDrive -Repository 'owner/repository'
+
+        $result.CouldNotEvaluate | Should -BeNullOrEmpty
+        $script:TrackerGhArgs | Should -Contain '-R'
+        $script:TrackerGhArgs | Should -Contain 'owner/repository'
+    }
 }
 
 Describe 'Test-DesignState: end-to-end (S5.2, S5.3, S5.4, S5.9)' {
@@ -1043,12 +1064,385 @@ Binds: I999
     }
 }
 
+Describe 'S8 command-state migration against this repository' {
+
+    BeforeAll {
+        $script:S8RepoRoot = Split-Path $PSScriptRoot -Parent
+        $script:S8Graph = Read-DesignStateGraph -Path $script:S8RepoRoot
+        $script:S8ById = @{}
+        foreach ($record in $script:S8Graph.Records) { $script:S8ById[$record.Id] = $record }
+        $script:S8Result = Invoke-DesignStateCheck -RepoPath $script:S8RepoRoot
+    }
+
+    It 'S8.1/S8.2: every command artifact has one complete, anchored command record' {
+        $expected = @(
+            Get-CommandGlobFiles -RepoPath $script:S8RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } } |
+                Sort-Object
+        )
+        $commands = @($script:S8Graph.Records | Where-Object { $_.Kind -eq 'Unit' -and $_.Scalars['Kind'] -eq 'command' -and $_.Scalars['Status'] -eq 'active' })
+        $actual = @($commands | ForEach-Object { $_.Scalars['Anchor'] } | Sort-Object)
+
+        @($expected | Where-Object { $_ -notin $actual }) | Should -BeNullOrEmpty
+        @($actual | Where-Object { $_ -notin $expected }) | Should -BeNullOrEmpty
+        foreach ($command in $commands) {
+            foreach ($field in 'Consumes', 'Exposes', 'Binds', 'Live', 'Archival', 'Questions', 'Work', 'Evidence') {
+                $command.Lists.ContainsKey($field) | Should -BeTrue -Because "$($command.Id) must carry the complete unit shape"
+            }
+        }
+        (@($script:S8Result.Findings | Where-Object { $_.Class -in 'AnchorMissing', 'UnresolvedId', 'RecordUnparseable' -and $_.Subject -like 'unit/command/*' })).Count | Should -Be 0
+    }
+
+    It 'S8.3/S8.4: command-facing contracts have unique owners and the required consumption edges' {
+        $required = @(
+            'contract/fix', 'contract/resolve', 'contract/test-companion',
+            'contract/test-designdrift', 'contract/test-designstate',
+            'contract/update-workmirror', 'contract/wait-pullrequestcheck'
+        )
+        foreach ($id in $required) { $script:S8ById.ContainsKey($id) | Should -BeTrue }
+        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'OwnerMismatch' -and $_.Subject -in $required })).Count | Should -Be 0
+
+        $script:S8ById['unit/command/resolve'].Lists['Consumes'] | Should -Contain 'contract/wait-pullrequestcheck'
+        $script:S8ById['unit/command/track'].Lists['Consumes'] | Should -Contain 'contract/test-designdrift'
+        $script:S8ById['unit/command/track'].Lists['Consumes'] | Should -Contain 'contract/update-workmirror'
+    }
+
+    It 'S8.5: every invariant or decision named by a command is a local record' {
+        $commands = @($script:S8Graph.Records | Where-Object { $_.Kind -eq 'Unit' -and $_.Scalars['Kind'] -eq 'command' })
+        foreach ($command in $commands) {
+            foreach ($field in 'Binds', 'Live', 'Archival') {
+                foreach ($id in @($command.Lists[$field])) {
+                    $script:S8ById.ContainsKey($id) | Should -BeTrue -Because "$($command.Id) names local $field id $id"
+                }
+            }
+        }
+    }
+
+    It 'S8.7: the completed command closures stay within the fixed ceiling' {
+        $script:S8Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
+    }
+}
+
+Describe 'S9 script-and-document state migration against this repository' {
+
+    BeforeAll {
+        $script:S9RepoRoot = (Resolve-Path (Split-Path $PSScriptRoot -Parent)).Path
+        $script:S9Graph = Read-DesignStateGraph -Path $script:S9RepoRoot
+        $script:S9ByAnchor = @{}
+        foreach ($record in $script:S9Graph.Records) {
+            if ($record.Kind -eq 'Unit' -and $record.Scalars['Anchor']) {
+                $script:S9ByAnchor[$record.Scalars['Anchor']] = $record
+            }
+        }
+        $script:S9Result = Invoke-DesignStateCheck -RepoPath $script:S9RepoRoot
+        $script:S9Commands = @(
+            Get-CommandGlobFiles -RepoPath $script:S9RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } }
+        )
+        $script:S9Scripts = @(
+            Get-ScriptGlobFiles -RepoPath $script:S9RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } }
+        )
+        $script:S9Documents = @(
+            Get-DocumentGlobFiles -RepoPath $script:S9RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } }
+        )
+    }
+
+    It 'S9.1: command, script and document artifacts exactly match their active unit records' {
+        foreach ($case in @(
+            @{ Kind = 'command'; Expected = $script:S9Commands },
+            @{ Kind = 'script'; Expected = $script:S9Scripts },
+            @{ Kind = 'document'; Expected = $script:S9Documents }
+        )) {
+            $records = @($script:S9Graph.Records | Where-Object {
+                $_.Kind -eq 'Unit' -and $_.Scalars['Kind'] -eq $case.Kind -and $_.Scalars['Status'] -eq 'active'
+            })
+            $actual = @($records | ForEach-Object { $_.Scalars['Anchor'] } | Sort-Object)
+            $expected = @($case.Expected | Sort-Object)
+            @($expected | Where-Object { $_ -notin $actual }) | Should -BeNullOrEmpty
+            @($actual | Where-Object { $_ -notin $expected }) | Should -BeNullOrEmpty
+        }
+
+        $artifacts = @($script:S9Commands + $script:S9Scripts + $script:S9Documents)
+        (@($script:S9Result.Findings | Where-Object {
+            $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -in $artifacts
+        })).Count | Should -Be 0
+    }
+
+    It 'S9.2: excluded artifacts have no unit record' {
+        $anchors = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Unit' } | ForEach-Object { $_.Scalars['Anchor'] })
+        @($anchors | Where-Object {
+            $_ -like '*.Tests.ps1' -or $_ -like '*-local.md' -or $_ -eq 'design/FROZEN.md' -or $_ -eq 'CLAUDE.md'
+        }) | Should -BeNullOrEmpty
+    }
+
+    It 'S9.3: every checked script is recorded and names its existing Pester evidence' {
+        foreach ($scriptPath in $script:S9Scripts) {
+            $script:S9ByAnchor.ContainsKey($scriptPath) | Should -BeTrue -Because "$scriptPath must have a unit record"
+            if (-not $script:S9ByAnchor.ContainsKey($scriptPath)) { continue }
+
+            $unit = $script:S9ByAnchor[$scriptPath]
+            $testPath = "tools/$([IO.Path]::GetFileNameWithoutExtension($scriptPath)).Tests.ps1"
+            if (Test-Path -LiteralPath (Join-Path $script:S9RepoRoot $testPath)) {
+                @($unit.Lists['Evidence']) | Should -Contain $testPath -Because "$scriptPath has a Pester test"
+            }
+        }
+
+        (@($script:S9Result.Findings | Where-Object { $_.Class -eq 'AnchorMissing' })).Count | Should -Be 0
+    }
+
+    It 'S9.4: installed public surfaces exactly match uniquely owned contract records' {
+        $contractText = Get-Content -LiteralPath (Join-Path $script:S9RepoRoot 'design/20-contract.md') -Raw
+        $section = [regex]::Match($contractText, '(?s)### Installed AgentKit surfaces\s+(.*?)\r?\n### Spec-set checker surfaces')
+        $section.Success | Should -BeTrue
+        $expected = @(
+            [regex]::Matches($section.Groups[1].Value, '(?m)^#### (?:tools/|\.claude/commands/)([^/\r\n]+)\.(?:ps1|md)\s*$') |
+                ForEach-Object { "contract/$($_.Groups[1].Value.ToLowerInvariant())" } |
+                Sort-Object
+        )
+        $actual = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Contract' } | ForEach-Object { $_.Id } | Sort-Object)
+        $actual | Should -Be $expected
+        (@($script:S9Result.Findings | Where-Object { $_.Class -eq 'OwnerMismatch' })).Count | Should -Be 0
+    }
+
+    It 'S9.5: migrated units have complete authored fields and resolve every named id' {
+        foreach ($anchor in @($script:S9Scripts + $script:S9Documents)) {
+            $script:S9ByAnchor.ContainsKey($anchor) | Should -BeTrue -Because "$anchor must have a unit record"
+            if (-not $script:S9ByAnchor.ContainsKey($anchor)) { continue }
+
+            $unit = $script:S9ByAnchor[$anchor]
+            foreach ($field in 'Consumes', 'Exposes', 'Binds', 'Live', 'Archival', 'Questions', 'Work', 'Evidence') {
+                $unit.Lists.ContainsKey($field) | Should -BeTrue -Because "$($unit.Id) must carry the complete unit shape"
+            }
+            $raw = Get-Content -LiteralPath (Join-Path $script:S9RepoRoot $unit.Path) -Raw
+            $raw | Should -Not -Match '(?m)^(Consumers|BoundBy|Affects):'
+        }
+
+        (@($script:S9Result.Findings | Where-Object { $_.Class -in 'UnresolvedId', 'RecordUnparseable' })).Count | Should -Be 0
+    }
+
+    It 'S9.6: the completed script and document closures stay within the fixed ceiling' {
+        $parsed = Get-ContractInvariantIds -ContractPath (Join-Path $script:S9RepoRoot 'design/20-contract.md')
+        $recorded = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Invariant' } | ForEach-Object { $_.Id })
+        foreach ($id in @($parsed.Ids | Where-Object { $_ -notin $recorded })) {
+            $script:S9Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -eq $id } | Should -Not -BeNullOrEmpty
+        }
+        $script:S9Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
+    }
+}
+
+# =================================================================================================
+# S10. Every local rule and logged decision becomes addressable.
+# =================================================================================================
+
+Describe 'S10 invariant and decision state against this repository' {
+
+    BeforeAll {
+        $script:S10RepoRoot = Split-Path $PSScriptRoot -Parent
+        $script:S10Graph = Read-DesignStateGraph -Path $script:S10RepoRoot
+        $script:S10ById = @{}
+        foreach ($record in $script:S10Graph.Records) { $script:S10ById[$record.Id] = $record }
+        $script:S10Result = Invoke-DesignStateCheck -RepoPath $script:S10RepoRoot
+
+        function ConvertTo-S10ComparableText {
+            param([AllowEmptyString()][string] $Text)
+            (($Text -replace '\s+', ' ').Trim())
+        }
+    }
+
+    It 'S10.1/S10.2: invariant records exactly reproduce the contract rows and are bound by their owners' {
+        $contractPath = Join-Path $script:S10RepoRoot 'design/20-contract.md'
+        $text = Get-Content -LiteralPath $contractPath -Raw
+        $start = $text.IndexOf('<!-- invariants:start -->')
+        $end = $text.IndexOf('<!-- invariants:end -->')
+        $start | Should -BeGreaterThan -1
+        $end | Should -BeGreaterThan $start
+        $region = $text.Substring($start, $end - $start)
+
+        $rows = @{}
+        foreach ($line in ($region -split "`n")) {
+            if ($line -notmatch '^\|\s*\*\*(I\d+)\*\*\s*\|\s*(.*?)\s*\|\s*`([^`]+)`\s*\|\s*(code|instruction)\s*\|\s*(.*?)\s*\|\s*$') { continue }
+            $rows[$Matches[1]] = [pscustomobject]@{
+                Statement = $Matches[2]
+                Owner = $Matches[3]
+                Enforcement = $Matches[4]
+                Evidence = @(
+                    if ($Matches[5] -ne '—') {
+                        $Matches[5] -split ',' | ForEach-Object { $_.Trim() }
+                    }
+                )
+            }
+        }
+
+        $invariants = @($script:S10Graph.Records | Where-Object { $_.Kind -eq 'Invariant' })
+        @($invariants.Id | Sort-Object) | Should -Be @($rows.Keys | Sort-Object)
+        foreach ($invariant in $invariants) {
+            $row = $rows[$invariant.Id]
+            ConvertTo-S10ComparableText $invariant.Prose['Statement'] | Should -Be (ConvertTo-S10ComparableText $row.Statement)
+            $invariant.Scalars['Owner'] | Should -Be $row.Owner
+            $invariant.Scalars['Enforcement'] | Should -Be $row.Enforcement
+            @($invariant.Lists['Evidence'] | Sort-Object) | Should -Be @($row.Evidence | Sort-Object)
+            $script:S10ById.ContainsKey($row.Owner) | Should -BeTrue
+            @($script:S10ById[$row.Owner].Lists['Binds']) | Should -Contain $invariant.Id
+            foreach ($evidence in $row.Evidence) {
+                Test-Path -LiteralPath (Join-Path $script:S10RepoRoot $evidence) | Should -BeTrue
+            }
+        }
+
+        (@($script:S10Result.Findings | Where-Object {
+            $_.Class -in 'UnrecordedArtifact', 'EnforcementUnevidenced', 'AnchorMissing', 'UnresolvedId'
+        })).Count | Should -Be 0
+    }
+
+    It 'S10.3/S10.5: decisions exactly reproduce every local heading and its standing Chosen claim' {
+        $headings = [System.Collections.Generic.List[string]]::new()
+        $claims = @{}
+        $current = $null
+        $claimLines = [System.Collections.Generic.List[string]]::new()
+        $capturing = $false
+        foreach ($line in (Get-Content -LiteralPath (Join-Path $script:S10RepoRoot 'design/90-decisions.md'))) {
+            if ($line -match '^###\s+(.+?)\s*$') {
+                if ($current -and $claimLines.Count -gt 0) { $claims[$current] = $claimLines -join "`n" }
+                $current = $Matches[1]
+                $headings.Add($current)
+                $claimLines = [System.Collections.Generic.List[string]]::new()
+                $capturing = $false
+                continue
+            }
+            if ($line -match '^Chosen:\s*(.*)$') {
+                $capturing = $true
+                $claimLines.Add($Matches[1])
+                continue
+            }
+            if ($line -match '^Rejected:') {
+                if ($current -and $claimLines.Count -gt 0) { $claims[$current] = $claimLines -join "`n" }
+                $capturing = $false
+                continue
+            }
+            if ($capturing) { $claimLines.Add($line) }
+        }
+        if ($current -and $claimLines.Count -gt 0 -and -not $claims.ContainsKey($current)) {
+            $claims[$current] = $claimLines -join "`n"
+        }
+
+        $decisions = @($script:S10Graph.Records | Where-Object { $_.Kind -eq 'Decision' })
+        @($decisions | ForEach-Object { $_.Scalars['Anchor'] } | Sort-Object) | Should -Be @($headings | Sort-Object)
+        foreach ($decision in $decisions) {
+            $claims.ContainsKey($decision.Scalars['Anchor']) | Should -BeTrue
+            ConvertTo-S10ComparableText $decision.Prose['Claim'] | Should -Be (ConvertTo-S10ComparableText $claims[$decision.Scalars['Anchor']])
+            $decision.Prose['Claim'] | Should -Not -Match '(?m)^Rejected:'
+        }
+        (@($script:S10Result.Findings | Where-Object { $_.Class -in 'LogEntryUnrecorded', 'DecisionAnchorAmbiguous' })).Count | Should -Be 0
+    }
+
+    It 'S10.4/S10.7: the local marker-vocabulary decision is superseded by the local identity decision' {
+        $oldId = 'decision/2026-08-20-marker-vocabulary-four-declared-id-forms-visible-bodies-one-corpus-wide-namespace'
+        $newId = 'decision/2026-08-21-marked-region-identity-is-document-scoped-and-form-is-repository-wide'
+        $old = $script:S10ById[$oldId]
+        $new = $script:S10ById[$newId]
+        $old.Scalars['Status'] | Should -Be 'superseded'
+        $old.Scalars['SupersededBy'] | Should -Be $newId
+        $new.Scalars['Status'] | Should -Be 'accepted'
+        $new.Scalars.ContainsKey('SupersededBy') | Should -BeFalse
+
+        foreach ($accepted in @($script:S10Graph.Records | Where-Object { $_.Kind -eq 'Decision' -and $_.Scalars['Status'] -eq 'accepted' })) {
+            $accepted.Scalars.ContainsKey('SupersededBy') | Should -BeFalse
+        }
+    }
+
+    It 'S10.5: unit Live and Archival decision ids resolve, are disjoint, and make every decision followable' {
+        $followed = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($unit in @($script:S10Graph.Records | Where-Object { $_.Kind -eq 'Unit' })) {
+            $live = @($unit.Lists['Live'])
+            $archival = @($unit.Lists['Archival'])
+            @($live | Where-Object { $_ -in $archival }) | Should -BeNullOrEmpty
+            foreach ($id in @($live + $archival)) {
+                $script:S10ById.ContainsKey($id) | Should -BeTrue
+                if ($id -like 'decision/*') { [void]$followed.Add($id) }
+            }
+        }
+        $decisionIds = @($script:S10Graph.Records | Where-Object { $_.Kind -eq 'Decision' } | ForEach-Object { $_.Id })
+        @($decisionIds | Where-Object { -not $followed.Contains($_) }) | Should -BeNullOrEmpty
+    }
+
+    It 'S10.6: no question record is invented without local contract state' {
+        (@($script:S10Graph.Records | Where-Object { $_.Kind -eq 'Question' })).Count | Should -Be 0
+    }
+
+    It 'S10.8: migration preserves work mirrors and the decision log while keeping closures bounded' {
+        & git -C $script:S10RepoRoot diff --quiet HEAD -- design/state/work design/90-decisions.md
+        $LASTEXITCODE | Should -Be 0
+        $script:S10Result.LargestClosure | Should -Not -BeNullOrEmpty
+        $script:S10Result.LargestClosure.Unit | Should -Not -BeNullOrEmpty
+        $script:S10Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
+        $script:S10Result.LargestClosure.LargestContributor | Should -Not -BeNullOrEmpty
+    }
+}
+
+# =================================================================================================
+# S11. The local design state reaches a checked fixed point.
+# =================================================================================================
+
+Describe 'S11 projected design state against this repository' {
+
+    BeforeAll {
+        $script:S11RepoRoot = Split-Path $PSScriptRoot -Parent
+        $script:S11IndexPath = Join-Path $script:S11RepoRoot 'design/state-index.md'
+        $script:S11ProjectionIds = @('units', 'bound-by', 'consumers', 'decision-affects', 'question-affects', 'outstanding')
+        . (Join-Path $PSScriptRoot 'Update-DesignProjection.ps1') -Path $script:S11RepoRoot
+    }
+
+    It 'S11.1: the state index has exactly one bare region per contracted id and no table rows outside them' {
+        Test-Path -LiteralPath $script:S11IndexPath | Should -BeTrue
+        $text = Get-Content -LiteralPath $script:S11IndexPath -Raw
+        foreach ($id in $script:S11ProjectionIds) {
+            ([regex]::Matches($text, "(?m)^<!-- $([regex]::Escape($id)):start -->$")).Count | Should -Be 1
+            ([regex]::Matches($text, "(?m)^<!-- $([regex]::Escape($id)):end -->$")).Count | Should -Be 1
+        }
+        ([regex]::Matches($text, '(?m)^<!-- ([^:]+):start -->$')).Count | Should -Be $script:S11ProjectionIds.Count
+        ([regex]::Matches($text, '(?m)^<!-- ([^:]+):end -->$')).Count | Should -Be $script:S11ProjectionIds.Count
+
+        $outside = $text
+        foreach ($id in $script:S11ProjectionIds) {
+            $outside = [regex]::Replace($outside, "(?ms)^<!-- $([regex]::Escape($id)):start -->$.*?^<!-- $([regex]::Escape($id)):end -->$", '')
+        }
+        $outside | Should -Not -Match '(?m)^\|'
+    }
+
+    It 'S11.4/S11.5: an unavailable tracker is exit 2 while local blocking findings remain empty' {
+        Mock Test-TrackerAvailable { $false }
+        $result = Invoke-DesignStateCheck -RepoPath $script:S11RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
+        $result.ExitCode | Should -Be 2
+        (@($result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'TrackerUnavailable' })).Count | Should -Be 1
+        $result.Findings | Should -BeNullOrEmpty
+        $result.LargestClosure.Unit | Should -Not -BeNullOrEmpty
+        $result.LargestClosure.Bytes | Should -BeGreaterThan 0
+        $result.LargestClosure.LargestContributor | Should -Not -BeNullOrEmpty
+    }
+
+    It 'S11.7: WorkRefs stay byte-identical and outstanding renders their existing Rank and MirroredAt fields' {
+        & git -C $script:S11RepoRoot diff --quiet HEAD -- design/state/work
+        $LASTEXITCODE | Should -Be 0
+        $graph = Read-DesignStateGraph -Path $script:S11RepoRoot
+        $expected = (Get-OutstandingProjectionContent -Records $graph.Records) -join "`n"
+        $projection = Invoke-DesignProjection -RepoPath $script:S11RepoRoot -DryRun
+        $actual = @($projection.Regions | Where-Object { $_.Document -eq 'design/state-index.md' -and $_.Id -eq 'outstanding' })
+        $actual.Count | Should -Be 1
+        $actual[0].Content | Should -Be $expected
+        foreach ($ref in @($graph.Records | Where-Object { $_.Kind -eq 'WorkRef' -and $_.Scalars['State'] -eq 'OPEN' })) {
+            $actual[0].Content | Should -Match ([regex]::Escape("| $($ref.Scalars['Rank']) | #$($ref.Scalars['Issue']) |"))
+            $actual[0].Content | Should -Match ([regex]::Escape("``$($ref.Scalars['MirroredAt'])``"))
+        }
+    }
+}
+
 Describe 'Test-DesignState against this repository''s own tree' {
 
     BeforeAll {
         $script:RepoRoot = Split-Path $PSScriptRoot -Parent
         $script:StatusBefore = & git -C $script:RepoRoot status --short
-        $script:RealResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot
+        $script:RealResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
     }
 
     It 'S5.9/I18: git status is unchanged by a real run against this repository' {
@@ -1136,25 +1530,28 @@ Describe 'Test-DesignState against this repository''s own tree' {
     }
 
     It 'S18.6: EnforcementUnevidenced rejects this repository''s own superseded decision once its SupersededBy line is removed, and clears once it is restored' {
-        $supersededPath = Join-Path $script:RepoRoot 'design/state/decisions/2026-08-03-ticking-checkbox-is-the-users.md'
-        $original = Get-Content -LiteralPath $supersededPath -Raw
+        $supersededId = 'decision/2026-08-20-marker-vocabulary-four-declared-id-forms-visible-bodies-one-corpus-wide-namespace'
+        $supersededPath = Join-Path $script:RepoRoot 'design/state/decisions/2026-08-20-marker-vocabulary-four-declared-id-forms-visible-bodies-one-corpus-wide-namespace.md'
+        $originalBytes = [IO.File]::ReadAllBytes($supersededPath)
+        $original = [Text.Encoding]::UTF8.GetString($originalBytes)
         $original | Should -Match '(?m)^SupersededBy:'
         try {
             $stripped = $original -replace '(?m)^SupersededBy:.*\r?\n', ''
-            Set-Content -LiteralPath $supersededPath -Value $stripped -Encoding utf8NoBOM -NoNewline
+            [IO.File]::WriteAllText($supersededPath, $stripped, [Text.UTF8Encoding]::new($false))
 
-            $strippedResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot
+            $strippedResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
             $strippedResult.ExitCode | Should -Be 1
-            $hit = @($strippedResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq 'decision/2026-08-03-ticking-checkbox-is-the-users' })
+            $hit = @($strippedResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq $supersededId })
             $hit.Count | Should -Be 1
             $hit[0].Detail | Should -Match 'SupersededBy'
         } finally {
-            Set-Content -LiteralPath $supersededPath -Value $original -Encoding utf8NoBOM -NoNewline
+            [IO.File]::WriteAllBytes($supersededPath, $originalBytes)
         }
 
-        $restoredResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot
+        $restoredResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
         (@($restoredResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' })).Count | Should -Be 0
         $restoredResult.ExitCode | Should -Be 0
+        [Convert]::ToBase64String([IO.File]::ReadAllBytes($supersededPath)) | Should -Be ([Convert]::ToBase64String($originalBytes))
         (& git -C $script:RepoRoot status --short) | Should -Be $script:StatusBefore
     }
 }
