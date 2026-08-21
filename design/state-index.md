@@ -151,13 +151,9 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 1 | #8 | S1 — The spec set is read end to end, or the run stops and points at the line | S1.1, S1.2, S1.3, S1.4, S1.5, S1.6, S1.7, S1.8, S1.9, S1.10 | `394505aae8cdd82a2375a4956fc7ba93090db469` |
-| 2 | #9 | S2 — Every push runs the checks | S2.1, S2.2, S2.3, S2.4, S2.5 | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
-| 4 | #11 | S4 — Every reference resolves, and every claim about the engine repository pins a commit | S4.1, S4.2, S4.3, S4.4, S4.5, S4.6 | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
-| 5 | #12 | S5 — Every provisional number says why it is deferred and what would settle it | S5.1, S5.2, S5.3, S5.4, S5.5, S5.6 | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
-| 6 | #13 | S6 — Everything the game keeps in state is counted, and told what it must say | S6.1, S6.2, S6.3, S6.4, S6.5 | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
-| 7 | #14 | S7 — The missing lifecycles are written | S7.1, S7.2, S7.3 | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
-| 10 | #10 | S3 — The two documents stop being able to disagree about the types they both describe | S3.1, S3.2, S3.3, S3.4, S3.5, S3.6, S3.7, S3.8, S3.9, S3.10 | `14a48c1a615cf682dc7e532eba983c49e6abc65d` |
-| 19 | #19 | Restore missing design-state closure records | — | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
-| 26 | #26 | Read-SpecSetIndex fails closed incorrectly for a shallow fixture path | — | `4049e58c385adc2ca5c1af69c80a64d36c4a5f08` |
+| 4 | #11 | S4 — Every reference resolves, and every claim about the engine repository pins a commit | S4.1, S4.2, S4.3, S4.4, S4.5, S4.6 | `bfacca05ba2c81e2d0e57cbd4e443f31234f326c` |
+| 5 | #12 | S5 — Every provisional number says why it is deferred and what would settle it | S5.1, S5.2, S5.3, S5.4, S5.5, S5.6 | `bfacca05ba2c81e2d0e57cbd4e443f31234f326c` |
+| 6 | #13 | S6 — Everything the game keeps in state is counted, and told what it must say | S6.1, S6.2, S6.3, S6.4, S6.5 | `bfacca05ba2c81e2d0e57cbd4e443f31234f326c` |
+| 7 | #14 | S7 — The missing lifecycles are written | S7.1, S7.2, S7.3 | `bfacca05ba2c81e2d0e57cbd4e443f31234f326c` |
+| 19 | #19 | Restore missing design-state closure records | — | `bfacca05ba2c81e2d0e57cbd4e443f31234f326c` |
 <!-- outstanding:end -->
