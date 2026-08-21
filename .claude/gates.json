@@ -1,0 +1,26 @@
+{
+  "manifestHash": "098c1974239fc9417c3048c57d060d0e50c6e52524393e355d247125bac5f93a",
+  "generated": "2026-08-21",
+  "gates": [
+    {
+      "command": "Parse every *.ps1 with System.Management.Automation.Language.Parser.ParseFile",
+      "name": "Parse-check PowerShell scripts"
+    },
+    {
+      "command": "Invoke-Pester -Path tools -Output Detailed -PassThru",
+      "name": "Run Pester tests"
+    },
+    {
+      "command": "./tools/Test-Companion.ps1",
+      "name": "Validate the core/companion split"
+    },
+    {
+      "command": "./tools/Test-DesignState.ps1",
+      "name": "Check the design state against the tree"
+    },
+    {
+      "command": "./tools/Test-SpecSet.ps1",
+      "name": "Check the spec set"
+    }
+  ]
+}

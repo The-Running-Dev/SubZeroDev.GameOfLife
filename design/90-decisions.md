@@ -7,6 +7,40 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-21 — Restore the installed design-state contract locally
+Context: The pinned AgentKit install shipped design-state readers, checkers, projectors,
+commands, and their tests, but the later spec-set contract replaced the repository-scoped
+artifact instead of preserving the landed path. CI therefore had implementation with no local
+closed class list, artifact policy, invariant set, or public-surface semantics to validate.
+Chosen: design/20-contract.md carries both paths. The AgentKit commit in .claude/kit.json is
+provenance, while this local file is the offline contract the installed checker parses. Restore
+the nine installed surfaces, persisted state schema, closed divergence classes, artifact globs,
+and I-prefixed invariants without changing or weakening the SS-prefixed spec-set contract.
+Rejected: Excluding the imported tests or removing the design-state gate — makes CI green by
+stopping it from checking the installed tools. Also rejected: resolving the contract through
+the sibling AgentKit checkout — makes identical commits evaluate differently depending on
+external working-copy state and breaks offline operation.
+Reversibility: expensive — removing the local contract again strands installed implementation
+and state records without semantics.
+
+### 2026-08-21 — Marked-region identity is document-scoped and form is repository-wide
+Context: Restoring the installed design-state contract exposed a contradiction. The spec-set
+contract required every region id to be unique across the corpus, while every installed command
+legitimately carries the same declared `companion` id and the design-state checker permits that
+repetition. The checker does reject an id that appears in both projected and declared form.
+Chosen: A region is identified by `(document, id)` and occurs at most once in that document. The
+same id may recur in other documents in the same form. An id may not be projected anywhere and
+declared anywhere else; form is consistent repository-wide. `provisional-register` remains a
+separate, explicit corpus-wide singleton. This supersedes the corpus-wide namespace clause in
+the 2026-08-20 marker-vocabulary decision; the rest of that decision stands.
+Rejected: Corpus-wide id uniqueness — it would require renaming every command's `companion`
+region and changing the installed checker and projector without gaining any disambiguation, since
+every projection already names its target document. Also rejected: form scoped per document — it
+would let a marker typo change ownership from projected to declared without the repository-wide
+collision detecting it.
+Reversibility: expensive — changing scope requires migrating every repeated marker and both
+readers' collision rules.
+
 ### 2026-08-20 — No `-EnginePath`; cross-repository references are permanently unchecked
 Context: `10-design.md` § *Open questions* 3, the last signature `20-contract.md` left open. SS9 already fixed the semantics — a reference into SubZeroDev.GameEngine is unchecked, never passed, never broken — so the only question was whether a parameter exists to resolve them against a checkout sitting beside this repository. A public interface, so not a slice's to add later without an amendment.
 Chosen: No parameter. `Read-SpecSetIndex` takes `-CorpusPath` only. Cross-repository references contribute to the did-not-run list and status 2, permanently, and `SpecReference.PinnedSha` (SS17) is the whole guarantee they carry.

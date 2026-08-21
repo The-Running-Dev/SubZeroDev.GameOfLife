@@ -1,0 +1,27 @@
+{
+  "gates": [
+    {
+      "name": "Parse-check PowerShell scripts",
+      "status": "Passed"
+    },
+    {
+      "name": "Run Pester tests",
+      "status": "Failed",
+      "detail": "Tests completed in 74.17s. Tests Passed: 249, Failed: 9, Skipped: 0, Inconclusive: 0, NotRun: 0. Failed: Read-DesignState.Tests.ps1 S4.6 and GlobDisagreement; Test-DesignState.Tests.ps1 S12.5, S7.9, S16.1/S16.2, S16.5, S17.2, S18.6; Update-DesignProjection.Tests.ps1 S7.2."
+    },
+    {
+      "name": "Validate the core/companion split",
+      "status": "Passed"
+    },
+    {
+      "name": "Check the design state against the tree",
+      "status": "DidNotRun",
+      "reason": "Exit code 2: ContractListUnreadable (SectionNotFound and GlobTableNotFound), ProjectorFailed (exited 1), and TrackerUnavailable for issues #8 through #14."
+    },
+    {
+      "name": "Check the spec set",
+      "status": "DidNotRun",
+      "reason": "Exit code 2: RegisterAbsent — No provisional-register region exists, so provisional-number checks could not run."
+    }
+  ]
+}
