@@ -136,6 +136,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-20-typed-classes-for-the-records-pscustomobject-for-the-result-envelope | `unit/script/read-specset`, `unit/script/test-specset` |
 | decision/2026-08-21-marked-region-identity-is-document-scoped-and-form-is-repository-wide | `unit/document/design-20-contract` |
 | decision/2026-08-21-restore-the-installed-design-state-contract-locally | `unit/document/design-20-contract` |
+| decision/2026-08-22-the-8-7-housing-quality-row-s-settling-condition-is-the-simulation-harness | `unit/script/test-specset` |
 <!-- decision-affects:end -->
 
 ## Question affects

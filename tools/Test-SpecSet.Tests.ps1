@@ -33,18 +33,16 @@ Describe 'S5: the provisional register holds against the real corpus' {
         $script:Index.State | Should -Be 'Indexed'
         $script:Index.ProvisionalEntries.Count | Should -Be 6
     }
-    It 'S5.4: every register row resolves to a matching provisional-site region, except the one deliberately left unsettled' {
+    It 'S5.4: every register row resolves to a matching provisional-site region' {
         $findings = Get-ProvisionalFindings -Index $script:Index
         $noSiteFindings = @($findings | Where-Object Detail -Match 'has no matching provisional-site-')
         $noSiteFindings.Count | Should -Be 0
         $noRowFindings = @($findings | Where-Object Detail -Match 'has no matching provisional register row')
         $noRowFindings.Count | Should -Be 0
     }
-    It 'raises exactly one finding for the Housing quality row''s deliberately empty Settles when cell, and none other' {
+    It 'S5.1: all six rows carry a non-empty Reason and Settles when, so the register raises no finding' {
         $findings = Get-ProvisionalFindings -Index $script:Index
-        $findings.Count | Should -Be 1
-        $findings[0].Subject | Should -Match 'Housing quality'
-        $findings[0].Detail | Should -Match 'empty Settles when cell'
+        $findings.Count | Should -Be 0
     }
 }
 

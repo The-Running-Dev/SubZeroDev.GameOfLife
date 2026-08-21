@@ -3302,17 +3302,12 @@ provisional numbers points here rather than repeating the population.
 | Area | Call made | Reason | Settles when |
 |---|---|---|---|
 | §7 Derived values | Resolver assumed to memoize per week per path | Chosen without profiling data on which paths are actually hot. | If profiling shows the cache is the bottleneck, the strategy changes — the layer model does not. |
-| §8.7 Housing quality | `(comfort + safety) / 2 − damage × 0.6` | Formula invented to make the design's derived-quality concept concrete. Pure balance; expect it to change. | |
+| §8.7 Housing quality | `(comfort + safety) / 2 − damage × 0.6` | Formula invented to make the design's derived-quality concept concrete. Pure balance; expect it to change. | Once the simulation harness produces real housing-outcome data, the comfort/safety/damage weighting is revisited. |
 | §6 `VisibleStatusEffect` | Raw `modifiers` replaced by a three-band `magnitudeHint` | Invented to avoid leaking exact numbers while keeping effects visible. | Once playtesting shows how finely players can distinguish effect strength, the band count is revisited — three is arbitrary. |
 | §5.6 `demandBand` | Thresholds at 35 and 65 | Arbitrary — chosen with no real demand data to calibrate against. | Once job availability exists and the real distribution of demand values is known, tune the thresholds. |
 | Design §3.3 | Need drift rates | They exist so the simulation harness has something to run; not a decided design. | Once the simulation harness runs and produces real balance data, the rates are revisited. |
 | Design §16.4 | Scenario economics | Explicitly provisional; invented so the scenario is runnable on day one. | The feasibility check implies the scenario is winnable only via the certificate path — simulation should confirm or kill that. |
 <!-- provisional-register:declared:end -->
-
-The `§8.7 Housing quality` row's `Settles when` cell is deliberately empty: the formula was
-invented purely to make the derived-quality concept concrete, and no checkable condition for
-revisiting it has been decided yet. The spec-set checker reports this as a `provisional` finding
-on every run until one is written — that is the intended behaviour, not a defect in the checker.
 
 ---
 
