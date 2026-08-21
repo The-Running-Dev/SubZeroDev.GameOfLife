@@ -1097,14 +1097,123 @@ Describe 'S8 command-state migration against this repository' {
         }
     }
 
-    It 'S8.7: the partial migration stays non-zero and names every remaining work class' {
-        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -like 'tools/*' })).Count | Should -BeGreaterThan 0
-        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -like '*.md' -and $_.Subject -notlike '.claude/commands/*' })).Count | Should -BeGreaterThan 0
-        (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -like 'I*' })).Count | Should -BeGreaterThan 0
+    It 'S8.7: the migration stays non-zero until the decision and projection slices land' {
         (@($script:S8Result.Findings | Where-Object { $_.Class -eq 'LogEntryUnrecorded' })).Count | Should -BeGreaterThan 0
         (@($script:S8Result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'ProjectorFailed' })).Count | Should -Be 1
         $script:S8Result.ExitCode | Should -Not -Be 0
         $script:S8Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
+    }
+}
+
+Describe 'S9 script-and-document state migration against this repository' {
+
+    BeforeAll {
+        $script:S9RepoRoot = (Resolve-Path (Split-Path $PSScriptRoot -Parent)).Path
+        $script:S9Graph = Read-DesignStateGraph -Path $script:S9RepoRoot
+        $script:S9ByAnchor = @{}
+        foreach ($record in $script:S9Graph.Records) {
+            if ($record.Kind -eq 'Unit' -and $record.Scalars['Anchor']) {
+                $script:S9ByAnchor[$record.Scalars['Anchor']] = $record
+            }
+        }
+        $script:S9Result = Invoke-DesignStateCheck -RepoPath $script:S9RepoRoot
+        $script:S9Commands = @(
+            Get-CommandGlobFiles -RepoPath $script:S9RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } }
+        )
+        $script:S9Scripts = @(
+            Get-ScriptGlobFiles -RepoPath $script:S9RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } }
+        )
+        $script:S9Documents = @(
+            Get-DocumentGlobFiles -RepoPath $script:S9RepoRoot |
+                ForEach-Object { foreach ($path in $_) { $path } }
+        )
+    }
+
+    It 'S9.1: command, script and document artifacts exactly match their active unit records' {
+        foreach ($case in @(
+            @{ Kind = 'command'; Expected = $script:S9Commands },
+            @{ Kind = 'script'; Expected = $script:S9Scripts },
+            @{ Kind = 'document'; Expected = $script:S9Documents }
+        )) {
+            $records = @($script:S9Graph.Records | Where-Object {
+                $_.Kind -eq 'Unit' -and $_.Scalars['Kind'] -eq $case.Kind -and $_.Scalars['Status'] -eq 'active'
+            })
+            $actual = @($records | ForEach-Object { $_.Scalars['Anchor'] } | Sort-Object)
+            $expected = @($case.Expected | Sort-Object)
+            @($expected | Where-Object { $_ -notin $actual }) | Should -BeNullOrEmpty
+            @($actual | Where-Object { $_ -notin $expected }) | Should -BeNullOrEmpty
+        }
+
+        $artifacts = @($script:S9Commands + $script:S9Scripts + $script:S9Documents)
+        (@($script:S9Result.Findings | Where-Object {
+            $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -in $artifacts
+        })).Count | Should -Be 0
+    }
+
+    It 'S9.2: excluded artifacts have no unit record' {
+        $anchors = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Unit' } | ForEach-Object { $_.Scalars['Anchor'] })
+        @($anchors | Where-Object {
+            $_ -like '*.Tests.ps1' -or $_ -like '*-local.md' -or $_ -eq 'design/FROZEN.md' -or $_ -eq 'CLAUDE.md'
+        }) | Should -BeNullOrEmpty
+    }
+
+    It 'S9.3: every checked script is recorded and names its existing Pester evidence' {
+        foreach ($scriptPath in $script:S9Scripts) {
+            $script:S9ByAnchor.ContainsKey($scriptPath) | Should -BeTrue -Because "$scriptPath must have a unit record"
+            if (-not $script:S9ByAnchor.ContainsKey($scriptPath)) { continue }
+
+            $unit = $script:S9ByAnchor[$scriptPath]
+            $testPath = "tools/$([IO.Path]::GetFileNameWithoutExtension($scriptPath)).Tests.ps1"
+            if (Test-Path -LiteralPath (Join-Path $script:S9RepoRoot $testPath)) {
+                @($unit.Lists['Evidence']) | Should -Contain $testPath -Because "$scriptPath has a Pester test"
+            }
+        }
+
+        (@($script:S9Result.Findings | Where-Object { $_.Class -eq 'AnchorMissing' })).Count | Should -Be 0
+    }
+
+    It 'S9.4: installed public surfaces exactly match uniquely owned contract records' {
+        $contractText = Get-Content -LiteralPath (Join-Path $script:S9RepoRoot 'design/20-contract.md') -Raw
+        $section = [regex]::Match($contractText, '(?s)### Installed AgentKit surfaces\s+(.*?)\r?\n### Spec-set checker surfaces')
+        $section.Success | Should -BeTrue
+        $expected = @(
+            [regex]::Matches($section.Groups[1].Value, '(?m)^#### (?:tools/|\.claude/commands/)([^/\r\n]+)\.(?:ps1|md)\s*$') |
+                ForEach-Object { "contract/$($_.Groups[1].Value.ToLowerInvariant())" } |
+                Sort-Object
+        )
+        $actual = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Contract' } | ForEach-Object { $_.Id } | Sort-Object)
+        $actual | Should -Be $expected
+        (@($script:S9Result.Findings | Where-Object { $_.Class -eq 'OwnerMismatch' })).Count | Should -Be 0
+    }
+
+    It 'S9.5: migrated units have complete authored fields and resolve every named id' {
+        foreach ($anchor in @($script:S9Scripts + $script:S9Documents)) {
+            $script:S9ByAnchor.ContainsKey($anchor) | Should -BeTrue -Because "$anchor must have a unit record"
+            if (-not $script:S9ByAnchor.ContainsKey($anchor)) { continue }
+
+            $unit = $script:S9ByAnchor[$anchor]
+            foreach ($field in 'Consumes', 'Exposes', 'Binds', 'Live', 'Archival', 'Questions', 'Work', 'Evidence') {
+                $unit.Lists.ContainsKey($field) | Should -BeTrue -Because "$($unit.Id) must carry the complete unit shape"
+            }
+            $raw = Get-Content -LiteralPath (Join-Path $script:S9RepoRoot $unit.Path) -Raw
+            $raw | Should -Not -Match '(?m)^(Consumers|BoundBy|Affects):'
+        }
+
+        (@($script:S9Result.Findings | Where-Object { $_.Class -in 'UnresolvedId', 'RecordUnparseable' })).Count | Should -Be 0
+    }
+
+    It 'S9.6: the partial migration stays non-zero and reports every remaining category honestly' {
+        $parsed = Get-ContractInvariantIds -ContractPath (Join-Path $script:S9RepoRoot 'design/20-contract.md')
+        $recorded = @($script:S9Graph.Records | Where-Object { $_.Kind -eq 'Invariant' } | ForEach-Object { $_.Id })
+        foreach ($id in @($parsed.Ids | Where-Object { $_ -notin $recorded })) {
+            $script:S9Result.Findings | Where-Object { $_.Class -eq 'UnrecordedArtifact' -and $_.Subject -eq $id } | Should -Not -BeNullOrEmpty
+        }
+        (@($script:S9Result.Findings | Where-Object { $_.Class -eq 'LogEntryUnrecorded' })).Count | Should -BeGreaterThan 0
+        (@($script:S9Result.CouldNotEvaluate | Where-Object { $_.Reason -eq 'ProjectorFailed' })).Count | Should -Be 1
+        $script:S9Result.ExitCode | Should -Not -Be 0
+        $script:S9Result.LargestClosure.Bytes | Should -BeLessOrEqual 16384
     }
 }
 
