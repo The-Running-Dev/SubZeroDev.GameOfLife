@@ -5,7 +5,7 @@ Anchor: design/20-contract.md
 Consumes:
 Exposes:
 Binds: I22
-Live:
+Live: decision/2026-08-21-restore-the-installed-design-state-contract-locally, decision/2026-08-21-marked-region-identity-is-document-scoped-and-form-is-repository-wide
 Archival:
 Questions:
 Work:

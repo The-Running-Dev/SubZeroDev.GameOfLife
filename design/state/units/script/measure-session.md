@@ -5,7 +5,7 @@ Anchor: tools/Measure-Session.ps1
 Consumes:
 Exposes:
 Binds:
-Live:
+Live: decision/2026-08-20-measure-session-ps1-hooks-on-kit-install
 Archival:
 Questions:
 Work:

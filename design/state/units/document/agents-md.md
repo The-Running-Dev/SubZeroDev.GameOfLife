@@ -5,7 +5,7 @@ Anchor: AGENTS.md
 Consumes:
 Exposes:
 Binds: I9
-Live:
+Live: decision/2026-08-20-agents-md-claude-md-direction-on-kit-install, decision/2026-08-20-house-conventions-path-on-kit-install
 Archival:
 Questions:
 Work:
