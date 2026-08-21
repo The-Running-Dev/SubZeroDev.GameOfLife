@@ -32,3 +32,15 @@ Describe 'CI workflow: the Run Pester tests step is authenticated (#79)' {
         $stepBody | Should -Match 'GH_TOKEN:\s*\$\{\{\s*secrets\.GITHUB_TOKEN\s*\}\}'
     }
 }
+
+Describe 'CI workflow: design-state pin ancestry is evaluable' {
+
+    BeforeAll {
+        $script:WorkflowPath = Join-Path (Split-Path $PSScriptRoot -Parent) '.github/workflows/verify.yml'
+        $script:WorkflowText = Get-Content -LiteralPath $script:WorkflowPath -Raw
+    }
+
+    It 'checks out full history so preserved MirroredAt pins resolve in Pester and the design-state gate' {
+        $script:WorkflowText | Should -Match '(?ms)- uses: actions/checkout@v4\s+with:\s+fetch-depth:\s*0(?:\s|$)'
+    }
+}
