@@ -57,9 +57,8 @@ only when it would have changed a decision.
 
 - **Engine-side unknowns** (incl. `PlayerProfile`, needed by the MVP achievement DoD) are
   tracked in the GameEngine repo's `OPEN-QUESTIONS.md`.
-- **Provisional simulation numbers** — drift rates, scenario economics, `demandBand`
-  thresholds, the housing-quality formula, travel costs — are marked as such in the docs; a
-  balancing pass is due once the sim harness runs. Not decided design.
+- **Provisional simulation numbers** — not decided design. `04-engine-specification.md`
+  §22.2 is the sole register of them, with why each is deferred and what would settle it.
 - **The docs-site base image is unverified.** `docs.ps1` builds on
   `ghcr.io/the-running-dev/docs-template`; we *assume* `@docusaurus/preset-classic` (v3),
   port 3000, `sidebar.ts`. Confirmed only against one local run.

@@ -949,6 +949,9 @@ Consequences principle.
 So projections expose `demandBand(value)` and never the value. Players learn that
 logistics is hot and retail is cold; they do not learn that logistics is 71.
 
+<!-- provisional-site-5-6-demandband:declared:start -->The band thresholds are `<35` cold,
+`35–65` steady, `>65` hot.<!-- provisional-site-5-6-demandband:declared:end -->
+
 `publishedIndicators` controls the rest. Inflation, unemployment and interest are
 newspaper facts and are published by default.
 
@@ -1022,6 +1025,10 @@ type VisibleStatusEffect =
  *  OpportunityDefinition, and definitions are registry content, never projected. */
 type VisibleOpportunity = Opportunity;
 ```
+
+<!-- provisional-site-6-visiblestatuseffect:declared:start -->`VisibleStatusEffect` replaces a
+status effect's raw `modifiers` with a three-band `magnitudeHint` — `"minor"`, `"moderate"`, or
+`"major"`.<!-- provisional-site-6-visiblestatuseffect:declared:end -->
 
 Excluded from every projection: `rng`, `attributes.luck`, **`ActorState.counters`**,
 `RelationshipState.resentment`, `NPCState.memories`, `world.eventCooldowns`,
@@ -1133,10 +1140,10 @@ Design §9.1's derived `quality` falls out of this same mechanism rather than be
 special case. Derived paths are read-only; a modifier or content effect targeting one
 is a Tier 1 validation error (`read_only_field`).
 
-> **⚑ Judgement call.** Derived reads go through a resolver on every access, which
+> **⚑ Judgement call.** <!-- provisional-site-7-derived-values:declared:start -->Derived reads go through a resolver on every access, which
 > costs against §1.5's budget. Assumed mitigation is memoizing per week per path and
 > invalidating when `activeEffects` changes. If profiling contradicts this, the
-> cache strategy changes — the model does not.
+> cache strategy changes — the model does not.<!-- provisional-site-7-derived-values:declared:end -->
 
 ---
 
@@ -1454,6 +1461,9 @@ tested `player.housing.quality` and wrote `player.housing.damage`, and neither
 existed anywhere in the specification — `HousingDefinition` had `comfort`, `safety`,
 `prestige` and `storage`, and `HousingState` was undefined entirely. The maintenance
 loop the design describes had nowhere to write.
+
+<!-- provisional-site-8-7-housing-quality:declared:start -->`quality`'s formula is
+`(comfort + safety) / 2 − damage × 0.6`, clamped to `0–100`.<!-- provisional-site-8-7-housing-quality:declared:end -->
 
 `quality` is derived and read-only; writes to it fail Tier 1 validation.
 
@@ -3285,14 +3295,24 @@ Flagged as judgement calls in revision 2, since decided.
 
 ### 22.2 Still Open
 
-| Area | Call made | Why it may need revisiting |
-|---|---|---|
-| §7 Derived values | Resolver assumed to memoize per week per path | If profiling shows the cache is the bottleneck, the strategy changes — the layer model does not. |
-| §8.7 Housing quality | `(comfort + safety) / 2 − damage × 0.6` | Formula invented to make the design's derived-quality concept concrete. Pure balance; expect it to change. |
-| §6 `VisibleStatusEffect` | Raw `modifiers` replaced by a three-band `magnitudeHint` | Invented to avoid leaking exact numbers while keeping effects visible. The band count is arbitrary. |
-| §5.6 `demandBand` | Thresholds at 35 and 65 | Arbitrary. Tune once job availability exists and the real distribution of demand values is known. |
-| Design §3.3 | Need drift rates | Explicitly provisional; they exist so the simulation harness has something to run. |
-| Design §16.4 | Scenario economics | Explicitly provisional. The feasibility check implies the scenario is winnable only via the certificate path — simulation should confirm or kill that. |
+This is the sole provisional-number register in the repository; every other list of
+provisional numbers points here rather than repeating the population.
+
+<!-- provisional-register:declared:start -->
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| §7 Derived values | Resolver assumed to memoize per week per path | Chosen without profiling data on which paths are actually hot. | If profiling shows the cache is the bottleneck, the strategy changes — the layer model does not. |
+| §8.7 Housing quality | `(comfort + safety) / 2 − damage × 0.6` | Formula invented to make the design's derived-quality concept concrete. Pure balance; expect it to change. | |
+| §6 `VisibleStatusEffect` | Raw `modifiers` replaced by a three-band `magnitudeHint` | Invented to avoid leaking exact numbers while keeping effects visible. | Once playtesting shows how finely players can distinguish effect strength, the band count is revisited — three is arbitrary. |
+| §5.6 `demandBand` | Thresholds at 35 and 65 | Arbitrary — chosen with no real demand data to calibrate against. | Once job availability exists and the real distribution of demand values is known, tune the thresholds. |
+| Design §3.3 | Need drift rates | They exist so the simulation harness has something to run; not a decided design. | Once the simulation harness runs and produces real balance data, the rates are revisited. |
+| Design §16.4 | Scenario economics | Explicitly provisional; invented so the scenario is runnable on day one. | The feasibility check implies the scenario is winnable only via the certificate path — simulation should confirm or kill that. |
+<!-- provisional-register:declared:end -->
+
+The `§8.7 Housing quality` row's `Settles when` cell is deliberately empty: the formula was
+invented purely to make the derived-quality concept concrete, and no checkable condition for
+revisiting it has been decided yet. The spec-set checker reports this as a `provisional` finding
+on every run until one is written — that is the intended behaviour, not a defect in the checker.
 
 ---
 

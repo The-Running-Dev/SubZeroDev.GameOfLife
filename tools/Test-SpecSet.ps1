@@ -49,6 +49,43 @@ function Get-MirrorFindings {
     }
     return ,@($findings)
 }
+function Get-ProvisionalFindings {
+    param([Parameter(Mandatory)][object] $Index)
+
+    $findings = [System.Collections.Generic.List[object]]::new()
+    $siteKeys = @($Index.ProvisionalSites | ForEach-Object Key)
+    foreach ($entry in $Index.ProvisionalEntries) {
+        if ([string]::IsNullOrWhiteSpace($entry.Reason)) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'provisional'; $f.Subject = $entry.Area; $f.DocumentPath = $entry.DocumentPath; $f.Line = $entry.Line
+            $f.Detail = "The provisional register row '$($entry.Area)' has an empty Reason cell."
+            $findings.Add($f)
+        }
+        if ([string]::IsNullOrWhiteSpace($entry.SettlesWhen)) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'provisional'; $f.Subject = $entry.Area; $f.DocumentPath = $entry.DocumentPath; $f.Line = $entry.Line
+            $f.Detail = "The provisional register row '$($entry.Area)' has an empty Settles when cell."
+            $findings.Add($f)
+        }
+        $key = Get-ProvisionalKey -Area $entry.Area
+        if ($key -notin $siteKeys) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'provisional'; $f.Subject = $entry.Area; $f.DocumentPath = $entry.DocumentPath; $f.Line = $entry.Line
+            $f.Detail = "The provisional register row '$($entry.Area)' has no matching provisional-site-$key region."
+            $findings.Add($f)
+        }
+    }
+    $entryKeys = @($Index.ProvisionalEntries | ForEach-Object { Get-ProvisionalKey -Area $_.Area })
+    foreach ($site in $Index.ProvisionalSites) {
+        if ($site.Key -notin $entryKeys) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'provisional'; $f.Subject = $site.Key; $f.DocumentPath = $site.DocumentPath; $f.Line = $site.Line
+            $f.Detail = "provisional-site-$($site.Key) in $($site.DocumentPath) has no matching provisional register row."
+            $findings.Add($f)
+        }
+    }
+    return ,@($findings)
+}
 function Invoke-SpecSetCheck {
     param([Parameter(Mandatory)][object] $Index)
 
@@ -60,7 +97,7 @@ function Invoke-SpecSetCheck {
         }
     }
 
-    $findings = @(Get-MirrorFindings -Index $Index)
+    $findings = @((Get-MirrorFindings -Index $Index) + (Get-ProvisionalFindings -Index $Index))
 
     [pscustomobject]@{
         Findings = $findings
