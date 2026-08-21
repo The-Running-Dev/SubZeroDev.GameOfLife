@@ -7,8 +7,8 @@
   },
   {
     "name": "Run Pester tests",
-    "status": "Failed",
-    "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 276, Failed: 5, Skipped: 0, Inconclusive: 0, NotRun: 0.\n\nAll 5 failures trace to one pre-existing cause unrelated to this PR: design/state-index.md's `outstanding` region is stale against the live tracker state (rank numbers shifted and issues #19/#26 are missing from the committed table), which Test-DesignState.ps1 reports as a blocking ProjectionStale finding when run against this repository's real tree. Failing tests:\n\n- S11.4/S11.5 (Test-DesignState.Tests.ps1:1418): Expected $null or empty, but got @{Class=ProjectionStale; Subject=design/state-index.md#outstanding; Detail=the tree's copy of this region differs from its regeneration; Blocking=True}.\n- S12.5 (Test-DesignState.Tests.ps1:1479): Expected 0, because findings: [ProjectionStale] design/state-index.md#outstanding: the tree's copy of this region differs from its regeneration; could not evaluate:, but got 1.\n- S7.9 (Test-DesignState.Tests.ps1:1486): Expected 0, but got 1 (ProjectionStale finding count).\n- S18.6 (Test-DesignState.Tests.ps1:1553): Expected 0, but got 1 (same ProjectionStale cause surfacing through the EnforcementUnevidenced restore path).\n- S7.3 (Update-DesignProjection.Tests.ps1:397): Expected '?? .claude/session-costs.tsv', but got @(' M design/state-index.md', '?? .claude/session-costs.tsv') — running the real (non-DryRun) projector against this repository rewrites design/state-index.md's outstanding region, which is the same staleness the other four failures detect.\n\nThe rewrite this last test performs was reverted from the working tree both times it was reproduced (git checkout -- design/state-index.md); it is not part of this PR's diff."
+    "status": "Passed",
+    "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 281, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0. The 5 failures present at 6ced5a2/bcd8fec were a single pre-existing cause (design/state-index.md's outstanding region stale against the live tracker after afb4cf0 updated WorkRef records without re-running the projector) and were cleared by 9ba4f50, which regenerates that projection. That commit changes only the projected `outstanding` table, no hand-authored content."
   },
   {
     "name": "Validate the core/companion split",
@@ -17,13 +17,13 @@
   },
   {
     "name": "Check the design state against the tree",
-    "status": "Failed",
-    "detail": "./tools/Test-DesignState.ps1 exit code 1.\n\nFindings (1):\n  [ProjectionStale] design/state-index.md#outstanding: the tree's copy of this region differs from its regeneration\n\nThis is the same pre-existing tracker/projection drift as the Pester failures above — design/state-index.md's outstanding table has not been regenerated since GitHub project ranks moved and issues #19/#26 were opened. It also reports 10 non-blocking MirrorStale/WorkStateDivergence findings (work/8 through work/26) for the same reason: WorkRef mirrors were last stamped at an earlier commit. None of this touches .github/workflows/verify.yml, the file this PR (S2) changes."
+    "status": "Passed",
+    "detail": "./tools/Test-DesignState.ps1: Findings (0), CouldNotEvaluate (0), ExitCode 0. Largest closure: unit/script/test-designstate, 6122 bytes (ceiling 16384), largest contributor contract/test-designstate. The blocking ProjectionStale finding present before 9ba4f50 is gone."
   },
   {
     "name": "Check the spec set",
     "status": "DidNotRun",
-    "reason": "./tools/Test-SpecSet.ps1 returned State: NotEvaluated, Reason: RegisterAbsent, Detail: 'No provisional-register region exists, so provisional-number checks could not run.' Exit code 2. Pre-existing — the provisional-register region is later slices' (S5's) territory, not S2's."
+    "reason": "./tools/Test-SpecSet.ps1 returned State: NotEvaluated, Reason: RegisterAbsent, Detail: 'No provisional-register region exists, so provisional-number checks could not run.' Exit code 2. Not a defect: design/20-contract.md's Error semantics table names RegisterAbsent as an unchecked reason that forces exit 2 by design (SS5, 'If any check is unchecked, the run exits 2 regardless of findings'). The provisional-register region is S5's territory, not S2's, and main itself has been red for this same reason since S1 added this workflow step. design/30-slices.md's own Contract question 1 already flags SS5's all-unchecked-forces-2 semantics as possibly wrong for the permanent CrossRepositoryUnresolvable case; this run surfaces a second, narrower instance (RegisterAbsent, temporary, clears when S5 lands) that the recorded question's 'S1-S3 and S5-S7 are unaffected' line did not anticipate. That is a contract question for /contract, not a code fix here."
   }
   ]
 }
