@@ -182,8 +182,8 @@ All needs clamp to `0–100` after every modification. Clamping happens once, at
 end of each system's pass, not after each individual change — so a −30 followed by
 a +30 within the same pass nets to zero rather than clipping at the floor.
 
-> **Provisional.** These drift rates are a starting point for balancing, not a
-> decided design. They exist so the simulation harness has something to run.
+<!-- provisional-site-design-3-3:declared:start -->> **Provisional.** These drift rates are a starting point for balancing, not a
+> decided design. They exist so the simulation harness has something to run.<!-- provisional-site-design-3-3:declared:end -->
 
 ### 3.4 Attributes
 
@@ -1216,6 +1216,7 @@ Overdue rent:      none
 
 ### 16.4 Provisional Economic Baseline
 
+<!-- provisional-site-design-16-4:declared:start -->
 > **These numbers are provisional.** They are not a balance decision. They exist so
 > that the scenario is runnable and the simulation harness can begin finding
 > problems on day one. Expect all of them to change.
@@ -1256,3 +1257,4 @@ only if nothing goes wrong. The intended path is therefore to spend early weeks 
 certificate at a real cost in both money and time, reach `skilled` around week 20,
 and bank the difference. This is deliberately tight; if simulation shows it is
 impossible rather than merely hard, wages move before anything else does.
+<!-- provisional-site-design-16-4:declared:end -->

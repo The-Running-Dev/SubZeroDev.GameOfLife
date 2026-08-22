@@ -85,4 +85,38 @@ Skills: <!-- mirror-PlayerState.skills:declared:start -->cooking<!-- mirror-Play
         $index = Read-SpecSetIndex -CorpusPath (Join-Path $TestDrive 'missing')
         $index.State | Should -Be 'NotEvaluated'; $index.Reason | Should -Be 'CorpusNotFound'
     }
+    It 'S5.1/S5.3: parses the register table into four-column entries and the sites into keyed entries' {
+        $corpus = Join-Path $TestDrive 'provisional'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $table = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| §5.6 `demandBand` | Thresholds at 35 and 65 | Arbitrary | Once real data exists |
+'@
+        $content = "# Fixture`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->`n`nSite: <!-- provisional-site-5-6-demandband:declared:start -->35 and 65<!-- provisional-site-5-6-demandband:declared:end -->"
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'Indexed'
+        $index.ProvisionalEntries.Count | Should -Be 1
+        $index.ProvisionalEntries[0].Area | Should -Be '§5.6 `demandBand`'
+        $index.ProvisionalEntries[0].Reason | Should -Be 'Arbitrary'
+        $index.ProvisionalEntries[0].SettlesWhen | Should -Be 'Once real data exists'
+        $index.ProvisionalSites.Count | Should -Be 1
+        $index.ProvisionalSites[0].Key | Should -Be '5-6-demandband'
+        (Get-ProvisionalKey -Area $index.ProvisionalEntries[0].Area) | Should -Be '5-6-demandband'
+    }
+    It 'S5.3: a second provisional-register region across the corpus yields DuplicateRegionId' {
+        $corpus = Join-Path $TestDrive 'duplicate-provisional-register'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $table = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| Test area | A call | A reason | A condition |
+'@
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# One`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->" -NoNewline
+        Set-Content -LiteralPath (Join-Path $corpus '02-fixture.md') -Value "# Two`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->" -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'NotEvaluated'
+        $index.Reason | Should -Be 'DuplicateRegionId'
+    }
 }

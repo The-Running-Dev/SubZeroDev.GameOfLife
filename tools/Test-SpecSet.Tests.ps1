@@ -10,12 +10,100 @@ Describe 'Test-SpecSet runner' {
         Get-SpecSetExitCode NotEvaluated | Should -Be 2
         { Get-SpecSetExitCode Other } | Should -Throw
     }
-    It 'fails closed when the provisional register is absent and keeps the result available when quiet' {
+    It 'keeps the result available when quiet' {
         $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        $result.Counts.Documents | Should -Be 8
+    }
+    It 'S5.5: a corpus with no provisional-register region records RegisterAbsent as unchecked and never exits 0' {
+        $corpus = Join-Path $TestDrive 'no-register'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n`nNo register here." -NoNewline
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
         $result.State | Should -Be 'NotEvaluated'
         $result.Reason | Should -Be 'RegisterAbsent'
         $result.Unchecked.Reason | Should -Contain 'RegisterAbsent'
-        $result.Counts.Documents | Should -Be 8
+        $result.State | Should -Not -Be 'Valid'
+    }
+}
+
+Describe 'S5: the provisional register holds against the real corpus' {
+    BeforeAll {
+        $script:Index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
+    }
+    It 'S5.3: exactly one provisional-register region is indexed corpus-wide' {
+        $script:Index.State | Should -Be 'Indexed'
+        $script:Index.ProvisionalEntries.Count | Should -Be 6
+    }
+    It 'S5.4: every register row resolves to a matching provisional-site region' {
+        $findings = Get-ProvisionalFindings -Index $script:Index
+        $noSiteFindings = @($findings | Where-Object Detail -Match 'has no matching provisional-site-')
+        $noSiteFindings.Count | Should -Be 0
+        $noRowFindings = @($findings | Where-Object Detail -Match 'has no matching provisional register row')
+        $noRowFindings.Count | Should -Be 0
+    }
+    It 'S5.1: all six rows carry a non-empty Reason and Settles when, so the register raises no finding' {
+        $findings = Get-ProvisionalFindings -Index $script:Index
+        $findings.Count | Should -Be 0
+    }
+}
+
+Describe 'S5.2: emptying a register cell produces exactly one finding' {
+    BeforeAll {
+        $script:FixtureRoot = Join-Path $TestDrive 'games-provisional'
+        Copy-Item -Recurse -Path (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games') -Destination $script:FixtureRoot
+        $script:EnginePath = Join-Path $script:FixtureRoot '04-engine-specification.md'
+        $script:OriginalText = Get-Content -LiteralPath $script:EnginePath -Raw
+    }
+
+    It 'raises one finding and exits 1 when a Reason cell is emptied' {
+        $mutated = $script:OriginalText -replace 'Arbitrary — chosen with no real demand data to calibrate against\.', ''
+        $mutated | Should -Not -Be $script:OriginalText
+        Set-Content -LiteralPath $script:EnginePath -Value $mutated -NoNewline
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $script:FixtureRoot -Quiet
+        $result.State | Should -Be 'Invalid'
+        $findings = @($result.Findings | Where-Object Detail -Match 'demandBand.*empty Reason cell')
+        $findings.Count | Should -Be 1
+    }
+
+    AfterEach { Set-Content -LiteralPath $script:EnginePath -Value $script:OriginalText -NoNewline }
+}
+
+Describe 'S5.3: a second provisional-register region yields DuplicateRegionId and exit 2' {
+    It 'fails the whole run rather than the provisional check alone' {
+        $corpus = Join-Path $TestDrive 'duplicate-register'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $table = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| Test area | A call | A reason | A condition |
+'@
+        $content1 = "# Fixture One`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->"
+        $content2 = "# Fixture Two`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->"
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content1 -NoNewline
+        Set-Content -LiteralPath (Join-Path $corpus '02-fixture.md') -Value $content2 -NoNewline
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
+        $result.State | Should -Be 'NotEvaluated'
+        $result.Reason | Should -Be 'DuplicateRegionId'
+    }
+}
+
+Describe 'S5.4: a provisional-site region with no matching register row is a finding' {
+    It 'raises exactly one finding naming the orphan site' {
+        $corpus = Join-Path $TestDrive 'orphan-site'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $table = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| Test area | A call | A reason | A condition |
+'@
+        $content = "# Fixture`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->`n`nSite: <!-- provisional-site-orphan:declared:start -->42<!-- provisional-site-orphan:declared:end -->"
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'Indexed'
+        $findings = Get-ProvisionalFindings -Index $index
+        $orphanFindings = @($findings | Where-Object Subject -eq 'orphan')
+        $orphanFindings.Count | Should -Be 1
+        $orphanFindings[0].Detail | Should -Match 'no matching provisional register row'
     }
 }
 

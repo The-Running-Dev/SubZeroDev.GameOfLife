@@ -43,6 +43,21 @@ class MirrorObligation {
     [string[]] $BodyMembers = @()
 }
 
+class ProvisionalEntry {
+    [string] $Area
+    [string] $CallMade
+    [string] $Reason
+    [string] $SettlesWhen
+    [string] $DocumentPath
+    [int] $Line
+}
+
+class ProvisionalSite {
+    [string] $Key
+    [string] $DocumentPath
+    [int] $Line
+}
+
 function New-SpecSetIndexFailure {
     param([string] $Reason, [string] $Path, [int] $Line = 0)
     [pscustomobject]@{
@@ -156,6 +171,45 @@ function Get-DeclaredRegions {
     [pscustomobject]@{ Regions = @($regions); Failure = $null }
 }
 
+function Get-ProvisionalKey {
+    param([string] $Area)
+
+    $key = $Area -replace '[§`]', '' -replace '[^A-Za-z0-9]+', '-'
+    $key = $key.ToLowerInvariant().Trim('-')
+    $key -replace '-+', '-'
+}
+
+function Get-ProvisionalRegisterFromRegion {
+    param([Parameter(Mandatory)][object] $Region)
+
+    $lines = @($Region.Body -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+    $dataLines = @($lines | Where-Object { $_ -notmatch '^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?$' })
+    if ($dataLines.Count -lt 2) { return [pscustomobject]@{ Failure = 'UnknownDeclarationForm'; Line = $Region.Line } }
+    $rows = @($dataLines | Select-Object -Skip 1)
+
+    $entries = [System.Collections.Generic.List[object]]::new()
+    foreach ($row in $rows) {
+        $cells = @($row.Trim('|') -split '\|' | ForEach-Object { $_.Trim() })
+        if ($cells.Count -ne 4) { return [pscustomobject]@{ Failure = 'UnknownDeclarationForm'; Line = $Region.Line } }
+        $entry = [ProvisionalEntry]::new()
+        $entry.Area = $cells[0]; $entry.CallMade = $cells[1]; $entry.Reason = $cells[2]; $entry.SettlesWhen = $cells[3]
+        $entry.DocumentPath = $Region.DocumentPath; $entry.Line = $Region.Line
+        $entries.Add($entry)
+    }
+    [pscustomobject]@{ Entries = @($entries); Failure = $null }
+}
+
+function Get-ProvisionalSiteFromRegion {
+    param([Parameter(Mandatory)][object] $Region)
+
+    if ($Region.Id -notlike 'provisional-site-*') { return $null }
+    $site = [ProvisionalSite]::new()
+    $site.Key = $Region.Id.Substring('provisional-site-'.Length)
+    $site.DocumentPath = $Region.DocumentPath
+    $site.Line = $Region.Line
+    $site
+}
+
 function Get-MirrorObligationFromRegion {
     param([Parameter(Mandatory)][object] $Region)
 
@@ -179,6 +233,9 @@ function Read-SpecSetIndex {
     $repoRoot = Get-SpecSetRepositoryRoot -CorpusRoot $root
     $documents = [System.Collections.Generic.List[object]]::new(); $declarations = [System.Collections.Generic.List[object]]::new()
     $mirrorObligations = [System.Collections.Generic.List[object]]::new()
+    $provisionalEntries = [System.Collections.Generic.List[object]]::new()
+    $provisionalSites = [System.Collections.Generic.List[object]]::new()
+    $registerRegions = [System.Collections.Generic.List[object]]::new()
     foreach ($file in @(Get-ChildItem -LiteralPath $root -File -Filter '*.md' | Sort-Object Name)) {
         try { $text = [System.IO.File]::ReadAllText($file.FullName, [System.Text.UTF8Encoding]::new($false)) } catch { return New-SpecSetIndexFailure -Reason 'UnreadableDocument' -Path $file.FullName }
         $relative = [System.IO.Path]::GetRelativePath($repoRoot, $file.FullName).Replace('\', '/')
@@ -189,6 +246,9 @@ function Read-SpecSetIndex {
         foreach ($region in $regionResult.Regions) {
             $obligation = Get-MirrorObligationFromRegion -Region $region
             if ($obligation) { $mirrorObligations.Add($obligation) }
+            $site = Get-ProvisionalSiteFromRegion -Region $region
+            if ($site) { $provisionalSites.Add($site) }
+            if ($region.Id -eq 'provisional-register') { $registerRegions.Add($region) }
         }
         $lines = $text -replace "`r`n", "`n" -split "`n"; $inFence = $false; $fence = @(); $start = 0
         for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -212,6 +272,13 @@ function Read-SpecSetIndex {
             }
         }
     }
+    if ($registerRegions.Count -gt 1) { return New-SpecSetIndexFailure -Reason 'DuplicateRegionId' -Path $registerRegions[1].DocumentPath -Line $registerRegions[1].Line }
+    if ($registerRegions.Count -eq 1) {
+        $registerResult = Get-ProvisionalRegisterFromRegion -Region $registerRegions[0]
+        if ($registerResult.Failure) { return New-SpecSetIndexFailure -Reason $registerResult.Failure -Path $registerRegions[0].DocumentPath -Line $registerResult.Line }
+        foreach ($entry in $registerResult.Entries) { $provisionalEntries.Add($entry) }
+    }
+
     # Alias fields are addressable through their alias as well as their structural source. This
     # keeps the index's qualified names aligned with the names consumers use in the prose.
     $playerAlias = @($declarations | Where-Object { $_.QualifiedName -eq 'PlayerState' } | Select-Object -First 1)
@@ -221,5 +288,5 @@ function Read-SpecSetIndex {
             $declarations.Add($aliasField)
         }
     }
-    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @(); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @(); ProvisionalSites = @(); Lifecycles = @() }
+    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @(); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @($provisionalEntries); ProvisionalSites = @($provisionalSites); Lifecycles = @() }
 }

@@ -195,10 +195,9 @@ interactive terminal.
 
 Independent. Neither affects the other.
 
-Provisional numbers — need drift rates, the scenario economics, `demandBand`
-thresholds, the housing quality formula — are marked as such in the documents.
-They exist so the simulation harness has something to run. Do not treat them as
-decided design.
+Provisional numbers are not decided design. `docs/docs/games/04-engine-specification.md`
+§22.2 is the sole register — every provisional number in the corpus is listed there, with why
+it is deferred and what would settle it.
 
 ## Source of truth
 
