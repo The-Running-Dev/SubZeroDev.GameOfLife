@@ -7,8 +7,8 @@
     },
     {
       "name": "Run Pester tests",
-      "status": "Failed",
-      "detail": "Tests Passed: 303, Failed: 7, Skipped: 0. All 7 failures are self-tests asserting this repository's own tree is a clean fixed point for design/state; each fails on the same two pre-existing findings (UnrecordedArtifact for .claude/commands/install-code-review-agent.md, LogEntryUnrecorded for the 2026-08-23 kit-sync decision heading) that already existed at the branch's base commit d488715, before this PR's commit. Failing tests: S8 command-state migration against this repository.S8.1/S8.2 (Expected $null or empty, but got '.claude/commands/install-code-review-agent.md'); S9 script-and-document state migration against this repository.S9.1 (same); S10 invariant and decision state against this repository.S10.1/S10.2 (Expected 0, but got 1); S10 invariant and decision state against this repository.S10.3/S10.5 (Expected a collection with length 23, but got a collection with length 22); S11 projected design state against this repository.S11.4/S11.5 (Expected $null or empty, but got the two findings above); Test-DesignState against this repository's own tree.S12.5 (Expected 0, but got 1); Test-DesignState against this repository's own tree.S18.6 (Expected 0, but got 1)."
+      "status": "Passed",
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 310, Failed: 0, Skipped: 0. The two design-state fixture files added on this branch (a unit record for install-code-review-agent.md and a decision record for the 2026-08-23 kit-sync heading) cleared all 7 previously-failing self-tests (S8.1/S8.2, S9.1, S10.1/S10.2, S10.3/S10.5, S11.4/S11.5, S12.5, S18.6)."
     },
     {
       "name": "Validate the core/companion split",
@@ -17,13 +17,13 @@
     },
     {
       "name": "Check the design state against the tree",
-      "status": "Failed",
-      "detail": "Exit code: 1. Findings (2): [UnrecordedArtifact] .claude/commands/install-code-review-agent.md: tree artifact of kind 'command' has no active unit record naming it as Anchor. [LogEntryUnrecorded] 2026-08-23 — /kit-sync reconciliation: AGENTS.md content forks, and three tools test files left divergent: log heading has no decision record naming it as Anchor. Both findings pre-date this branch: confirmed present at base commit d488715 (the file and the decision-log heading both already existed there) — this PR's commit does not touch either. Also reported (non-blocking, exit-neutral): 9 MirrorStale work/* records whose MirroredAt trails the current commit, expected on any commit after the last /track sync."
+      "status": "Passed",
+      "detail": "Findings (0). Reported (non-blocking, exit-neutral): 9 MirrorStale work/* records whose MirroredAt trails the current commit, expected since the last /track sync. Exit code: 0."
     },
     {
       "name": "Check the spec set",
       "status": "Passed",
-      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked. Commit: 6591d47160d4da136adea77cac5fc22624baee50. WorkingTree: Clean."
+      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked. Commit: c4a48e235d438a4ce6f3f0b4538608a6af8ce41a. WorkingTree: Clean."
     },
     {
       "name": "docs.ps1 -BuildOnly (Docusaurus image build)",
