@@ -5,7 +5,7 @@ Anchor: design/20-contract.md
 Consumes:
 Exposes:
 Binds: I22
-Live: decision/2026-08-21-restore-the-installed-design-state-contract-locally, decision/2026-08-21-marked-region-identity-is-document-scoped-and-form-is-repository-wide
+Live: decision/2026-08-21-restore-the-installed-design-state-contract-locally, decision/2026-08-21-marked-region-identity-is-document-scoped-and-form-is-repository-wide, decision/2026-08-23-a-mirror-obligation-is-all-or-nothing-and-the-bound-is-recorded-rather-than-widened
 Archival:
 Questions:
 Work:
