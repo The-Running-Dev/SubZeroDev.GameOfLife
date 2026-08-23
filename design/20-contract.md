@@ -115,6 +115,28 @@ is a defect in the authoring, not a feature of the format.
 not a silently ignored region — an author who obligates a keyed map has misunderstood the
 distinction and needs telling.
 
+**An obligation asserts that its body is a *complete* restatement of the declaration's membership,
+and there is no partial form.** Every member must be named in the body by its identifier; a member
+the body omits is a finding, and so is a name the body carries that the declaration does not
+declare. This is not a strictness that could be relaxed later — it is the whole check. The defect
+the brief names is `wisdom`, a member **missing** from a list, so an obligation that tolerated
+subsets would have passed the one case this machinery exists to catch.
+
+**What that costs, stated rather than left to be discovered: the obligation set is small and does
+not grow on its own.** A site that describes part of a declaration is not a weak obligation, it is
+not an obligation — `03` §12.1 names four of `RelationshipState`'s ten members, and §13.3's
+"Classic Mode / Open Life Mode / Challenge Mode" does not contain `classic`, `open_life` or
+`challenge` as identifiers, so neither can be obligated as written. Such a site is reduced per
+`90-decisions.md` (2026-08-20, reduce the mirrored surface) or left to the full-audit path; making
+it obligable means editing `03` to restate more of `04`, which is that decision's rejected
+direction and is a change to `03`'s prose, not a marker.
+
+**So the brief's second condition is mechanically covered where `03`'s prose is already exhaustive
+and nowhere else**, and the bound is smaller than `10-design.md` § *Data model* reads as implying.
+It sits beside SS16's bound rather than under it: SS16 says the obligation set cannot be proven
+complete, and this says that even a complete set would reach only the exact restatements. Both
+limits are why the full-audit path is not retired by any of this.
+
 **A concept is a state-bearing entity** — something `04` holds in game state. Stateless mechanisms
 (the eviction ladder, promotion, the check formula) are outside the derived concept set and are
 judged on the full-audit path. This bounds the fourth brief condition to something enumerable from
@@ -289,7 +311,12 @@ The entry point emits a result object and then exits, guarded by
 The result object is a `[pscustomobject]` and not one of the classes above, because `/verify`
 already consumes that shape from `Test-Companion.ps1` and `Test-DesignState.ps1`. Its `State` is
 `Valid`, `Invalid`, or `NotEvaluated`; it carries `Findings`, `Unchecked`, per-check counts, the
-commit it ran against, whether the tree was clean, and `Detail`.
+commit it ran against, whether the tree was clean, and `Detail`. **`Unresolvable` is a *scaffold***
+— the fourth bucket SS6 counts and SS18 reports has no declaration in the tree until S4 lands it,
+and the slice that does replaces this sentence with nothing, because the field is then the tree's
+to state and only its meaning belongs here. That meaning: it is a separate list from `Unchecked`
+and never merges into it, and a consumer reading only `State` cannot recover it — which is why
+SS18 puts it in the report rather than leaving it to be inferred.
 
 **`-Quiet` suppresses the human-readable report only.** The result object is always emitted, and no
 parameter may ever suppress it — a caller that cannot see the result cannot tell a clean run from a
@@ -494,18 +521,44 @@ A check produces findings, not errors. Findings yield `State = 'Invalid'`, exit 
 | `reference` | A section or document reference resolves to nothing |
 | `reference` | A cross-repository reference carries no pinned sha |
 
-A check that cannot complete records an **unchecked** entry rather than a finding, which forces the
-run to `NotEvaluated` and exit 2:
+A check that **could not complete** records an *unchecked* entry rather than a finding, which forces
+the run to `NotEvaluated` and exit 2 (SS5):
+
+| Reason | Raised when | Caller does |
+|---|---|---|
+| `RegisterAbsent` | No `provisional-register` region exists | Author it, or accept that the third brief condition is unchecked |
+
+A check that **completed** against a subject a recorded decision placed out of reach records an
+*unresolvable* entry. It is reported and counted on every run and **never changes run status**:
 
 | Reason | Raised when | Caller does |
 |---|---|---|
 | `CrossRepositoryUnresolvable` | A reference targets SubZeroDev.GameEngine | Nothing; this is the permanent steady state, not a degraded one |
-| `RegisterAbsent` | No `provisional-register` region exists | Author it, or accept that the third brief condition is unchecked |
+
+**The two lists exist because one word was doing two jobs, and the conflation had an exit code.**
+*Unchecked* means the run is degraded: something environmental went wrong, it is nobody's intent,
+and it is fixable — which is why it must fail the build, and why `AGENTS.md` § *Verification*
+forbids reporting it as a pass. *Unresolvable* means the run finished and one of its subjects was
+put beyond reach by `90-decisions.md` (2026-08-20, no `-EnginePath`). Nothing went wrong, nothing
+is fixable, and no edit to this repository can ever clear it. Failing a build on the second is not
+rigour: it is a gate that is red on every commit forever, which distinguishes nothing and stops
+being read — the outcome that same decision rejects `-EnginePath`'s finding variant for.
+
+**The unresolvable list is closed at `CrossRepositoryUnresolvable` and has exactly one member.**
+Adding a second is a contract amendment, never a check's call, and the bar is the one this class
+clears: a *recorded decision* — not a limitation, not an inconvenience, not a check that turned out
+to be hard — must be what places the subject out of reach. Without that bar this category is a
+drain the whole of SS5 leaks through, and it is the only thing bounding it.
+
+**A clean run still names them** (SS18). A run that reports `Valid` while eight references went
+unresolved must say so in as many words, because the reader's question is not "did the checker
+finish" but "was this corpus checked", and for those eight the answer is permanently no.
 
 **A cross-repository reference is never reported as passed and never as broken** (SS9). Absent
 evidence is not evidence of either. Treating them as fine is how a whole class of reference rots
 unnoticed; treating them as broken makes the check unusable without a second checkout and trains
-the author to ignore it.
+the author to ignore it. Neither the split above nor the exit code it produces touches that: an
+unresolvable entry asserts nothing about the reference except that this repository cannot see it.
 
 ### Report and Runner
 
@@ -518,9 +571,10 @@ the author to ignore it.
 
 ## Invariants
 
-The I-prefixed rows are the installed design-state invariant unit set. They are generated from
-design/state/invariants/*.md once those records are materialised; until then this block is the
-contract scaffold. SS-prefixed invariants below belong to the spec-set checker and remain
+The I-prefixed rows are the installed design-state invariant unit set. This is a **projected**
+region: it is rendered from design/state/invariants/*.md, those records are materialised, and
+`ProjectionStale` fails when the two disagree. Do not hand-edit inside the markers — edit the
+record and regenerate. SS-prefixed invariants below belong to the spec-set checker and remain
 hand-authored.
 
 <!-- invariants:start -->
@@ -568,11 +622,11 @@ means a test fails when it is broken; those are the only ones a reader may trust
 | **SS2** | Every regular expression in the system is in `Read-SpecSet.ps1` | Index | Code — AST inspection finds no match operator or `[regex]` outside that file |
 | **SS3** | No check function reads a file | Checks | Code — AST inspection finds no file cmdlet inside any check function |
 | **SS4** | No check calls another check | Checks | Code — a check receives records and returns findings; the call graph is asserted acyclic and flat |
-| **SS5** | If any check is unchecked, the run exits 2 regardless of findings | Report | Code |
-| **SS6** | Every obligation, register row, concept, and reference is in exactly one of held, failed, or unchecked | Report | Code — the three counts sum to the index's totals |
+| **SS5** | If any check records an *unchecked* entry, the run exits 2 regardless of findings. An *unresolvable* entry never changes run status | Report | Code — a fixture producing one of each asserts both directions |
+| **SS6** | Every obligation, register row, concept, and reference is in exactly one of held, failed, unchecked, or unresolvable | Report | Code — the four counts sum to the index's totals |
 | **SS7** | An unrecognised construct stops the run; nothing partial is reported as complete | Index | Code — the grammar's fallback branch raises, and a test feeds it an unknown form |
 | **SS8** | Closure is derived from a declaration's form and can be set by nothing else | Index | Code — no marker id, parameter, or config key names closure |
-| **SS9** | A cross-repository reference is reported unchecked, never passed, never broken, and no parameter can change that | Checks | Code — asserted alongside SS1's no-write-parameter check |
+| **SS9** | A cross-repository reference is reported unresolvable, never passed, never broken, and no parameter can change that | Checks | Code — asserted alongside SS1's no-write-parameter check |
 | **SS10** | The report names the commit it ran against and whether the tree was clean | Report | Code |
 | **SS11** | A finding states that two documents disagree and never which is stale | Checks | Instruction — `SpecFinding` has no field for it, which is the enforcement available |
 | **SS12** | Every marker is an HTML comment; removing the checker leaves the corpus valid, publishable markdown | Corpus | Code — the docs build has no dependency on the checker, and a test asserts markers render nothing |
@@ -581,6 +635,7 @@ means a test fails when it is broken; those are the only ones a reader may trust
 | **SS15** | Only a closed declaration may carry a mirror obligation | Checks | Code |
 | **SS16** | A clean run is never reported as "`03` and `04` are consistent" | Report | Instruction — the report states the obligation count checked, and the wording is fixed in `Write-SpecSetReport` |
 | **SS17** | Every cross-repository claim pins a sha, in the `<path> § <section> @ <sha>` form `AGENTS.md` already uses | Corpus | Code |
+| **SS18** | Every completed run names its unresolvable count, including a run reporting `Valid`, and no wording implies those subjects were checked | Report | Code — a fixture with a non-zero count asserts the count appears in the report under `Valid` |
 
 **SS16 is the bound on what this machinery may claim, and it is the one an author is most likely to
 forget.** The checker proves that declared obligations hold. It cannot prove the obligation set is
@@ -588,6 +643,13 @@ complete, because completeness is a reading and nothing can compute "describes".
 implied otherwise would be worse than no report at all: it would retire the full-audit read that
 currently catches everything the extractor cannot see. Path 1 exists to retire the counting, not
 the reading.
+
+**SS18 is what keeps SS5's split from becoming the hole it looks like.** Letting an unresolvable
+entry pass without failing the build is only defensible while the run says out loud what it did not
+reach. Take SS18 away and `Valid` starts meaning two different things a reader cannot tell apart —
+a corpus whose references all resolved, and one where eight of them were never looked at — which is
+the *could not look read as nothing wrong* failure re-entering through the door SS5 just opened.
+The exit code stops carrying that fact, so the report must.
 
 **SS11's enforcement is deliberately weak, and the weakness is recorded rather than fixed.** No test
 can tell whether a `Detail` string editorialises. Removing the field would make findings useless.
