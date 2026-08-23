@@ -16,6 +16,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | `unit/command/freeze` | command | `.claude/commands/freeze.md` |
 | `unit/command/install` | command | `.claude/commands/install.md` |
 | `unit/command/install-all` | command | `.claude/commands/install-all.md` |
+| `unit/command/install-code-review-agent` | command | `.claude/commands/install-code-review-agent.md` |
 | `unit/command/kit-help` | command | `.claude/commands/kit-help.md` |
 | `unit/command/kit-sync` | command | `.claude/commands/kit-sync.md` |
 | `unit/command/make-human-docs` | command | `.claude/commands/make-human-docs.md` |
@@ -139,6 +140,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-22-the-8-7-housing-quality-row-s-settling-condition-is-the-simulation-harness | `unit/script/test-specset` |
 | decision/2026-08-23-a-mirror-obligation-is-all-or-nothing-and-the-bound-is-recorded-rather-than-widened | `unit/document/design-20-contract` |
 | decision/2026-08-23-an-unresolvable-subject-is-not-an-unchecked-run-ss5-splits-the-list | `unit/script/test-specset` |
+| decision/2026-08-23-kit-sync-reconciliation-agents-md-content-forks-and-three-tools-test-files-left-divergent | `unit/document/agents-md` |
 <!-- decision-affects:end -->
 
 ## Question affects
