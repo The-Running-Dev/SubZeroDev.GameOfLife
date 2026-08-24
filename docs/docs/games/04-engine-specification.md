@@ -798,6 +798,7 @@ refuses a week that still has unanswered responses.
 
 ### 5.4.1 Opportunity Lifecycle
 
+<!-- lifecycle-Opportunity:declared:start -->
 Revision 2 had `Opportunity` in state, `"opportunity"` in `RewardType`,
 `generatedOpportunities: string[]` on two outcome types, an `opportunities` entry in
 `END_WEEK_SYSTEM_ORDER`, and a hidden `weight` field — with **no definition type for
@@ -846,9 +847,11 @@ finite and contested. If holding an unexpired offer reserved the slot, the rival
 never take it and the scarcity model would be decorative. Instead the offer evaporates
 with a visible message — which is the moment the rival stops being a background
 simulation and becomes something the player feels.
+<!-- lifecycle-Opportunity:declared:end -->
 
 ### 5.4.2 Scheduled Event Lifecycle
 
+<!-- lifecycle-ScheduledEvent:declared:start -->
 **Creation.** `EventOutcome.scheduledEvents: Array<{ eventId, inWeeks }>` produces a
 `ScheduledEvent` with `scheduledWeek = currentWeek + inWeeks`, inheriting `chainId`
 and `chainStep` from the emitting event. Recorded as `event_scheduled`.
@@ -881,6 +884,7 @@ which cancels the hearing. Explicit, recorded, and inspectable in history.
 > a standalone, it fires even after you move out. The fix is to put it in a chain, so
 > that moving out can end the chain. Stated here so it is a known constraint rather
 > than a surprise.
+<!-- lifecycle-ScheduledEvent:declared:end -->
 
 ### 5.5 Goal State
 
