@@ -156,8 +156,10 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 4 | #11 | S4 — Every reference resolves, and every claim about the engine repository pins a commit | S4.1, S4.2, S4.3, S4.4, S4.5, S4.6 | `be5316f53cd0f5b58ab552e34fa0a8ec9c9b25bf` |
-| 6 | #13 | S6 — Everything the game keeps in state is counted, and told what it must say | S6.1, S6.2, S6.3, S6.4, S6.5 | `be5316f53cd0f5b58ab552e34fa0a8ec9c9b25bf` |
-| 7 | #14 | S7 — The missing lifecycles are written | S7.1, S7.2, S7.3 | `be5316f53cd0f5b58ab552e34fa0a8ec9c9b25bf` |
-| 19 | #19 | Restore missing design-state closure records | — | `be5316f53cd0f5b58ab552e34fa0a8ec9c9b25bf` |
+| 4 | #11 | S4 — Every reference resolves, and every claim about the engine repository pins a commit | S4.1, S4.2, S4.3, S4.4, S4.5, S4.6, S4.7, S4.8 | `6d257d42d77ac1988281ac0efdd03e2c398bcbfb` |
+| 6 | #13 | S6 — Everything the game keeps in state is counted, and told what it must say | S6.1, S6.2, S6.3, S6.4, S6.5 | `6d257d42d77ac1988281ac0efdd03e2c398bcbfb` |
+| 7 | #14 | S7 — The missing lifecycles are written | S7.1, S7.2, S7.3 | `6d257d42d77ac1988281ac0efdd03e2c398bcbfb` |
+| 19 | #19 | Restore missing design-state closure records | — | `6d257d42d77ac1988281ac0efdd03e2c398bcbfb` |
+| 35 | #35 | bulgaria-adventure.md assigns Enterprise an achievement the built arc does not have | — | `6d257d42d77ac1988281ac0efdd03e2c398bcbfb` |
+| 36 | #36 | bulgaria-adventure.md says the Return arc seeds variables the other arcs read; no such mechanism exists | — | `6d257d42d77ac1988281ac0efdd03e2c398bcbfb` |
 <!-- outstanding:end -->
