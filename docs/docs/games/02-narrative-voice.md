@@ -503,7 +503,7 @@ or the joke dies.
 
 ### 2. Achievements do not exist
 
-§17 lists "achievement checks" as a use of history, and that is the only mention in
+Engine spec §17 lists "achievement checks" as a use of history, and that is the only mention in
 the entire specification. There is no `AchievementDefinition`, no unlock evaluation,
 no unlocked set in state.
 

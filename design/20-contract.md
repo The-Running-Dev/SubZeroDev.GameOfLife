@@ -310,13 +310,11 @@ The entry point emits a result object and then exits, guarded by
 
 The result object is a `[pscustomobject]` and not one of the classes above, because `/verify`
 already consumes that shape from `Test-Companion.ps1` and `Test-DesignState.ps1`. Its `State` is
-`Valid`, `Invalid`, or `NotEvaluated`; it carries `Findings`, `Unchecked`, per-check counts, the
-commit it ran against, whether the tree was clean, and `Detail`. **`Unresolvable` is a *scaffold***
-— the fourth bucket SS6 counts and SS18 reports has no declaration in the tree until S4 lands it,
-and the slice that does replaces this sentence with nothing, because the field is then the tree's
-to state and only its meaning belongs here. That meaning: it is a separate list from `Unchecked`
-and never merges into it, and a consumer reading only `State` cannot recover it — which is why
-SS18 puts it in the report rather than leaving it to be inferred.
+`Valid`, `Invalid`, or `NotEvaluated`; it carries `Findings`, `Unchecked`, `Unresolvable`,
+per-check counts, the commit it ran against, whether the tree was clean, and `Detail`.
+**`Unresolvable` is a separate list from `Unchecked` and never merges into it, and a consumer
+reading only `State` cannot recover it** — which is why SS18 puts it in the report rather than
+leaving it to be inferred.
 
 **`-Quiet` suppresses the human-readable report only.** The result object is always emitted, and no
 parameter may ever suppress it — a caller that cannot see the result cannot tell a clean run from a

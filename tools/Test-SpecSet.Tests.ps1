@@ -25,6 +25,126 @@ Describe 'Test-SpecSet runner' {
     }
 }
 
+Describe 'S4.5: SS5 asserted explicitly in both directions' {
+    BeforeAll {
+        $script:registerTable = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| Test area | A call | A reason | A condition |
+'@
+    }
+
+    It 'one unchecked entry plus one finding exits 2' {
+        $corpus = Join-Path $TestDrive 'unchecked-plus-finding'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        # No provisional-register region (RegisterAbsent, unchecked) alongside a broken document link (a finding).
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n`nSee [missing](nowhere.md)." -NoNewline
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
+        $result.Unchecked.Count | Should -Be 1
+        $result.Findings.Count | Should -Be 1
+        $result.State | Should -Be 'NotEvaluated'
+        (Get-SpecSetExitCode -State $result.State) | Should -Be 2
+    }
+
+    It 'one unresolvable entry plus one finding exits 1' {
+        $corpus = Join-Path $TestDrive 'unresolvable-plus-finding'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $content = "# Fixture`n`n<!-- provisional-register:declared:start -->`n$script:registerTable`n<!-- provisional-register:declared:end -->`n`nSite: <!-- provisional-site-test-area:declared:start -->x<!-- provisional-site-test-area:declared:end -->`n`nSee ``engine/01-vision.md`` § 1 @ ``bc74a62a2a0a57c5fd82f337712868b6877bbc6a``. Also see §99, which does not exist."
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
+        $result.Unchecked.Count | Should -Be 0
+        $result.Unresolvable.Count | Should -Be 1
+        $result.Findings.Count | Should -Be 1
+        $result.State | Should -Be 'Invalid'
+        (Get-SpecSetExitCode -State $result.State) | Should -Be 1
+    }
+
+    It 'one unresolvable entry and no finding exits 0' {
+        $corpus = Join-Path $TestDrive 'unresolvable-no-finding'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $content = "# Fixture`n`n<!-- provisional-register:declared:start -->`n$script:registerTable`n<!-- provisional-register:declared:end -->`n`nSite: <!-- provisional-site-test-area:declared:start -->x<!-- provisional-site-test-area:declared:end -->`n`nSee ``engine/01-vision.md`` § 1 @ ``bc74a62a2a0a57c5fd82f337712868b6877bbc6a``."
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
+        $result.Unchecked.Count | Should -Be 0
+        $result.Unresolvable.Count | Should -Be 1
+        $result.Findings.Count | Should -Be 0
+        $result.State | Should -Be 'Valid'
+        (Get-SpecSetExitCode -State $result.State) | Should -Be 0
+    }
+}
+
+Describe 'S4.2: a broken reference produces exactly one finding, proven by breaking and restoring a real reference' {
+    BeforeAll {
+        $script:FixtureRoot = Join-Path $TestDrive 'games-reference'
+        Copy-Item -Recurse -Path (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games') -Destination $script:FixtureRoot
+        $script:GameDesignPath = Join-Path $script:FixtureRoot '03-game-design.md'
+        $script:OriginalText = Get-Content -LiteralPath $script:GameDesignPath -Raw
+    }
+
+    It 'is clean while §11.5 is a real heading' {
+        $index = Read-SpecSetIndex -CorpusPath $script:FixtureRoot
+        (Get-ReferenceFindings -Index $index).Count | Should -Be 0
+    }
+
+    It 'raises exactly one finding when the §11.5 heading is renumbered out from under its references' {
+        $mutated = $script:OriginalText -replace '### 11\.5 When Choice-Events Resolve', '### 11.9 When Choice-Events Resolve'
+        $mutated | Should -Not -Be $script:OriginalText
+        Set-Content -LiteralPath $script:GameDesignPath -Value $mutated -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $script:FixtureRoot
+        $findings = Get-ReferenceFindings -Index $index
+        $findings.Count | Should -BeGreaterThan 0
+        $findings | Where-Object { $_.Detail -match '§11\.5' -and $_.DocumentPath -match '03-game-design\.md' } | Should -Not -BeNullOrEmpty
+    }
+
+    It 'returns to clean once §11.5 is restored' {
+        Set-Content -LiteralPath $script:GameDesignPath -Value $script:OriginalText -NoNewline
+        $index = Read-SpecSetIndex -CorpusPath $script:FixtureRoot
+        (Get-ReferenceFindings -Index $index).Count | Should -Be 0
+    }
+}
+
+Describe 'S4.3: cross-repository references never appear as passed or broken' {
+    It 'a cross-repository reference to a real corpus never enters the findings list as passed, and never as broken' {
+        $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
+        $findings = Get-ReferenceFindings -Index $index
+        $crossRepoBrokenFindings = @($findings | Where-Object Detail -Match 'resolves to nothing')
+        $crossRepoBrokenFindings.Count | Should -Be 0
+        $resolutions = Get-ReferenceResolutions -Index $index
+        $crossRepo = @($resolutions | Where-Object { $_.Reference.Kind -eq 'CrossRepository' })
+        $crossRepo.Count | Should -Be 8
+        foreach ($r in $crossRepo) { $r.Status | Should -Be 'Unresolvable' }
+    }
+    It 'a cross-repository reference with no pinned sha is a reference finding' {
+        $corpus = Join-Path $TestDrive 'unpinned'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n`nSee ``engine/01-vision.md``." -NoNewline
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $findings = Get-ReferenceFindings -Index $index
+        $findings.Count | Should -Be 1
+        $findings[0].Detail | Should -Match 'carries no pinned commit'
+    }
+}
+
+Describe 'S4.6: held, failed, unchecked and unresolvable sum to the index totals' {
+    It 'sums to the totals for obligations, register rows, concepts and references against the real corpus' {
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        foreach ($category in @('MirrorObligations', 'ProvisionalEntries', 'Concepts', 'References')) {
+            $bucket = $result.Buckets.$category
+            ($bucket.Held + $bucket.Failed + $bucket.Unchecked + $bucket.Unresolvable) | Should -Be $bucket.Total
+        }
+        $result.Buckets.MirrorObligations.Total | Should -Be $result.Counts.MirrorObligations
+        $result.Buckets.References.Total | Should -Be $result.Counts.References
+    }
+}
+
+Describe 'S4.7: a clean run still names the unresolvable count' {
+    It 'includes the unresolvable count in the report even when State is Valid, and never implies those subjects were checked' {
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        $result.State | Should -Be 'Valid'
+        $result.Counts.Unresolvable | Should -BeGreaterThan 0
+        $line = Write-SpecSetReport -Result $result
+        $line | Should -Match "$($result.Counts.Unresolvable) references unresolvable"
+        $line | Should -Match 'unresolvable \(cross-repository, not checked\)'
+    }
+}
+
 Describe 'S5: the provisional register holds against the real corpus' {
     BeforeAll {
         $script:Index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
@@ -217,7 +337,7 @@ Describe 'S3.8: the report states the count checked and never claims consistency
             State = 'Valid'
             Documents = @(1, 2)
             Declarations = @(1, 2, 3)
-            Counts = [pscustomobject]@{ MirrorObligations = 2 }
+            Counts = [pscustomobject]@{ MirrorObligations = 2; Unresolvable = 0 }
         }
         $line = Write-SpecSetReport -Result $result
         $line | Should -Match '2 mirror obligations checked'
