@@ -115,7 +115,7 @@ Skills: <!-- mirror-PlayerState.skills:declared:start -->cooking<!-- mirror-Play
         $index.ProvisionalSites[0].Key | Should -Be '5-6-demandband'
         (Get-ProvisionalKey -Area $index.ProvisionalEntries[0].Area) | Should -Be '5-6-demandband'
     }
-    It 'S4.1: extracts all 107 section references and all 36 document links from the real corpus, with SourcePath, Line, Kind and RawTarget' {
+    It 'S4.1: extracts all 161 section references and all 36 document links from the real corpus, with SourcePath, Line, Kind and RawTarget' {
         $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
         $index.State | Should -Be 'Indexed'
         $sections = @($index.References | Where-Object Kind -eq 'Section')
@@ -125,10 +125,14 @@ Skills: <!-- mirror-PlayerState.skills:declared:start -->cooking<!-- mirror-Play
         # added. Pinning all 8 cross-repository mentions in the `<path> § <section> @ <sha>`
         # form (S4.4) gave 7 of them a section mark they did not carry before, each folded into
         # its CrossRepository reference rather than double-counted as a same-repo Section one —
-        # so 106 same-repo Section references remain, plus 8 CrossRepository references that
-        # each carry a section mark (106 + 8 = 114 total §-marks in the landed corpus).
+        # so 106 same-repo Section references remained at that point, plus 8 CrossRepository
+        # references that each carry a section mark. S7 then added 55 same-repo section
+        # references across the twelve new `lifecycle-` regions it wrote, each citing the
+        # sections its creation/retirement paths depend on — 161 same-repo Section references
+        # remain, plus the same 8 CrossRepository references (161 + 8 = 169 total §-marks in the
+        # landed corpus).
         $crossRepoWithSection = @($crossRepo | Where-Object RawTarget -Match '§')
-        $sections.Count | Should -Be 106
+        $sections.Count | Should -Be 161
         $crossRepoWithSection.Count | Should -Be 8
         $documentLinks.Count | Should -Be 36
         $crossRepo.Count | Should -Be 8

@@ -249,18 +249,37 @@ Describe 'S6: the concept lifecycle check' {
         $findings | Where-Object Subject -In @('Opportunity', 'ScheduledEvent') | Should -BeNullOrEmpty
     }
 
-    It 'S6.3: every derived concept with no lifecycle- region produces exactly one finding naming it, and the run exits 1' {
-        $findings = Get-ConceptFindings -Index $script:Index
-        $missing = @($script:Index.Concepts | Where-Object { $_ -notin @('Opportunity', 'ScheduledEvent') })
-        $missing.Count | Should -BeGreaterThan 0
-        foreach ($concept in $missing) {
-            @($findings | Where-Object { $_.CheckId -eq 'concept' -and $_.Subject -eq $concept }).Count | Should -Be 1
-        }
-        @($findings | Where-Object CheckId -eq 'concept').Count | Should -Be $missing.Count
+    It 'S6.3: a concept with no lifecycle- region still produces exactly one finding naming it, and the run exits 1' {
+        # S6 landed with 12 of the 14 derived concepts still missing a lifecycle- region and
+        # this test asserted that gap directly, by count, because S7 — filling it — had not
+        # landed yet. S7 wrote all 12 remaining regions (S7.1: "zero concept findings"), so the
+        # gap this test exercises no longer exists in the real corpus; it is reconstructed here
+        # against a copy with one region removed, which is what S6.3 was actually testing.
+        $fixtureRoot = Join-Path $TestDrive 's6-3-missing-lifecycle'
+        Copy-Item -Recurse -Path (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games') -Destination $fixtureRoot
+        $enginePath = Join-Path $fixtureRoot '04-engine-specification.md'
+        $text = Get-Content -LiteralPath $enginePath -Raw
+        $withoutRngState = $text -replace '(?s)<!-- lifecycle-RngState:declared:start -->.*?<!-- lifecycle-RngState:declared:end -->\r?\n\r?\n', ''
+        $withoutRngState | Should -Not -Be $text
+        Set-Content -LiteralPath $enginePath -Value $withoutRngState -NoNewline
 
-        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        $index = Read-SpecSetIndex -CorpusPath $fixtureRoot
+        $findings = Get-ConceptFindings -Index $index
+        @($findings | Where-Object { $_.CheckId -eq 'concept' -and $_.Subject -eq 'RngState' }).Count | Should -Be 1
+        @($findings | Where-Object CheckId -eq 'concept').Count | Should -Be 1
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $fixtureRoot -Quiet
         $result.State | Should -Be 'Invalid'
         (Get-SpecSetExitCode -State $result.State) | Should -Be 1
+    }
+
+    It 'S7.1: every derived concept in the real corpus carries a lifecycle- region, and the run reports Valid' {
+        $findings = Get-ConceptFindings -Index $script:Index
+        @($findings | Where-Object CheckId -eq 'concept') | Should -BeNullOrEmpty
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        $result.State | Should -Be 'Valid'
+        (Get-SpecSetExitCode -State $result.State) | Should -Be 0
     }
 }
 

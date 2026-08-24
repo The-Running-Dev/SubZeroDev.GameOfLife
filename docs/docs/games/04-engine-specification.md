@@ -329,6 +329,22 @@ interface RngState {
 }
 ```
 
+### 3.1.1 RNG State Lifecycle
+
+<!-- lifecycle-RngState:declared:start -->
+**Creation.** `createGame` constructs the root `RngState` once, from
+`NewGameConfig.seed`, alongside every other top-level `GameState` field (§5). Every
+named substream (§3.2) derives from this same seed through `deriveStream`, so nothing
+downstream ever seeds its own generator independently.
+
+**Retirement.** There is no removal path. `RngState` is required in every save (§16)
+and `GameEngine`'s API (§11) has no operation that deletes or replaces a game —
+`createGame`, reading, planning, validation, execution and persistence are the whole
+surface. `RngState` therefore persists for the life of the `GameState` it belongs to
+and retires only when the save itself is discarded, which happens outside the
+engine's own surface.
+<!-- lifecycle-RngState:declared:end -->
+
 ### 3.2 Named Substreams
 
 The engine does not draw from one global sequence. Randomness is partitioned into
@@ -595,6 +611,21 @@ availableTimeUnits = totalTimeUnits − committedTimeUnits − spentTimeUnits
 const WEEKLY_TIME_UNITS = 14;
 ```
 
+### 5.1.1 Calendar State Lifecycle
+
+<!-- lifecycle-CalendarState:declared:start -->
+**Creation.** Constructed once at `createGame`, alongside every other top-level
+`GameState` field: `currentWeek` begins at 1, `totalTimeUnits` at
+`WEEKLY_TIME_UNITS`, and `committedTimeUnits`/`spentTimeUnits` at 0, satisfying the
+invariant in §5.1 from the first week.
+
+**Retirement.** No removal path exists. `time_advance` (§12.1) mutates
+`currentWeek`, `spentTimeUnits` and `committedTimeUnits` every week, but the field
+itself is never replaced or deleted — it persists for the life of the `GameState`,
+retiring only when the save itself is discarded, outside the engine's API surface
+(§11).
+<!-- lifecycle-CalendarState:declared:end -->
+
 ### 5.2 Metadata
 
 ```typescript
@@ -630,6 +661,21 @@ interface MigrationRecord {
 `contentPacks` replaces revision 1's single `contentVersion: string`. One string
 cannot identify `base@1.2.0 + winter-dlc@0.3.1 + user-mod@2`, and §4.2 explicitly
 supports multiple packs with dependencies — so saves would silently mis-hydrate.
+
+### 5.2.1 Game Metadata Lifecycle
+
+<!-- lifecycle-GameMetadata:declared:start -->
+**Creation.** Constructed once at `createGame`, from `NewGameConfig`'s
+`scenarioId`, `difficultyId`, `mode` and optional `transparency` (default `"off"`,
+§5.2), stamped with `createdAt`/`updatedAt`, the registry's resolved
+`ResolvedContentPack[]` as `contentPacks`, the current `engineVersion`, and an empty
+`migrations` array.
+
+**Retirement.** No removal path. `updatedAt` is touched by ordinary play and
+`migrations` grows by one `MigrationRecord` per `migrate()` call (§16.4), but the
+field itself is never replaced — it persists for the life of the `GameState` and
+retires only when the save is discarded, outside the engine's API surface (§11).
+<!-- lifecycle-GameMetadata:declared:end -->
 
 ### 5.3 World State
 
@@ -734,6 +780,25 @@ goose* — that is the correct behaviour.
 
 A single global scope would be wrong in both directions: game-scoped kills the long
 arc, profile-scoped carries your eviction history into a new life.
+
+### 5.3.3 World State Lifecycle
+
+<!-- lifecycle-WorldState:declared:start -->
+**Creation.** Constructed once at `createGame`: `npcs` seeded from
+`ContentRegistry.npcs` (§14.6), one `NPCState` per `NPCDefinition`; `locations` from
+the `LocationDefinition` graph reachable from `ScenarioDefinition.startingLocationId`
+(§14.8); `jobMarket.openings` from `JobDefinition` entries per their `contested`/
+`positionsAvailable` rules (§14.1); `eventCooldowns` and `firedUniqueEvents` start
+empty; `chainStates` holds any chain the scenario declares active from the start;
+`strangenessBase` starts at the bottom of its curve (§5.3.1); `headlinePool.remainingIds`
+is the registry's `headlines` shuffled once; `agents` is populated from
+`NewGameConfig.rival`, empty in `open_life` mode (§5.3, field comment).
+
+**Retirement.** No removal path. `WorldState` persists for the life of the
+`GameState` and retires only when the save is discarded, outside the engine's API
+surface (§11); the removal of an individual member — an expired `NPCMemory`, a
+filled `JobOpening` — is that member's own lifecycle, not `WorldState`'s.
+<!-- lifecycle-WorldState:declared:end -->
 
 ### 5.4 Effects, Opportunities and Scheduled Events
 
@@ -886,6 +951,43 @@ which cancels the hearing. Explicit, recorded, and inspectable in history.
 > than a surprise.
 <!-- lifecycle-ScheduledEvent:declared:end -->
 
+### 5.4.3 Status Effect Lifecycle
+
+<!-- lifecycle-StatusEffect:declared:start -->
+**Application.** A `StatusEffect` is constructed whenever a system or resolver grants
+a modifier tied to one of the declared `sourceKind`s (§5.4): an item's effect while
+held (`"item"`), housing's ambient effect while occupied (`"housing"`), a
+`TraitDefinition.effects` entry while the trait is possessed (`"trait"`), a `Reward`
+of type `"modifier"` from an action or event outcome (`"event"`), a job's terms while
+employed (`"job"`), a course's terms while enrolled (`"course"`), or an effect the
+engine derives itself, such as the reduced-hours effect referenced in §12.1
+(`"system"`). Each is stamped with `appliedWeek`, its granting `sourceId`, and the
+`stacking` rule that governs a second grant from that same source (§7).
+
+**Expiry.** An effect with `expiresAtWeek` set is removed from `activeEffects` by the
+`effects` system, at the start of the week following `expiresAtWeek` (§7, §12.1). An
+effect with no `expiresAtWeek` is permanent while its source persists (§5.4, field
+comment) — held item, occupied housing, current job, active trait — and is retired
+when that source itself ends, through the source's own lifecycle rather than a
+separate check the `effects` system performs.
+<!-- lifecycle-StatusEffect:declared:end -->
+
+### 5.4.4 Pending Event Response Lifecycle
+
+<!-- lifecycle-PendingEventResponse:declared:start -->
+**Creation.** The `events` system queues a `PendingEventResponse` for any fired event
+that carries choices — whether the event fired unconditionally because it was
+`ScheduledEvent` due this week (§5.4.2, step 3) or was rolled at random by weight
+(§5.4.2, step 4) — implementing the deferred-event model of §11.5: it rolls at the
+end of week N and is presented at the start of week N+1.
+
+**Resolution.** `respondToEvent(state, pendingResponseId, choiceId)` is the only
+consuming path — it removes the entry from `pendingEventResponses` and returns the
+resulting `EventResolution` (§11.2). Unlike `Opportunity` (§5.4.1), there is no
+expiry: `endWeek` refuses to run at all while any `pendingEventResponses` remain,
+returning an error rather than silently discarding an unanswered decision (§11.5).
+<!-- lifecycle-PendingEventResponse:declared:end -->
+
 ### 5.5 Goal State
 
 ```typescript
@@ -918,6 +1020,24 @@ credit — which is what makes design §13.1's anti-exploit intent actually hold
 `progressNotes` exists to serve the Transparent Consequences principle: a client can
 show *which* clause of a compound goal is currently unmet, not just that the goal
 isn't done.
+
+### 5.5.1 Goal State Lifecycle
+
+<!-- lifecycle-GoalState:declared:start -->
+**Instantiation.** At `createGame`, from `NewGameConfig.goalIds` when given, or
+`ScenarioDefinition.goalIds` otherwise (§14.7) — each id produces one `GoalState`
+with `status: "active"`. `RewardType` (§13.4) has no `"goal"` member and no other API
+adds an entry later, so this is the only creation path; a game's goal set is fixed at
+the start.
+
+**Resolution.** The `goals` system (§12.2) evaluates every active `GoalState`'s
+`conditions`/`failureConditions` each end of week; `consecutiveWeeksSatisfied` resets
+to zero on any unsatisfied week (design §13.1). Reaching completion or failure sets
+`status` to `"completed"` or `"failed"` and stamps `completedWeek`/`failedWeek` —
+the entry is never removed from `GameState.goals`. Resolution retires it from
+evaluation, not from the array: it stands afterward as a permanent record, which is
+what §16 means by "goal progress" being part of every save.
+<!-- lifecycle-GoalState:declared:end -->
 
 ### 5.6 Economy State
 
@@ -958,6 +1078,37 @@ logistics is hot and retail is cold; they do not learn that logistics is 71.
 
 `publishedIndicators` controls the rest. Inflation, unemployment and interest are
 newspaper facts and are published by default.
+
+### 5.6.1 Economy State Lifecycle
+
+<!-- lifecycle-EconomyState:declared:start -->
+**Creation.** Constructed once at `createGame`, from a fixed baseline modified by
+`DifficultyDefinition.economyModifiers` (§14.7) — design §15 states that "the initial
+economy may use mostly fixed values with controlled variation."
+
+**Retirement.** No removal path, and no engine system currently mutates
+`EconomyState` after creation — `SystemId` (§12) has no `"economy"` entry in either
+`START_WEEK_SYSTEM_ORDER` or `END_WEEK_SYSTEM_ORDER`. It persists unchanged for the
+life of the `GameState`, consistent with design §15.3's scope limitation, which
+deliberately excludes "real-time markets" and "complex monetary policy" from this
+version.
+<!-- lifecycle-EconomyState:declared:end -->
+
+### 5.7 Game Status Lifecycle
+
+<!-- lifecycle-GameStatus:declared:start -->
+**Assignment.** `status` starts `"active"` at `createGame` — `NewGameConfig` (§11.1)
+carries no status field, so every new game begins active.
+
+**Transition.** The `goals` and `failure` systems (§12.2) evaluate completion and
+failure each end of week, per design §13.1–§13.3; when a scenario's goal set is
+satisfied (§5.5) or a failure condition fires, `status` becomes `"completed"` or
+`"failed"`, with precedence between the two governed by
+`ScenarioDefinition.goalFailurePrecedence` (§12.3), and the change is reported on
+`WeekResolution.statusChanged` (§11.2). `"abandoned"` is a declared value with no
+engine-side trigger anywhere in this specification — flagged here rather than
+invented, the same treatment §8.4 gives an unused field.
+<!-- lifecycle-GameStatus:declared:end -->
 
 ---
 
@@ -1520,6 +1671,24 @@ Moving the dimensions onto the actor gives every actor their own social state an
 leaves `NPCState` holding only what genuinely belongs to the NPC: its role,
 availability, memories and flags. The same NPC can respect the player and resent the
 rival, which is what a competitive life sim wants.
+
+### 8.10 Player State Lifecycle
+
+<!-- lifecycle-PlayerState:declared:start -->
+**Creation.** Constructed once at `createGame` as `GameState.player`. Identity comes
+from `NewGameConfig.playerName` and the `BackgroundDefinition` named by
+`config.backgroundId` (§14.8) — `startingAttributes`, `startingSkills`,
+`startingCredentials`, `startingTraits` and `startingCashModifierCents` all apply.
+Finances, starting location and starting inventory come from `ScenarioDefinition`'s
+`startingCashCents`, `startingHousingId`, `startingLocationId` and
+`startingInventory` (§14.7). Everything else — relationships, education, career,
+`counters` — starts empty.
+
+**Retirement.** No removal path. `PlayerState` is `GameState.player` and persists for
+the life of the game; §16.3's `PlayerProfile` accumulates `ActorState.counters` into
+`lifetimeCounters` at game end, but that copies into a separate save artifact rather
+than retiring the field itself.
+<!-- lifecycle-PlayerState:declared:end -->
 
 ---
 
@@ -2977,6 +3146,35 @@ const HISTORY_DETAIL_WEEKS = 8;
 
 Weekly summaries, save debugging, replay, player journals, achievement checks,
 narrative generation, bug reproduction.
+
+### 17.3 History Entry Lifecycle
+
+<!-- lifecycle-HistoryEntry:declared:start -->
+**Recording.** The `history` system, last in `END_WEEK_SYSTEM_ORDER` so it can see
+everything the pass produced (§12.2), appends one `HistoryEntry` per recorded
+`StateChange` and narrative event for that week, each individually addressable by
+`id` and `sequence`.
+
+**Compaction.** Entries older than `HISTORY_DETAIL_WEEKS` (default 8, §17.1) are
+merged into one summary entry per week per category, marked `compacted: true`. The
+original fine-grained entries are retired by this merge — nothing player-visible is
+lost, and the merged entry is what survives migration (§16.2).
+<!-- lifecycle-HistoryEntry:declared:end -->
+
+### 17.4 Logged Action Lifecycle
+
+<!-- lifecycle-LoggedAction:declared:start -->
+**Recording.** `executeActionPlan` appends one `LoggedAction` per executed action,
+and `respondToEvent` appends one for each event response, populating
+`eventResponse` (§11, §17.1). These are the only two writers.
+
+**Retirement.** None. `actionLog` has no removal or compaction path: §16.4 requires
+a migration to "never silently discard important state," and a migrated save keeps
+`actionLog` intact while setting `replayCompatible: false` (§16.2) rather than
+pruning it. An entry's exit is not deletion but the loss of its replay guarantee
+across an engine or content version boundary — after that point it remains a record
+but can no longer reproduce state via replay.
+<!-- lifecycle-LoggedAction:declared:end -->
 
 ---
 
