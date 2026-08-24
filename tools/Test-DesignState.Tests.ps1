@@ -1540,8 +1540,11 @@ Describe 'Test-DesignState against this repository''s own tree' {
             [IO.File]::WriteAllText($supersededPath, $stripped, [Text.UTF8Encoding]::new($false))
 
             $strippedResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
-            $strippedResult.ExitCode | Should -Be 1
-            $hit = @($strippedResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq $supersededId })
+            # design/FROZEN.md exists on this tree, so per design/20-contract.md "The freeze",
+            # EnforcementUnevidenced is downgraded to reported rather than blocking - exit 0,
+            # not 1 (I21).
+            $strippedResult.ExitCode | Should -Be 0
+            $hit = @($strippedResult.Reported | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq $supersededId })
             $hit.Count | Should -Be 1
             $hit[0].Detail | Should -Match 'SupersededBy'
         } finally {
@@ -1550,6 +1553,7 @@ Describe 'Test-DesignState against this repository''s own tree' {
 
         $restoredResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
         (@($restoredResult.Findings | Where-Object { $_.Class -eq 'EnforcementUnevidenced' })).Count | Should -Be 0
+        (@($restoredResult.Reported | Where-Object { $_.Class -eq 'EnforcementUnevidenced' })).Count | Should -Be 0
         $restoredResult.ExitCode | Should -Be 0
         [Convert]::ToBase64String([IO.File]::ReadAllBytes($supersededPath)) | Should -Be ([Convert]::ToBase64String($originalBytes))
         (& git -C $script:RepoRoot status --short) | Should -Be $script:StatusBefore
