@@ -7,6 +7,7 @@ class SpecDocument {
     [string] $Path
     [Nullable[int]] $Ordinal
     [string] $Title
+    [string[]] $SectionNumbers = @()
 }
 
 class SpecDeclaration {
@@ -210,6 +211,59 @@ function Get-ProvisionalSiteFromRegion {
     $site
 }
 
+function Get-SpecSetSectionNumbers {
+    param([string] $Text)
+
+    @([regex]::Matches($Text, '(?m)^#{1,4}\s+(\d+(?:\.\d+)*)\b') | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+}
+
+function Get-SpecSetReferences {
+    param([Parameter(Mandatory)][string] $Text, [Parameter(Mandatory)][string] $DocumentPath)
+
+    $refs = [System.Collections.Generic.List[object]]::new()
+    $consumed = [System.Collections.Generic.List[object]]::new()
+    $sourceName = [System.IO.Path]::GetFileName($DocumentPath)
+
+    foreach ($m in [regex]::Matches($Text, '\]\((?<target>[^)\s#]+\.md)\)')) {
+        $r = [SpecReference]::new()
+        $r.SourcePath = $DocumentPath; $r.Line = Get-SpecSetLineNumber -Text $Text -Index $m.Index
+        $r.Kind = 'Document'; $r.RawTarget = $m.Groups['target'].Value
+        $refs.Add($r)
+    }
+
+    $crossPattern = '`(?<path>engine/[\w./-]+\.md)`(?:\s+§\s*(?<sec>[0-9]+[a-z]?))?(?:\s+@\s+`(?<sha>[0-9a-f]{40})`)?'
+    foreach ($m in [regex]::Matches($Text, $crossPattern)) {
+        $r = [SpecReference]::new()
+        $r.SourcePath = $DocumentPath; $r.Line = Get-SpecSetLineNumber -Text $Text -Index $m.Index
+        $r.Kind = 'CrossRepository'
+        $target = $m.Groups['path'].Value
+        if ($m.Groups['sec'].Success) { $target = "$target § $($m.Groups['sec'].Value)" }
+        $r.RawTarget = $target
+        if ($m.Groups['sha'].Success) { $r.PinnedSha = $m.Groups['sha'].Value }
+        $refs.Add($r)
+        $consumed.Add([pscustomobject]@{ Start = $m.Index; End = $m.Index + $m.Length })
+    }
+
+    $sectionPattern = '\]\((?<linkpath>[^)\s#]+\.md)\)\s+§(?<linknum>[0-9]+(?:\.[0-9]+)*)|(?i:design|engine spec)\s+§(?<qualnum>[0-9]+(?:\.[0-9]+)*)|§(?<barenum>[0-9]+(?:\.[0-9]+)*)[a-z]?'
+    foreach ($m in [regex]::Matches($Text, $sectionPattern)) {
+        if (@($consumed | Where-Object { $m.Index -ge $_.Start -and $m.Index -lt $_.End })) { continue }
+        $r = [SpecReference]::new()
+        $r.SourcePath = $DocumentPath; $r.Line = Get-SpecSetLineNumber -Text $Text -Index $m.Index; $r.Kind = 'Section'
+        if ($m.Groups['linknum'].Success) {
+            $r.RawTarget = "$($m.Groups['linkpath'].Value)#$($m.Groups['linknum'].Value)"
+        } elseif ($m.Groups['qualnum'].Success) {
+            $qualifierText = $m.Value.Substring(0, $m.Value.IndexOf('§')).Trim().ToLowerInvariant()
+            $targetName = switch ($qualifierText) { 'design' { '03-game-design.md' } 'engine spec' { '04-engine-specification.md' } default { $sourceName } }
+            $r.RawTarget = "$targetName#$($m.Groups['qualnum'].Value)"
+        } else {
+            $r.RawTarget = "$sourceName#$($m.Groups['barenum'].Value)"
+        }
+        $refs.Add($r)
+    }
+
+    ,@($refs)
+}
+
 function Get-MirrorObligationFromRegion {
     param([Parameter(Mandatory)][object] $Region)
 
@@ -236,11 +290,15 @@ function Read-SpecSetIndex {
     $provisionalEntries = [System.Collections.Generic.List[object]]::new()
     $provisionalSites = [System.Collections.Generic.List[object]]::new()
     $registerRegions = [System.Collections.Generic.List[object]]::new()
+    $references = [System.Collections.Generic.List[object]]::new()
     foreach ($file in @(Get-ChildItem -LiteralPath $root -File -Filter '*.md' | Sort-Object Name)) {
         try { $text = [System.IO.File]::ReadAllText($file.FullName, [System.Text.UTF8Encoding]::new($false)) } catch { return New-SpecSetIndexFailure -Reason 'UnreadableDocument' -Path $file.FullName }
         $relative = [System.IO.Path]::GetRelativePath($repoRoot, $file.FullName).Replace('\', '/')
         $doc = [SpecDocument]::new(); $doc.Path = $relative; $doc.Ordinal = Get-SpecDocumentOrdinal -Name $file.Name
-        $h1 = [regex]::Match($text, '(?m)^#\s+(.+?)\s*$'); $doc.Title = if ($h1.Success) { $h1.Groups[1].Value } else { '' }; $documents.Add($doc)
+        $h1 = [regex]::Match($text, '(?m)^#\s+(.+?)\s*$'); $doc.Title = if ($h1.Success) { $h1.Groups[1].Value } else { '' }
+        $doc.SectionNumbers = Get-SpecSetSectionNumbers -Text $text
+        $documents.Add($doc)
+        foreach ($r in (Get-SpecSetReferences -Text $text -DocumentPath $relative)) { $references.Add($r) }
         $regionResult = Get-DeclaredRegions -Text $text -DocumentPath $relative
         if ($regionResult.Failure) { return New-SpecSetIndexFailure -Reason $regionResult.Failure -Path $relative -Line $regionResult.Line }
         foreach ($region in $regionResult.Regions) {
@@ -288,5 +346,5 @@ function Read-SpecSetIndex {
             $declarations.Add($aliasField)
         }
     }
-    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @(); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @($provisionalEntries); ProvisionalSites = @($provisionalSites); Lifecycles = @() }
+    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @($references); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @($provisionalEntries); ProvisionalSites = @($provisionalSites); Lifecycles = @() }
 }

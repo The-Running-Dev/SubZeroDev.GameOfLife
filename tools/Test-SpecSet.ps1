@@ -86,6 +86,89 @@ function Get-ProvisionalFindings {
     }
     return ,@($findings)
 }
+function Get-ReferenceResolutions {
+    param([Parameter(Mandatory)][object] $Index)
+
+    $resolutions = [System.Collections.Generic.List[object]]::new()
+    foreach ($ref in $Index.References) {
+        if ($ref.Kind -eq 'CrossRepository') {
+            $finding = $null
+            if ([string]::IsNullOrWhiteSpace($ref.PinnedSha)) {
+                $f = [SpecFinding]::new()
+                $f.CheckId = 'reference'; $f.Subject = $ref.RawTarget; $f.DocumentPath = $ref.SourcePath; $f.Line = $ref.Line
+                $f.Detail = "Cross-repository reference to '$($ref.RawTarget)' in $($ref.SourcePath) carries no pinned commit."
+                $finding = $f
+            }
+            $resolutions.Add([pscustomobject]@{ Reference = $ref; Status = 'Unresolvable'; Finding = $finding })
+            continue
+        }
+        if ($ref.Kind -eq 'Document') {
+            $found = @($Index.Documents | Where-Object { [System.IO.Path]::GetFileName($_.Path) -eq $ref.RawTarget })
+            if ($found.Count -eq 0) {
+                $f = [SpecFinding]::new()
+                $f.CheckId = 'reference'; $f.Subject = $ref.RawTarget; $f.DocumentPath = $ref.SourcePath; $f.Line = $ref.Line
+                $f.Detail = "Document link to '$($ref.RawTarget)' in $($ref.SourcePath) resolves to nothing."
+                $resolutions.Add([pscustomobject]@{ Reference = $ref; Status = 'Failed'; Finding = $f })
+            } else {
+                $resolutions.Add([pscustomobject]@{ Reference = $ref; Status = 'Held'; Finding = $null })
+            }
+            continue
+        }
+        # Kind -eq 'Section'
+        $parts = $ref.RawTarget.Split('#')
+        $targetName = $parts[0]; $number = $parts[1]
+        $doc = @($Index.Documents | Where-Object { [System.IO.Path]::GetFileName($_.Path) -eq $targetName })
+        if ($doc.Count -eq 0 -or $number -notin $doc[0].SectionNumbers) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'reference'; $f.Subject = "§$number"; $f.DocumentPath = $ref.SourcePath; $f.Line = $ref.Line
+            $f.Detail = "Section reference '§$number' in $($ref.SourcePath) resolves to nothing in $targetName."
+            $resolutions.Add([pscustomobject]@{ Reference = $ref; Status = 'Failed'; Finding = $f })
+        } else {
+            $resolutions.Add([pscustomobject]@{ Reference = $ref; Status = 'Held'; Finding = $null })
+        }
+    }
+    return ,@($resolutions)
+}
+function Get-ReferenceFindings {
+    param([Parameter(Mandatory)][object] $Index)
+    return ,@((Get-ReferenceResolutions -Index $Index) | Where-Object { $_.Finding } | ForEach-Object Finding)
+}
+function Get-ReferenceUnresolvable {
+    param([Parameter(Mandatory)][object] $Index)
+
+    $entries = [System.Collections.Generic.List[object]]::new()
+    foreach ($resolution in @((Get-ReferenceResolutions -Index $Index) | Where-Object Status -eq 'Unresolvable')) {
+        $ref = $resolution.Reference
+        $entries.Add([pscustomobject]@{
+            Reason = 'CrossRepositoryUnresolvable'
+            Detail = "$($ref.SourcePath):$($ref.Line) references $($ref.RawTarget), which lives in SubZeroDev.GameEngine and cannot be resolved from this repository."
+        })
+    }
+    return ,@($entries)
+}
+function Get-SpecSetBucketCounts {
+    param([Parameter(Mandatory)][object] $Index, [AllowEmptyCollection()][object[]] $Findings = @(), [AllowEmptyCollection()][object[]] $ReferenceResolutions = @())
+
+    $mirrorFindingSubjects = @($Findings | Where-Object CheckId -eq 'mirror' | ForEach-Object Subject)
+    $mirrorFailed = @($Index.MirrorObligations | Where-Object { $obligationName = $_.QualifiedName; @($mirrorFindingSubjects | Where-Object { $_ -eq $obligationName -or $_.StartsWith("$obligationName.") }).Count -gt 0 }).Count
+    $mirrorTotal = $Index.MirrorObligations.Count
+
+    $provisionalFailedAreas = @($Findings | Where-Object CheckId -eq 'provisional' | ForEach-Object Subject | Select-Object -Unique)
+    $provisionalFailed = @($Index.ProvisionalEntries | Where-Object { $_.Area -in $provisionalFailedAreas }).Count
+    $provisionalTotal = $Index.ProvisionalEntries.Count
+
+    $referenceHeld = @($ReferenceResolutions | Where-Object Status -eq 'Held').Count
+    $referenceFailed = @($ReferenceResolutions | Where-Object { $_.Status -eq 'Failed' -or ($_.Status -eq 'Unresolvable' -and $_.Finding) }).Count
+    $referenceUnresolvable = @($ReferenceResolutions | Where-Object Status -eq 'Unresolvable').Count
+    $referenceTotal = $ReferenceResolutions.Count
+
+    [pscustomobject]@{
+        MirrorObligations = [pscustomobject]@{ Held = $mirrorTotal - $mirrorFailed; Failed = $mirrorFailed; Unchecked = 0; Unresolvable = 0; Total = $mirrorTotal }
+        ProvisionalEntries = [pscustomobject]@{ Held = $provisionalTotal - $provisionalFailed; Failed = $provisionalFailed; Unchecked = 0; Unresolvable = 0; Total = $provisionalTotal }
+        Concepts = [pscustomobject]@{ Held = 0; Failed = 0; Unchecked = 0; Unresolvable = 0; Total = 0 }
+        References = [pscustomobject]@{ Held = $referenceHeld; Failed = $referenceFailed; Unchecked = 0; Unresolvable = $referenceUnresolvable; Total = $referenceTotal }
+    }
+}
 function Invoke-SpecSetCheck {
     param([Parameter(Mandatory)][object] $Index)
 
@@ -97,15 +180,20 @@ function Invoke-SpecSetCheck {
         }
     }
 
-    $findings = @((Get-MirrorFindings -Index $Index) + (Get-ProvisionalFindings -Index $Index))
+    $findings = @((Get-MirrorFindings -Index $Index) + (Get-ProvisionalFindings -Index $Index) + (Get-ReferenceFindings -Index $Index))
+    $unresolvable = Get-ReferenceUnresolvable -Index $Index
+    $resolutions = Get-ReferenceResolutions -Index $Index
+    $buckets = Get-SpecSetBucketCounts -Index $Index -Findings $findings -ReferenceResolutions $resolutions
 
     [pscustomobject]@{
         Findings = $findings
         Unchecked = $unchecked
-        Counts = [pscustomobject]@{ Unchecked = $unchecked.Count }
+        Unresolvable = $unresolvable
+        Buckets = $buckets
+        Counts = [pscustomobject]@{ Unchecked = $unchecked.Count; Unresolvable = $unresolvable.Count }
     }
 }
-function Write-SpecSetReport { param([Parameter(Mandatory)][object] $Result) "Spec-set: $($Result.State); $($Result.Documents.Count) documents; $($Result.Declarations.Count) declarations; $($Result.Counts.MirrorObligations) mirror obligations checked." }
+function Write-SpecSetReport { param([Parameter(Mandatory)][object] $Result) "Spec-set: $($Result.State); $($Result.Documents.Count) documents; $($Result.Declarations.Count) declarations; $($Result.Counts.MirrorObligations) mirror obligations checked; $($Result.Counts.Unresolvable) references unresolvable (cross-repository, not checked)." }
 function Get-SpecSetGitInfo {
     $root = Split-Path -Parent $PSScriptRoot
     $sha = (& git -C $root rev-parse HEAD 2>$null); if ($LASTEXITCODE -ne 0) { return [pscustomobject]@{ Commit = $null; WorkingTree = 'NotAGitRepository' } }
@@ -116,11 +204,12 @@ function Get-SpecSetGitInfo {
 if (-not $CorpusPath) { $CorpusPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games' }
 $index = Read-SpecSetIndex -CorpusPath $CorpusPath
 $git = Get-SpecSetGitInfo
-$check = if ($index.State -eq 'Indexed') { Invoke-SpecSetCheck -Index $index } else { [pscustomobject]@{ Findings = @(); Unchecked = @(); Counts = [pscustomobject]@{} } }
+$emptyBuckets = [pscustomobject]@{ Held = 0; Failed = 0; Unchecked = 0; Unresolvable = 0; Total = 0 }
+$check = if ($index.State -eq 'Indexed') { Invoke-SpecSetCheck -Index $index } else { [pscustomobject]@{ Findings = @(); Unchecked = @(); Unresolvable = @(); Buckets = [pscustomobject]@{ MirrorObligations = $emptyBuckets; ProvisionalEntries = $emptyBuckets; Concepts = $emptyBuckets; References = $emptyBuckets }; Counts = [pscustomobject]@{ Unresolvable = 0 } } }
 $state = if ($index.State -ne 'Indexed' -or $check.Unchecked.Count -gt 0) { 'NotEvaluated' } elseif ($check.Findings.Count -gt 0) { 'Invalid' } else { 'Valid' }
 $reason = if ($index.State -ne 'Indexed') { $index.Reason } elseif ($check.Unchecked.Count -gt 0) { $check.Unchecked[0].Reason } else { $null }
 $detail = if ($index.State -ne 'Indexed') { $index.Detail } elseif ($check.Unchecked.Count -gt 0) { $check.Unchecked[0].Detail } else { '' }
-$result = [pscustomobject]@{ State = $state; Reason = $reason; Detail = $detail; Line = $index.Line; Documents = $index.Documents; Declarations = $index.Declarations; Findings = $check.Findings; Unchecked = $check.Unchecked; Counts = [pscustomobject]@{ Documents = $index.Documents.Count; Declarations = $index.Declarations.Count; Unchecked = $check.Unchecked.Count; MirrorObligations = $index.MirrorObligations.Count }; Commit = $git.Commit; WorkingTree = $git.WorkingTree }
+$result = [pscustomobject]@{ State = $state; Reason = $reason; Detail = $detail; Line = $index.Line; Documents = $index.Documents; Declarations = $index.Declarations; Findings = $check.Findings; Unchecked = $check.Unchecked; Unresolvable = $check.Unresolvable; Buckets = $check.Buckets; Counts = [pscustomobject]@{ Documents = $index.Documents.Count; Declarations = $index.Declarations.Count; Unchecked = $check.Unchecked.Count; MirrorObligations = $index.MirrorObligations.Count; References = $index.References.Count; Unresolvable = $check.Counts.Unresolvable }; Commit = $git.Commit; WorkingTree = $git.WorkingTree }
 if (-not $Quiet) { Write-SpecSetReport -Result $result }
 $result
 if ($MyInvocation.InvocationName -ne '.') { exit (Get-SpecSetExitCode -State $result.State) }

@@ -7,7 +7,7 @@
 
 > One of two games this repo is building on the narrative engine. The other is
 > [`bulgaria-adventure.md`](bulgaria-adventure.md). They share nothing mechanical — see
-> `engine/01-vision.md`.
+> `engine/01-vision.md` § 2 @ `bc74a62a2a0a57c5fd82f337712868b6877bbc6a`.
 
 ---
 
@@ -27,7 +27,7 @@ determinism harness, save/migration).
 ## Bulgaria is a culture pack *of this game*
 
 "Jones-in-Bulgaria" is **not a separate game** — it is a content pack over this one
-(§4a of `engine/02-architecture.md`). Same weekly loop and
+(`engine/02-architecture.md` § 4a @ `bc74a62a2a0a57c5fd82f337712868b6877bbc6a`). Same weekly loop and
 mechanics; Bulgarian jobs, bureaucratic events, inheritance disputes, prices, and a
 Bulgarian narrator voice swapped in. The source scenes in [`bulgaria.md`](bulgaria.md)
 feed this pack as events and situations. Building the culture pack requires this game
@@ -57,4 +57,4 @@ first.
 It is the largest build in the project. Proving the *platform* does not require it —
 the platform thesis (engine once, many clients, campaigns as data, MCP-first) is proven
 far more cheaply by the story-graph MVP. This game is the milestone that proves the
-platform has *depth*, and it comes second. See `engine/MVP.md`.
+platform has *depth*, and it comes second. See `engine/MVP.md` § 1 @ `bc74a62a2a0a57c5fd82f337712868b6877bbc6a`.

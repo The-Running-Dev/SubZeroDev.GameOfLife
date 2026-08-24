@@ -105,6 +105,64 @@ Skills: <!-- mirror-PlayerState.skills:declared:start -->cooking<!-- mirror-Play
         $index.ProvisionalSites[0].Key | Should -Be '5-6-demandband'
         (Get-ProvisionalKey -Area $index.ProvisionalEntries[0].Area) | Should -Be '5-6-demandband'
     }
+    It 'S4.1: extracts all 107 section references and all 36 document links from the real corpus, with SourcePath, Line, Kind and RawTarget' {
+        $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
+        $index.State | Should -Be 'Indexed'
+        $sections = @($index.References | Where-Object Kind -eq 'Section')
+        $documentLinks = @($index.References | Where-Object Kind -eq 'Document')
+        $crossRepo = @($index.References | Where-Object Kind -eq 'CrossRepository')
+        # The brief's "107 section references" describes the corpus before S4.4's pins were
+        # added. Pinning all 8 cross-repository mentions in the `<path> § <section> @ <sha>`
+        # form (S4.4) gave 7 of them a section mark they did not carry before, each folded into
+        # its CrossRepository reference rather than double-counted as a same-repo Section one —
+        # so 106 same-repo Section references remain, plus 8 CrossRepository references that
+        # each carry a section mark (106 + 8 = 114 total §-marks in the landed corpus).
+        $crossRepoWithSection = @($crossRepo | Where-Object RawTarget -Match '§')
+        $sections.Count | Should -Be 106
+        $crossRepoWithSection.Count | Should -Be 8
+        $documentLinks.Count | Should -Be 36
+        $crossRepo.Count | Should -Be 8
+        foreach ($r in $index.References) {
+            $r.SourcePath | Should -Not -BeNullOrEmpty
+            $r.Line | Should -BeGreaterThan 0
+            $r.Kind | Should -BeIn @('Section', 'Document', 'CrossRepository')
+            $r.RawTarget | Should -Not -BeNullOrEmpty
+        }
+    }
+    It 'S4.3/S4.4: the 8 engine/*.md mentions are classified CrossRepository and each carries a pinned sha' {
+        $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
+        $crossRepo = @($index.References | Where-Object Kind -eq 'CrossRepository')
+        $crossRepo.Count | Should -Be 8
+        foreach ($r in $crossRepo) { $r.PinnedSha | Should -Match '^[0-9a-f]{40}$' }
+    }
+    It 'S4.1: a bare, qualified and link-adjacent section reference each extract with the resolved document in RawTarget' {
+        $corpus = Join-Path $TestDrive 'references'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $content = @'
+# 01-fixture
+
+## 1. Alpha
+
+Bare same-document: §1. Qualified: design §1. Link-adjacent: [target](02-fixture.md) §1.
+'@
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+        Set-Content -LiteralPath (Join-Path $corpus '02-fixture.md') -Value "# 02-fixture`n`n## 1. Beta`n" -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'Indexed'
+        $sections = @($index.References | Where-Object Kind -eq 'Section')
+        $sections.Count | Should -Be 3
+        $sections.RawTarget | Should -Contain '01-fixture.md#1'
+        $sections.RawTarget | Should -Contain '02-fixture.md#1'
+    }
+    It 'S4.3: an unpinned engine/*.md mention still extracts as CrossRepository with an empty PinnedSha' {
+        $corpus = Join-Path $TestDrive 'unpinned-cross-repo'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n`nSee ``engine/01-vision.md``." -NoNewline
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'Indexed'
+        $crossRepo = @($index.References | Where-Object Kind -eq 'CrossRepository')
+        $crossRepo.Count | Should -Be 1
+        $crossRepo[0].PinnedSha | Should -BeNullOrEmpty
+    }
     It 'S5.3: a second provisional-register region across the corpus yields DuplicateRegionId' {
         $corpus = Join-Path $TestDrive 'duplicate-provisional-register'; New-Item -ItemType Directory -Path $corpus | Out-Null
         $table = @'
