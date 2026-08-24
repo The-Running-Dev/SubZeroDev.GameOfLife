@@ -3,37 +3,37 @@
     {
       "name": "Parse-check PowerShell scripts",
       "status": "Passed",
-      "detail": "PARSE_OK: all files parsed cleanly, count=33"
+      "detail": "Parsed every tools/*.ps1 with [System.Management.Automation.Language.Parser]::ParseFile — all scripts parse cleanly, no syntax errors."
     },
     {
       "name": "Run Pester tests",
-      "status": "Passed",
-      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 310, Failed: 0, Skipped: 0. The two design-state fixture files added on this branch (a unit record for install-code-review-agent.md and a decision record for the 2026-08-23 kit-sync heading) cleared all 7 previously-failing self-tests (S8.1/S8.2, S9.1, S10.1/S10.2, S10.3/S10.5, S11.4/S11.5, S12.5, S18.6)."
+      "status": "Failed",
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 323, Failed: 1, Skipped: 0, Total: 324. The one failure — Test-DesignState.Tests.ps1 'S18.6: EnforcementUnevidenced rejects this repository's own superseded decision once its SupersededBy line is removed, and clears once it is restored' — asserts Expected 1, but got 0 at $strippedResult.ExitCode. Confirmed pre-existing and unrelated to this branch: it reproduces identically on main at commit cbc5a60 with none of this branch's changes checked out. Cause: design/FROZEN.md now exists (added at 407bcea, before this slice started) and the freeze downgrades every blocking divergence class — including EnforcementUnevidenced — to reported rather than blocking (design/20-contract.md § The freeze), so ExitCode is 0 instead of the 1 this test still expects. The test was written before the freeze existed and was never updated for it."
     },
     {
       "name": "Validate the core/companion split",
       "status": "Passed",
-      "detail": "Companion split OK - 22 core(s) checked, 0 companion file(s) present, 22 core(s) with no companion. State: Valid."
+      "detail": "Companion split OK - 22 core(s) checked, 0 companion file(s) present, 22 core(s) with no companion. State: Valid. Exit code: 0."
     },
     {
       "name": "Check the design state against the tree",
       "status": "Passed",
-      "detail": "Findings (0). Reported (non-blocking, exit-neutral): 9 MirrorStale work/* records whose MirroredAt trails the current commit, expected since the last /track sync. Exit code: 0."
+      "detail": "State: Valid. Findings: 0. CouldNotEvaluate: 0. Freeze active: 0 blocking finding(s) downgraded to reported. Largest closure: unit/script/test-specset, 7258 bytes (ceiling 16384). Exit code: 0."
     },
     {
       "name": "Check the spec set",
       "status": "Passed",
-      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked. Commit: c4a48e235d438a4ce6f3f0b4538608a6af8ce41a. WorkingTree: Clean."
+      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 8 references unresolvable (cross-repository, not checked). Findings: 0. Unchecked: 0. Commit: 3f214beb175da1a0ebd8469fe3316bf9133ac855. WorkingTree: Clean. Exit code: 0."
     },
     {
       "name": "docs.ps1 -BuildOnly (Docusaurus image build)",
-      "status": "Passed",
-      "detail": "Built 'gameoflife-docs' from /Users/ben/Dropbox/Projects/SubZeroDev.GameOfLife/docs (base: ghcr.io/the-running-dev/docs-template:latest). All build steps (load definition, load context, FROM, WORKDIR, COPY, export) completed successfully; final line: Built 'gameoflife-docs'. (build-only)"
+      "status": "DidNotRun",
+      "reason": "Docker Desktop is not running locally (`docker info` failed) — this repository's docs build needs Docker and is not CI-gated (no `# verification: true` flag on any docs.ps1-related step in .github/workflows/verify.yml), so it was skipped rather than reported as passed."
     },
     {
       "name": "git diff --check",
       "status": "Passed",
-      "detail": "git diff --check exited 0 — no trailing whitespace or conflict markers."
+      "detail": "git diff --check exited 0 — no trailing whitespace or conflict markers introduced by this branch."
     }
   ]
 }
