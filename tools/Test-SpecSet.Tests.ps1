@@ -136,7 +136,19 @@ Describe 'S4.6: held, failed, unchecked and unresolvable sum to the index totals
 
 Describe 'S4.7: a clean run still names the unresolvable count' {
     It 'includes the unresolvable count in the report even when State is Valid, and never implies those subjects were checked' {
-        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        # A fixture rather than the real corpus: the real corpus carries concept findings
+        # (S6 lands with that gate red on purpose, cleared by S7), which would make this
+        # State-independent report assertion depend on unrelated, still-open work.
+        $corpus = Join-Path $TestDrive 'unresolvable-valid'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $table = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| Test area | A call | A reason | A condition |
+'@
+        $content = "# Fixture`n`n<!-- provisional-register:declared:start -->`n$table`n<!-- provisional-register:declared:end -->`n`nSite: <!-- provisional-site-test-area:declared:start -->x<!-- provisional-site-test-area:declared:end -->`n`nSee ``engine/01-vision.md`` § 1 @ ``bc74a62a2a0a57c5fd82f337712868b6877bbc6a``."
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
         $result.State | Should -Be 'Valid'
         $result.Counts.Unresolvable | Should -BeGreaterThan 0
         $line = Write-SpecSetReport -Result $result
@@ -224,6 +236,103 @@ Describe 'S5.4: a provisional-site region with no matching register row is a fin
         $orphanFindings = @($findings | Where-Object Subject -eq 'orphan')
         $orphanFindings.Count | Should -Be 1
         $orphanFindings[0].Detail | Should -Match 'no matching provisional register row'
+    }
+}
+
+Describe 'S6: the concept lifecycle check' {
+    BeforeAll {
+        $script:Index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
+    }
+
+    It 'S6.2: §5.4.1 and §5.4.2 are wrapped as lifecycle-Opportunity and lifecycle-ScheduledEvent, and both are held' {
+        $findings = Get-ConceptFindings -Index $script:Index
+        $findings | Where-Object Subject -In @('Opportunity', 'ScheduledEvent') | Should -BeNullOrEmpty
+    }
+
+    It 'S6.3: every derived concept with no lifecycle- region produces exactly one finding naming it, and the run exits 1' {
+        $findings = Get-ConceptFindings -Index $script:Index
+        $missing = @($script:Index.Concepts | Where-Object { $_ -notin @('Opportunity', 'ScheduledEvent') })
+        $missing.Count | Should -BeGreaterThan 0
+        foreach ($concept in $missing) {
+            @($findings | Where-Object { $_.CheckId -eq 'concept' -and $_.Subject -eq $concept }).Count | Should -Be 1
+        }
+        @($findings | Where-Object CheckId -eq 'concept').Count | Should -Be $missing.Count
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        $result.State | Should -Be 'Invalid'
+        (Get-SpecSetExitCode -State $result.State) | Should -Be 1
+    }
+}
+
+Describe 'S6.4: deleting the Resolution half of §5.4.1 produces a creation-without-retirement finding' {
+    BeforeAll {
+        $script:FixtureRoot = Join-Path $TestDrive 'games-lifecycle'
+        Copy-Item -Recurse -Path (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games') -Destination $script:FixtureRoot
+        $script:EnginePath = Join-Path $script:FixtureRoot '04-engine-specification.md'
+        $script:OriginalText = Get-Content -LiteralPath $script:EnginePath -Raw
+    }
+
+    It 'is held while §5.4.1 states both Generation and Resolution' {
+        $index = Read-SpecSetIndex -CorpusPath $script:FixtureRoot
+        (Get-ConceptFindings -Index $index) | Where-Object Subject -eq 'Opportunity' | Should -BeNullOrEmpty
+    }
+
+    It 'raises exactly one concept finding for Opportunity once the Resolution paragraph is removed' {
+        $lines = $script:OriginalText -split "`n"
+        $startIdx = [Array]::FindIndex([string[]]$lines, [Predicate[string]] { param($l) $l.StartsWith('**Resolution.**') })
+        $endIdx = [Array]::FindIndex([string[]]$lines, [Predicate[string]] { param($l) $l.StartsWith('**The `opportunities` system**') })
+        $startIdx | Should -BeGreaterThan 0
+        $endIdx | Should -BeGreaterThan $startIdx
+        $mutatedLines = $lines[0..($startIdx - 1)] + $lines[$endIdx..($lines.Count - 1)]
+        $mutated = $mutatedLines -join "`n"
+        $mutated | Should -Not -Be $script:OriginalText
+        Set-Content -LiteralPath $script:EnginePath -Value $mutated -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $script:FixtureRoot
+        $findings = Get-ConceptFindings -Index $index
+        $opportunityFindings = @($findings | Where-Object Subject -eq 'Opportunity')
+        $opportunityFindings.Count | Should -Be 1
+        $opportunityFindings[0].Detail | Should -Match 'only one boundary'
+    }
+
+    It 'returns to clean once Resolution is restored' {
+        Set-Content -LiteralPath $script:EnginePath -Value $script:OriginalText -NoNewline
+        $index = Read-SpecSetIndex -CorpusPath $script:FixtureRoot
+        (Get-ConceptFindings -Index $index) | Where-Object Subject -eq 'Opportunity' | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'S6.5: a lifecycle- region naming something outside the derived concept set is a finding' {
+    It 'raises exactly one finding naming the out-of-set concept, rather than silently ignoring the region' {
+        $corpus = Join-Path $TestDrive 'lifecycle-outside-set'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $content = @'
+# Fixture
+
+```typescript
+interface GameState {
+  player: PlayerState;
+}
+type PlayerState = ActorState;
+interface ActorState {
+  name: string;
+}
+```
+
+<!-- lifecycle-ActorState:declared:start -->
+**Creation.** Made at game start.
+
+**Retirement.** Never retired.
+<!-- lifecycle-ActorState:declared:end -->
+'@
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'Indexed'
+        $index.Concepts | Should -Not -Contain 'ActorState'
+        $findings = Get-ConceptFindings -Index $index
+        $outsideFindings = @($findings | Where-Object Subject -eq 'ActorState')
+        $outsideFindings.Count | Should -Be 1
+        $outsideFindings[0].Detail | Should -Match 'outside the derived concept set'
     }
 }
 

@@ -18,6 +18,16 @@ Describe 'Read-SpecSetIndex' {
         ($index.Declarations | Where-Object QualifiedName -eq 'GameMode').Members | Should -Be @('classic', 'open_life', 'challenge')
         ($index.Declarations | Where-Object QualifiedName -eq 'PlayerState.skills').IsClosed | Should -BeFalse
     }
+    It 'S6.1: derives the concept set from GameState''s 17 fields and the declarations reachable from them' {
+        $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
+        ($index.Declarations | Where-Object { $_.QualifiedName -eq 'GameState' -and $_.Owner -eq '' }).Members.Count | Should -Be 17
+        $index.Concepts | Should -Contain 'Opportunity'
+        $index.Concepts | Should -Contain 'ScheduledEvent'
+        $index.Concepts | Should -Contain 'StatusEffect'
+        $index.Concepts | Should -Contain 'GoalState'
+        $index.Concepts | Should -Contain 'PlayerState'
+        $index.Concepts | Should -Not -Contain 'ResolutionDebugInfo'
+    }
     It 'extracts the NeedState and AttributeState mirror obligations from §3.1' {
         $index = Read-SpecSetIndex -CorpusPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'docs/docs/games')
         $index.MirrorObligations.Count | Should -Be 2

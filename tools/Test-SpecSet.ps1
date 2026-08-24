@@ -86,6 +86,41 @@ function Get-ProvisionalFindings {
     }
     return ,@($findings)
 }
+function Get-ConceptFindings {
+    param([Parameter(Mandatory)][object] $Index)
+
+    $findings = [System.Collections.Generic.List[object]]::new()
+    $lifecycleByName = @{}
+    foreach ($lifecycle in $Index.Lifecycles) {
+        if (-not $lifecycleByName.ContainsKey($lifecycle.ConceptName)) { $lifecycleByName[$lifecycle.ConceptName] = $lifecycle }
+    }
+
+    foreach ($concept in $Index.Concepts) {
+        if (-not $lifecycleByName.ContainsKey($concept)) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'concept'; $f.Subject = $concept; $f.DocumentPath = ''; $f.Line = 0
+            $f.Detail = "$concept is a state-bearing concept with no lifecycle-$concept region."
+            $findings.Add($f)
+            continue
+        }
+        $lifecycle = $lifecycleByName[$concept]
+        if ($lifecycle.LabelCount -lt 2) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'concept'; $f.Subject = $concept; $f.DocumentPath = $lifecycle.DocumentPath; $f.Line = $lifecycle.Line
+            $f.Detail = "lifecycle-$concept in $($lifecycle.DocumentPath) states only one boundary of the lifecycle; it must state both what creates $concept and what retires it."
+            $findings.Add($f)
+        }
+    }
+    foreach ($lifecycle in $Index.Lifecycles) {
+        if ($lifecycle.ConceptName -notin $Index.Concepts) {
+            $f = [SpecFinding]::new()
+            $f.CheckId = 'concept'; $f.Subject = $lifecycle.ConceptName; $f.DocumentPath = $lifecycle.DocumentPath; $f.Line = $lifecycle.Line
+            $f.Detail = "lifecycle-$($lifecycle.ConceptName) in $($lifecycle.DocumentPath) names a concept outside the derived concept set."
+            $findings.Add($f)
+        }
+    }
+    return ,@($findings)
+}
 function Get-ReferenceResolutions {
     param([Parameter(Mandatory)][object] $Index)
 
@@ -157,6 +192,10 @@ function Get-SpecSetBucketCounts {
     $provisionalFailed = @($Index.ProvisionalEntries | Where-Object { $_.Area -in $provisionalFailedAreas }).Count
     $provisionalTotal = $Index.ProvisionalEntries.Count
 
+    $conceptFindingSubjects = @($Findings | Where-Object CheckId -eq 'concept' | ForEach-Object Subject)
+    $conceptFailed = @($Index.Concepts | Where-Object { $_ -in $conceptFindingSubjects }).Count
+    $conceptTotal = $Index.Concepts.Count
+
     $referenceHeld = @($ReferenceResolutions | Where-Object Status -eq 'Held').Count
     $referenceFailed = @($ReferenceResolutions | Where-Object { $_.Status -eq 'Failed' -or ($_.Status -eq 'Unresolvable' -and $_.Finding) }).Count
     $referenceUnresolvable = @($ReferenceResolutions | Where-Object Status -eq 'Unresolvable').Count
@@ -165,7 +204,7 @@ function Get-SpecSetBucketCounts {
     [pscustomobject]@{
         MirrorObligations = [pscustomobject]@{ Held = $mirrorTotal - $mirrorFailed; Failed = $mirrorFailed; Unchecked = 0; Unresolvable = 0; Total = $mirrorTotal }
         ProvisionalEntries = [pscustomobject]@{ Held = $provisionalTotal - $provisionalFailed; Failed = $provisionalFailed; Unchecked = 0; Unresolvable = 0; Total = $provisionalTotal }
-        Concepts = [pscustomobject]@{ Held = 0; Failed = 0; Unchecked = 0; Unresolvable = 0; Total = 0 }
+        Concepts = [pscustomobject]@{ Held = $conceptTotal - $conceptFailed; Failed = $conceptFailed; Unchecked = 0; Unresolvable = 0; Total = $conceptTotal }
         References = [pscustomobject]@{ Held = $referenceHeld; Failed = $referenceFailed; Unchecked = 0; Unresolvable = $referenceUnresolvable; Total = $referenceTotal }
     }
 }
@@ -180,7 +219,7 @@ function Invoke-SpecSetCheck {
         }
     }
 
-    $findings = @((Get-MirrorFindings -Index $Index) + (Get-ProvisionalFindings -Index $Index) + (Get-ReferenceFindings -Index $Index))
+    $findings = @((Get-MirrorFindings -Index $Index) + (Get-ProvisionalFindings -Index $Index) + (Get-ConceptFindings -Index $Index) + (Get-ReferenceFindings -Index $Index))
     $unresolvable = Get-ReferenceUnresolvable -Index $Index
     $resolutions = Get-ReferenceResolutions -Index $Index
     $buckets = Get-SpecSetBucketCounts -Index $Index -Findings $findings -ReferenceResolutions $resolutions

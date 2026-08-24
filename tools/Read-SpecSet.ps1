@@ -18,6 +18,7 @@ class SpecDeclaration {
     [string] $DocumentPath
     [int] $Line
     [string[]] $Members = @()
+    [string[]] $TypeRefs = @()
 }
 
 class SpecReference {
@@ -59,12 +60,20 @@ class ProvisionalSite {
     [int] $Line
 }
 
+class ConceptLifecycle {
+    [string] $ConceptName
+    [string] $DocumentPath
+    [int] $Line
+    [int] $LabelCount
+}
+
 function New-SpecSetIndexFailure {
     param([string] $Reason, [string] $Path, [int] $Line = 0)
     [pscustomobject]@{
         State = 'NotEvaluated'; Reason = $Reason; Detail = $Path; Line = $Line
         Documents = @(); Declarations = @(); References = @()
         MirrorObligations = @(); ProvisionalEntries = @(); ProvisionalSites = @(); Lifecycles = @()
+        Concepts = @()
     }
 }
 
@@ -115,6 +124,13 @@ function Get-FenceDeclarations {
                 $name = $member.Groups[1].Value
                 $d.Members += $name
                 $field = [SpecDeclaration]::new(); $field.QualifiedName = "$($d.QualifiedName).$name"; $field.Owner = $d.QualifiedName; $field.Form = 'Field'; $field.IsClosed = $false; $field.DocumentPath = $DocumentPath; $field.Line = $StartLine + $i
+                if (-not $member.Value.TrimEnd().EndsWith(')')) {
+                    $colonIndex = $Lines[$i].IndexOf(':')
+                    if ($colonIndex -ge 0) {
+                        $typeText = [regex]::Replace($Lines[$i].Substring($colonIndex + 1), '//.*$', '')
+                        $field.TypeRefs = @([regex]::Matches($typeText, '\b[A-Z][A-Za-z0-9_]*\b') | ForEach-Object { $_.Value } | Select-Object -Unique)
+                    }
+                }
                 $rows.Add($field)
                 $i++
             }
@@ -278,6 +294,43 @@ function Get-MirrorObligationFromRegion {
     $obligation
 }
 
+function Get-ConceptLifecycleFromRegion {
+    param([Parameter(Mandatory)][object] $Region)
+
+    if ($Region.Id -notlike 'lifecycle-*') { return $null }
+    $lifecycle = [ConceptLifecycle]::new()
+    $lifecycle.ConceptName = $Region.Id.Substring('lifecycle-'.Length)
+    $lifecycle.DocumentPath = $Region.DocumentPath
+    $lifecycle.Line = $Region.Line
+    # A label is a single capitalised word wholly inside its own bold span, ending in a
+    # period — "**Generation.**", "**Cancellation.**" — never a bolded sentence or phrase
+    # ("**Why explicit decline exists.**", "**The `opportunities` system**"). This is a
+    # shape test, not a word list: it does not need to know which word means creation and
+    # which means retirement, only that the region states two distinct boundaries.
+    $lifecycle.LabelCount = @([regex]::Matches($Region.Body, '\*\*[A-Z][A-Za-z]*\.\*\*')).Count
+    $lifecycle
+}
+
+function Get-SpecSetConcepts {
+    param([Parameter(Mandatory)][AllowEmptyCollection()][object[]] $Declarations)
+
+    $gameState = @($Declarations | Where-Object { $_.QualifiedName -eq 'GameState' -and $_.Owner -eq '' -and $_.Form -eq 'Interface' })
+    if ($gameState.Count -eq 0) { return ,@() }
+
+    $topLevelNames = [System.Collections.Generic.HashSet[string]]::new()
+    foreach ($d in @($Declarations | Where-Object { $_.Owner -eq '' })) { $topLevelNames.Add($d.QualifiedName) | Out-Null }
+
+    $concepts = [System.Collections.Generic.List[string]]::new()
+    foreach ($fieldName in $gameState[0].Members) {
+        $field = @($Declarations | Where-Object { $_.QualifiedName -eq "GameState.$fieldName" -and $_.Form -eq 'Field' } | Select-Object -First 1)
+        if ($field.Count -eq 0) { continue }
+        foreach ($ref in $field[0].TypeRefs) {
+            if ($topLevelNames.Contains($ref) -and -not $concepts.Contains($ref)) { $concepts.Add($ref) }
+        }
+    }
+    ,@($concepts)
+}
+
 function Read-SpecSetIndex {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string] $CorpusPath)
@@ -290,6 +343,7 @@ function Read-SpecSetIndex {
     $provisionalEntries = [System.Collections.Generic.List[object]]::new()
     $provisionalSites = [System.Collections.Generic.List[object]]::new()
     $registerRegions = [System.Collections.Generic.List[object]]::new()
+    $lifecycles = [System.Collections.Generic.List[object]]::new()
     $references = [System.Collections.Generic.List[object]]::new()
     foreach ($file in @(Get-ChildItem -LiteralPath $root -File -Filter '*.md' | Sort-Object Name)) {
         try { $text = [System.IO.File]::ReadAllText($file.FullName, [System.Text.UTF8Encoding]::new($false)) } catch { return New-SpecSetIndexFailure -Reason 'UnreadableDocument' -Path $file.FullName }
@@ -307,6 +361,8 @@ function Read-SpecSetIndex {
             $site = Get-ProvisionalSiteFromRegion -Region $region
             if ($site) { $provisionalSites.Add($site) }
             if ($region.Id -eq 'provisional-register') { $registerRegions.Add($region) }
+            $lifecycle = Get-ConceptLifecycleFromRegion -Region $region
+            if ($lifecycle) { $lifecycles.Add($lifecycle) }
         }
         $lines = $text -replace "`r`n", "`n" -split "`n"; $inFence = $false; $fence = @(); $start = 0
         for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -346,5 +402,6 @@ function Read-SpecSetIndex {
             $declarations.Add($aliasField)
         }
     }
-    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @($references); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @($provisionalEntries); ProvisionalSites = @($provisionalSites); Lifecycles = @() }
+    $concepts = Get-SpecSetConcepts -Declarations $declarations
+    [pscustomobject]@{ State = 'Indexed'; Reason = $null; Detail = ''; Line = 0; Documents = @($documents); Declarations = @($declarations); References = @($references); MirrorObligations = @($mirrorObligations); ProvisionalEntries = @($provisionalEntries); ProvisionalSites = @($provisionalSites); Lifecycles = @($lifecycles); Concepts = @($concepts) }
 }
