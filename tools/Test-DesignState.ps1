@@ -947,9 +947,31 @@ function Invoke-Projector {
         return [pscustomobject]@{ Ran = $false; Detail = 'tools/Update-DesignProjection.ps1 does not exist'; Regions = @() }
     }
     try {
-        $raw = & pwsh -NoProfile -File $projectorPath -Path $RepoPath -DryRun 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            return [pscustomobject]@{ Ran = $false; Detail = "exited $LASTEXITCODE"; Regions = @() }
+        # Invoke via Process, not the `&` call operator: PowerShell decodes a captured
+        # child's stdout using [Console]::OutputEncoding, which on Windows defaults to the
+        # OEM code page (e.g. ibm437) rather than the UTF-8 the projector writes. Left
+        # unset, every non-ASCII byte the projector renders (an em dash, a section sign)
+        # comes back mis-decoded, and every region comparison below reports a false
+        # ProjectionStale (the same class of bug tools/Sync-Kit.ps1's Invoke-GitRaw exists
+        # to avoid for git).
+        $psi = [System.Diagnostics.ProcessStartInfo]::new()
+        $psi.FileName = 'pwsh'
+        $psi.ArgumentList.Add('-NoProfile')
+        $psi.ArgumentList.Add('-File')
+        $psi.ArgumentList.Add($projectorPath)
+        $psi.ArgumentList.Add('-Path')
+        $psi.ArgumentList.Add($RepoPath)
+        $psi.ArgumentList.Add('-DryRun')
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.UseShellExecute = $false
+        $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false)
+        $proc = [System.Diagnostics.Process]::Start($psi)
+        $raw = $proc.StandardOutput.ReadToEnd()
+        $proc.StandardError.ReadToEnd() | Out-Null
+        $proc.WaitForExit()
+        if ($proc.ExitCode -ne 0) {
+            return [pscustomobject]@{ Ran = $false; Detail = "exited $($proc.ExitCode)"; Regions = @() }
         }
     } catch {
         return [pscustomobject]@{ Ran = $false; Detail = $_.Exception.Message; Regions = @() }
