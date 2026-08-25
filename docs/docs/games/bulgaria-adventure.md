@@ -31,7 +31,7 @@ connected arcs (each with its own state and gated choices, independent of the ot
 |---|---|---|
 | **Bureaucracy** | Municipality, Government Office, Room 14/6 | Loops, requirement-gated retries, a rising counter |
 | **Inheritance** | Property Inheritance, Village Life, Family Meeting | Branching on prior choices, relationship variables, an ending |
-| **Enterprise** | Starting a Business, Entrepreneur, Ultimate Reward | Accumulating debt/patience, the "It Builds Character" achievement |
+| **Enterprise** | Starting a Business, Entrepreneur | Accumulating debt/patience, multiple gated endings |
 | **Driving** | Driving, BMW Ownership | A short two-scene arc, a "trust the mechanic" flag |
 | **Return** | Expat Returns | Standalone opener; narratively first, with no mechanism to affect the other arcs |
 
