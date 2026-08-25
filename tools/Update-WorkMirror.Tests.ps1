@@ -280,4 +280,40 @@ Describe 'Update-WorkMirror' {
             $text | Should -Not -Match 'git\s+push'
         }
     }
+
+    Context 'Invoke-Gh decodes the child process output as UTF-8 regardless of the console default (#48)' {
+        <#
+          gh itself needs auth this environment cannot guarantee, so this points Invoke-Gh's
+          -Command at git instead - a process this repository can always run, and one whose
+          "show a blob containing an em dash" output exercises the exact same
+          ProcessStartInfo/StandardOutputEncoding path Invoke-Gh uses for gh. The `&` call
+          operator Invoke-Gh replaced decoded a captured child's stdout using
+          [Console]::OutputEncoding, which on Windows defaults to the OEM code page rather
+          than the UTF-8 the child actually writes - this is the regression test for that:
+          it fails under the pre-fix `&`-based implementation and passes under Invoke-Gh.
+        #>
+        BeforeAll {
+            $script:EncodingRepo = Join-Path $TestDrive 'encoding-repo'
+            New-Item -ItemType Directory -Path $script:EncodingRepo -Force | Out-Null
+            & git -C $script:EncodingRepo init --quiet 2>$null
+            & git -C $script:EncodingRepo config user.email 'test@example.com' 2>$null
+            & git -C $script:EncodingRepo config user.name 'Test' 2>$null
+            Set-Content -LiteralPath (Join-Path $script:EncodingRepo 'file.md') -Value "line one em dash `u{2014} end" -NoNewline -Encoding utf8NoBOM
+            & git -C $script:EncodingRepo add file.md 2>$null
+            & git -C $script:EncodingRepo commit -m 'em dash' --quiet 2>$null
+        }
+
+        It 'decodes a non-ASCII child process output correctly even when Console.OutputEncoding is a non-UTF8 code page' {
+            $original = [Console]::OutputEncoding
+            try {
+                [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(437)
+                $result = Invoke-Gh -Command 'git' -Arguments @('-C', $script:EncodingRepo, 'show', 'HEAD:file.md')
+            } finally {
+                [Console]::OutputEncoding = $original
+            }
+
+            $result.ExitCode | Should -Be 0
+            $result.StdOut | Should -Be "line one em dash `u{2014} end"
+        }
+    }
 }
