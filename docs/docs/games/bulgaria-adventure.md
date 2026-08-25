@@ -33,7 +33,7 @@ connected arcs (each with its own state and gated choices, independent of the ot
 | **Inheritance** | Property Inheritance, Village Life, Family Meeting | Branching on prior choices, relationship variables, an ending |
 | **Enterprise** | Starting a Business, Entrepreneur | Accumulating debt/patience, multiple gated endings |
 | **Driving** | Driving, BMW Ownership | A short two-scene arc, a "trust the mechanic" flag |
-| **Return** | Expat Returns | Standalone opener; seeds variables the other arcs read |
+| **Return** | Expat Returns | Standalone opener; narratively first, with no mechanism to affect the other arcs |
 
 The MVP builds **only the Bureaucracy arc** (see `engine/MVP.md` § 3 @ `bc74a62a2a0a57c5fd82f337712868b6877bbc6a`); the rest
 follow once the loop is proven.
