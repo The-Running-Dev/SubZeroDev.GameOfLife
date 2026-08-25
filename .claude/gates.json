@@ -1,14 +1,14 @@
 {
   "manifestHash": "837dfb78e5457ebb6b232f7ccf1d6f4a67cd4687fb8d2e1bd11a5e2594a3928e",
-  "generated": "2026-08-21",
+  "generated": "2026-08-25",
   "gates": [
     {
-      "command": "Parse every *.ps1 with System.Management.Automation.Language.Parser.ParseFile",
-      "name": "Parse-check PowerShell scripts"
+      "name": "Parse-check PowerShell scripts",
+      "command": "ParseFile"
     },
     {
       "name": "Run Pester tests",
-      "command": "Invoke-Pester -Path tools -Output Detailed -PassThru"
+      "command": "Invoke-Pester -Path tools"
     },
     {
       "name": "Validate the core/companion split",
