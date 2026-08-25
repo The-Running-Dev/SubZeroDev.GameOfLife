@@ -47,6 +47,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Without this, a non-console stdout (redirected to a file, or captured by a parent process -
+# exactly how -DryRun is consumed) falls back to the OS's OEM code page, which lacks characters
+# like an em dash or a section sign - .NET then best-fit-substitutes each one (an em dash
+# becomes a plain hyphen) before the bytes ever leave this process, so no amount of fixing the
+# caller's own decoding can recover them.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 $script:ReaderPath = Join-Path $PSScriptRoot 'Read-DesignState.ps1'
 if (-not (Test-Path -LiteralPath $script:ReaderPath)) {
     throw "tools/Read-DesignState.ps1 not found beside tools/Update-DesignProjection.ps1 at $script:ReaderPath"
