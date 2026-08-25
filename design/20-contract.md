@@ -181,24 +181,28 @@ amending this contract, not optimising within it.
 The corpus itself is the only persisted state, and the checker's schema over it is the marker
 vocabulary above plus one table shape.
 
-**Adding markers is additive.** The corpus today carries none, so there is nothing to migrate, and
-a document with no regions is valid input yielding zero obligations rather than an error.
+**Adding markers is additive**, which is why the corpus could acquire the ones it now carries
+without a migration step: a document with no regions is valid input yielding zero obligations
+rather than an error, and that is still true of every document that has none.
 
 ### The provisional register's table shape
 
-`04` §22.2 today has three columns — `Area`, `Call made`, `Why it may need revisiting` — and the
-last folds the reason and the settling condition into one free-text cell. **SS13 requires them
-split**, into `Area`, `Call made`, `Reason`, `Settles when`. This is not cosmetic: with one column
-the check has to decide whether a sentence contains a settling condition, which is judgement over
-prose and exactly what `10-design.md` establishes cannot be computed. With two, the check is "the
-cell is non-empty" — set arithmetic, which is the only kind of check this system is allowed to make.
+**SS13 requires four columns** — `Area`, `Call made`, `Reason`, `Settles when`. `04` §22.2 once
+had three, the last folding the reason and the settling condition into one free-text cell. The
+split is not cosmetic, and the reason it is binding outlives the migration that performed it: with
+one column the check has to decide whether a sentence contains a settling condition, which is
+judgement over prose and exactly what `10-design.md` establishes cannot be computed. With two, the
+check is "the cell is non-empty" — set arithmetic, which is the only kind of check this system is
+allowed to make. A future row that folds them back is a finding, not a formatting choice.
 
-**Migration: the six existing rows gain a column, and one of them fails on the first run.** The
-`§8.7 Housing quality` row's reason is "Pure balance; expect it to change", which has no settling
-condition to move into the new cell. That row is a day-one `provisional` finding and is meant to be
-— it is the brief's third condition catching the first thing it was written to catch. Whoever lands
-this either writes a real condition or records why the number is deferred indefinitely. **Do not
-migrate it by inventing one.**
+**The migration is done, and the row it was expected to fail on was settled rather than
+invented.** The six rows gained the column, and the `§8.7 Housing quality` row — whose reason was
+"Pure balance; expect it to change" — had no settling condition to move into the new cell and was
+a `provisional` finding on the first run, which is the brief's third condition catching the first
+thing it was written to catch. It was closed by asking rather than by inventing a condition, per
+`90-decisions.md` (2026-08-22, housing quality settling condition). **The rule that produced that
+outcome still binds every later row: a row missing a condition is written or deferred on the
+record, never migrated by inventing one.**
 
 `.claude/gates.json` and `.claude/verify-report.json` are written by `/verify` and
 `tools/Test-GatesCache.ps1`, not by anything in this contract. The checker returns a result object
