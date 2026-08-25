@@ -57,6 +57,32 @@ function New-WorkMirrorFailure {
     [pscustomobject]@{ Reason = $Reason; Detail = $Detail }
 }
 
+<#
+    Every gh call in this script goes through here instead of the `&` call operator. The `&`
+    operator decodes a captured child's stdout using [Console]::OutputEncoding, which on Windows
+    defaults to the OEM code page rather than the UTF-8 gh actually writes - every non-ASCII
+    byte in an issue title (an em dash, a section sign) comes back mis-decoded before this
+    script ever sees it. tools/Test-DesignState.ps1's Invoke-Projector hit the same class of bug
+    for a different child process (#46) and fixed it the same way: bypass `&` and read the
+    child's stdout via Process with an explicit UTF-8 StandardOutputEncoding.
+#>
+function Invoke-Gh {
+    param([Parameter(Mandatory)][string[]] $Arguments, [string] $Command = 'gh')
+
+    $psi = [System.Diagnostics.ProcessStartInfo]::new()
+    $psi.FileName = $Command
+    foreach ($arg in $Arguments) { $psi.ArgumentList.Add($arg) }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.UseShellExecute = $false
+    $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $proc = [System.Diagnostics.Process]::Start($psi)
+    $stdout = $proc.StandardOutput.ReadToEnd()
+    $proc.StandardError.ReadToEnd() | Out-Null
+    $proc.WaitForExit()
+    [pscustomobject]@{ ExitCode = $proc.ExitCode; StdOut = $stdout }
+}
+
 function New-WorkMirrorResult {
     param(
         [Parameter(Mandatory)][string]   $State,
@@ -97,20 +123,20 @@ function Get-OpenIssueList {
     if ($Repository) { $ghArgs += @('-R', $Repository) }
 
     try {
-        $json = & gh @ghArgs 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            return [pscustomobject]@{ Issues = @(); Failure = (New-WorkMirrorFailure -Reason 'GhUnavailable' -Detail "gh exited $LASTEXITCODE") }
+        $result = Invoke-Gh -Arguments $ghArgs
+        if ($result.ExitCode -ne 0) {
+            return [pscustomobject]@{ Issues = @(); Failure = (New-WorkMirrorFailure -Reason 'GhUnavailable' -Detail "gh exited $($result.ExitCode)") }
         }
     } catch {
         return [pscustomobject]@{ Issues = @(); Failure = (New-WorkMirrorFailure -Reason 'GhUnavailable' -Detail $_.Exception.Message) }
     }
 
-    if ([string]::IsNullOrWhiteSpace(($json -join ''))) {
+    if ([string]::IsNullOrWhiteSpace($result.StdOut)) {
         return [pscustomobject]@{ Issues = @(); Failure = $null }
     }
 
     try {
-        $parsed = ($json -join "`n") | ConvertFrom-Json
+        $parsed = $result.StdOut | ConvertFrom-Json
     } catch {
         return [pscustomobject]@{ Issues = @(); Failure = (New-WorkMirrorFailure -Reason 'TrackerUnreadable' -Detail $_.Exception.Message) }
     }
@@ -129,9 +155,9 @@ function Get-ProjectItemPositions {
     param([Parameter(Mandatory)][string] $Owner, [Parameter(Mandatory)][string] $RepoName)
 
     try {
-        $projJson = & gh project list --owner $Owner --format json 2>$null
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($projJson -join ''))) { return $null }
-        $projects = ($projJson -join "`n") | ConvertFrom-Json
+        $projResult = Invoke-Gh -Arguments @('project', 'list', '--owner', $Owner, '--format', 'json')
+        if ($projResult.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($projResult.StdOut)) { return $null }
+        $projects = $projResult.StdOut | ConvertFrom-Json
     } catch {
         return $null
     }
@@ -140,9 +166,9 @@ function Get-ProjectItemPositions {
     if (-not $project) { return $null }
 
     try {
-        $itemsJson = & gh project item-list $project.number --owner $Owner --format json 2>$null
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($itemsJson -join ''))) { return $null }
-        $items = ($itemsJson -join "`n") | ConvertFrom-Json
+        $itemsResult = Invoke-Gh -Arguments @('project', 'item-list', "$($project.number)", '--owner', $Owner, '--format', 'json')
+        if ($itemsResult.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($itemsResult.StdOut)) { return $null }
+        $items = $itemsResult.StdOut | ConvertFrom-Json
     } catch {
         return $null
     }
@@ -172,13 +198,13 @@ function Get-IssuesByNumber {
         if ($Repository) { $ghArgs += @('-R', $Repository) }
 
         try {
-            $json = & gh @ghArgs 2>$null
-            if ($LASTEXITCODE -ne 0) { continue }
+            $result = Invoke-Gh -Arguments $ghArgs
+            if ($result.ExitCode -ne 0) { continue }
         } catch { continue }
-        if ([string]::IsNullOrWhiteSpace(($json -join ''))) { continue }
+        if ([string]::IsNullOrWhiteSpace($result.StdOut)) { continue }
 
         try {
-            $results.Add((($json -join "`n") | ConvertFrom-Json))
+            $results.Add(($result.StdOut | ConvertFrom-Json))
         } catch { continue }
     }
     @($results)
@@ -193,9 +219,9 @@ function Get-CurrentRepoOwnerName {
     }
 
     try {
-        $json = & gh repo view --json owner,name 2>$null
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace(($json -join ''))) { return $null }
-        $parsed = ($json -join "`n") | ConvertFrom-Json
+        $result = Invoke-Gh -Arguments @('repo', 'view', '--json', 'owner,name')
+        if ($result.ExitCode -ne 0 -or [string]::IsNullOrWhiteSpace($result.StdOut)) { return $null }
+        $parsed = $result.StdOut | ConvertFrom-Json
     } catch {
         return $null
     }

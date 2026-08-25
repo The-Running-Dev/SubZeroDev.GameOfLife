@@ -157,6 +157,6 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 19 | #19 | Restore missing design-state closure records | — | `3e6c2c2d768540ca2da5f7160dedcb05366535cb` |
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `3e6c2c2d768540ca2da5f7160dedcb05366535cb` |
+| 19 | #19 | Restore missing design-state closure records | — | `19c07e04b2d610ed6539e40a3dd0c94ead429215` |
+| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `19c07e04b2d610ed6539e40a3dd0c94ead429215` |
 <!-- outstanding:end -->
