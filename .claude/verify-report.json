@@ -3,12 +3,12 @@
     {
       "name": "Parse-check PowerShell scripts",
       "status": "Passed",
-      "detail": "Parsed every *.ps1 under the repository with [System.Management.Automation.Language.Parser]::ParseFile. PARSE_OK — no syntax errors."
+      "detail": "Parsed every *.ps1 under the repository with [System.Management.Automation.Language.Parser]::ParseFile. 33 files checked, all parsed cleanly, no syntax errors."
     },
     {
       "name": "Run Pester tests",
       "status": "Passed",
-      "detail": "Invoke-Pester -Path tools -Output Detailed: Tests Passed: 332, Failed: 0, Skipped: 0, NotRun: 0. Tests completed in 93.5s."
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 333, Failed: 0, Skipped: 0, NotRun: 0. Tests completed in 151.63s. Includes the new Update-WorkMirror.Tests.ps1 regression test for Invoke-Gh's UTF-8 decoding (#48), verified to fail under the pre-fix `&`-based implementation and pass under the fix."
     },
     {
       "name": "Validate the core/companion split",
@@ -18,17 +18,17 @@
     {
       "name": "Check the design state against the tree",
       "status": "Passed",
-      "detail": "State: Valid. Findings (blocking): 0. Reported (non-blocking): 12, all class MirrorStale on work/8 through work/44, each because MirroredAt still names the parent commit 3e6c2c2d... rather than this branch's own commit bba8553 — expected on an unmerged feature branch, not a design freeze or a downgrade (DowngradedCount: 0). CouldNotEvaluate: 0. Largest closure: unit/script/test-specset, 7258 bytes (ceiling 16384). Exit code: 0."
+      "detail": "State: Valid. Findings (blocking): 0. Reported (non-blocking): 12, all class MirrorStale on work/8 through work/44, each because MirroredAt still names the branch's parent commit 19c07e04 rather than this branch's own commit 9cc1d656 — expected on an unmerged feature branch, not a design freeze or a downgrade (DowngradedCount: 0). CouldNotEvaluate: 0. Largest closure: unit/script/test-specset, 7258 bytes (ceiling 16384). Exit code: 0."
     },
     {
       "name": "Check the spec set",
       "status": "Passed",
-      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 0 findings; 0 unchecked; 8 references unresolvable (cross-repository, engine/*.md in SubZeroDev.GameEngine — the established permanent steady state, not checked from this repository). Commit: bba85534e3714f3402ae742dc583e71f8b2effb9. WorkingTree: Clean. Exit code: 0."
+      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 0 findings; 0 unchecked; 8 references unresolvable (cross-repository, engine/*.md in SubZeroDev.GameEngine — the established permanent steady state, not checked from this repository). Commit: 9cc1d656edec088eb5dc3ca5ab75a51edb6eae18. WorkingTree: Clean. Exit code: 0."
     },
     {
       "name": "docs.ps1 -BuildOnly (Docusaurus image build)",
       "status": "DidNotRun",
-      "reason": "Not CI-gated (no `# verification: true` flag on any docs.ps1-related step in .github/workflows/*.yml) and needs Docker Desktop, which was not available to check in this session — skipped rather than reported as passed."
+      "reason": "Not CI-gated (no `# verification: true` flag on any docs.ps1-related step in .github/workflows/*.yml). Docker Desktop was available this session, but this change touches no docs/ files, so the build was not run rather than spending an unrelated Docker build cycle on it."
     },
     {
       "name": "git diff --check",
