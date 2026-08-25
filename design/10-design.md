@@ -5,7 +5,7 @@ machinery that holds its invariants** — not the game, and not the engine. The 
 `docs/docs/games/03-game-design.md`; the engine's is `04-engine-specification.md`. This document
 is about keeping those two, and their four companions, true.
 
-The brief's four completion conditions are invariants over a 177 KB corpus, and the brief states
+The brief's four completion conditions are invariants over the whole corpus, and the brief states
 why they survive unmet: each is "only discoverable by reading the whole set at once". That is the
 whole design problem. A rule whose only enforcement is an expensive full read is enforced at
 whatever rate full reads actually happen, which the repository's own history shows is lower than
@@ -27,9 +27,9 @@ drift from the corpus by construction.
 | Record | Identity | Extracted from | Notes |
 |---|---|---|---|
 | **Document** | Repo-relative path | The corpus directory | Ordering position comes from the numeric filename prefix; see *Failure modes* on renumbering |
-| **Declaration** | Qualified name (`AttributeState.wisdom`) | TypeScript fences in `04` | 172 today. Fields, type aliases, and union members each get their own identity |
+| **Declaration** | Qualified name (`AttributeState.wisdom`) | TypeScript fences in `04` | Fields, type aliases, and union members each get their own identity. The population, and how much of it is closed, is whatever `Test-SpecSet.ps1` reports |
 | **Closure** | — | The declaration's own form | A derived boolean, defined below. The single most important derived value in the model |
-| **Reference** | Source document + target | `§N.N` spans and inter-document links | 107 section references and 36 document links today |
+| **Reference** | Source document + target | `§N.N` spans and inter-document links | Section references, document links, and cross-repository references are counted separately; the checker reports each |
 | **Finding** | Check id + subject | A check run | In-memory for the life of one run |
 
 **Closure is what makes the mirror invariant tractable.** A declaration is *closed* when its
