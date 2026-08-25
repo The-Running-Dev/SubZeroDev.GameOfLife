@@ -5,7 +5,7 @@ machinery that holds its invariants** — not the game, and not the engine. The 
 `docs/docs/games/03-game-design.md`; the engine's is `04-engine-specification.md`. This document
 is about keeping those two, and their four companions, true.
 
-The brief's four completion conditions are invariants over a 177 KB corpus, and the brief states
+The brief's four completion conditions are invariants over the whole corpus, and the brief states
 why they survive unmet: each is "only discoverable by reading the whole set at once". That is the
 whole design problem. A rule whose only enforcement is an expensive full read is enforced at
 whatever rate full reads actually happen, which the repository's own history shows is lower than
@@ -27,9 +27,9 @@ drift from the corpus by construction.
 | Record | Identity | Extracted from | Notes |
 |---|---|---|---|
 | **Document** | Repo-relative path | The corpus directory | Ordering position comes from the numeric filename prefix; see *Failure modes* on renumbering |
-| **Declaration** | Qualified name (`AttributeState.wisdom`) | TypeScript fences in `04` | 172 today. Fields, type aliases, and union members each get their own identity |
+| **Declaration** | Qualified name (`AttributeState.wisdom`) | TypeScript fences in `04` | Fields, type aliases, and union members each get their own identity. The population, and how much of it is closed, is whatever `Test-SpecSet.ps1` reports |
 | **Closure** | — | The declaration's own form | A derived boolean, defined below. The single most important derived value in the model |
-| **Reference** | Source document + target | `§N.N` spans and inter-document links | 107 section references and 36 document links today |
+| **Reference** | Source document + target | `§N.N` spans and inter-document links | Section references, document links, and cross-repository references are counted separately; the checker reports each |
 | **Finding** | Check id + subject | A check run | In-memory for the life of one run |
 
 **Closure is what makes the mirror invariant tractable.** A declaration is *closed* when its
@@ -381,18 +381,27 @@ because a hook that blocks a commit on a cross-document invariant blocks work-in
 that are legitimately mid-edit. A corpus-wide invariant is not a property every commit should have.
 The predictable outcome is a habit of bypassing the hook, which is worse than not having one.
 
-**Rejected — CI:** the repository has no CI at all today, so this would introduce a workflow, a
-runner, and a green/red signal as a side effect of a checker decision. Whether this repository has
-CI is a policy question that outranks this design, and it is raised in *Open questions* rather than
-settled by implication.
+**Rejected — CI:** at the time this was written the repository had no CI at all, so CI would have
+introduced a workflow, a runner, and a green/red signal as a side effect of a checker decision.
+Whether this repository has CI is a policy question that outranks this design, so it was raised in
+*Settled questions* 2 rather than settled by implication.
+
+**Answered, and the premise above was wrong.** `90-decisions.md` (2026-08-20, *The checker is a CI
+gate, and a finding fails the build*) found that `/verify` discovers a gate only from a
+`# verification: true` comment in `.github/workflows/*.yml`, so with no workflow the checker was
+never a discovered gate — the *Chosen* line was aspirational rather than true.
+`.github/workflows/verify.yml` now carries it, and exit 1 and exit 2 both fail the step. The
+pre-commit hook stays rejected, unchanged.
 
 **Reversibility: cheap** in both directions; the check is a command, and what invokes it is a
 separate choice.
 
-## Open questions
+## Settled questions
 
-These need information the brief does not contain. Each is a real fork, not a request for
-confirmation.
+These needed information the brief does not contain, and each was a real fork rather than a
+request for confirmation. **All six have been decided.** The question is kept because the fork it
+names is what a later reader needs in order to understand why the answer is what it is; the answer
+follows each one, and the entry named there carries the rejected alternatives.
 
 **1. What counts as a "concept" for the fourth condition?** The brief requires every concept to
 have a stated lifecycle. The narrow reading is state-bearing entities — the things `04` holds in
@@ -404,14 +413,28 @@ corpus and is not enumerable mechanically at all. This changes both the scope of
 whether the condition is checkable. *Recommendation: the narrow reading, with the broad set handled
 on the full-audit path.*
 
-**2. Should this repository have CI?** It has none. Alternative 5 declined to create one as a
+**Answered — the narrow reading.** `90-decisions.md` (2026-08-20, *A concept is a state-bearing
+entity*). Stateless mechanisms are outside the derived concept set and go to the full-audit path;
+`20-contract.md` § *Authored records* carries the binding wording.
+
+**2. Should this repository have CI?** It had none, and Alternative 5 declined to create one as a
 side effect. If the answer is yes, the checker is its first job and the question is whether a
 finding fails the build or merely reports.
+
+**Answered — yes, and a finding fails the build.** `90-decisions.md` (2026-08-20, *The checker is a
+CI gate, and a finding fails the build*). `.github/workflows/verify.yml` carries the checker and
+the Pester suite; exit 1 and exit 2 both fail the step.
 
 **3. Is SubZeroDev.GameEngine checked out beside this repository, and may the checker read it?**
 It changes cross-repository references from permanently unchecked to resolvable, which is the
 difference between a whole class of reference being verified and being taken on trust. It also
 makes the checker's behaviour depend on a second working copy, which is a cost.
+
+**Answered — no, and permanently.** `90-decisions.md` (2026-08-20, *No `-EnginePath`*). There is no
+parameter and adding one is a contract amendment (SS9). Cross-repository references are reported
+*unresolvable* — never passed, never broken — and `SpecReference.PinnedSha` is the guarantee
+carried instead. The later SS5 split (2026-08-23) made that category stop failing the build without
+reopening the parameter.
 
 **4. The provisional register disagrees with itself, and I cannot tell which side is right.**
 `04` §22.2 lists six deferred items. `AGENTS.md` names four; `agent.md` names five, adding travel
@@ -421,6 +444,12 @@ Additionally, §22.2's rows carry a reason but not always a settling condition �
 expect it to change" is a reason with no condition, where "Tune once job availability exists" is
 both. Which rows are authoritative, and does every row need a condition or only a reason? *This is
 a decision, and it is the one that most blocks the third condition from being checkable at all.*
+
+**Answered — §22.2 is authoritative and every row carries both.** `90-decisions.md` (2026-08-20,
+*`04` §22.2 is the sole provisional register*): the lists in `AGENTS.md` and `agent.md` became
+pointers, the free-text column split into `Reason` and `Settles when`, and SS13/SS14 hold it. The
+one row that had a reason and no condition was settled by asking rather than by inventing one —
+`90-decisions.md` (2026-08-22, *housing quality settling condition*).
 
 **5. Is tooling in scope for this repository?** The brief's non-goals exclude engine source,
 hosting, and base-image changes — not tooling — and the repository already carries a substantial
@@ -432,8 +461,19 @@ should leave the model entirely. **If that reading is wrong, most of this design
 and the answer is a documented full-read discipline instead — in which case say so, because the
 data model and the module boundaries both fall with it.
 
+**Answered — the reading was right; tooling is in scope.** `90-decisions.md` (2026-08-20, *Tooling
+is in scope; the checker is PowerShell in `tools/`*). Nothing here falls.
+
 **6. What is the enforcement standing of the reduction in Alternative 4?** Deleting restatements
 from `03` improves the corpus and shrinks the checkable surface, but it is an edit to a design
 document with its own voice and audience, and it is expensive to reverse. Whether that reduction is
 a licence to apply per-site during implementation, or a separate reviewed pass, is a scope decision
 I should not take by default.
+
+**Answered — per-site, and never by growing `03` to make a site obligable.** `90-decisions.md`
+(2026-08-20, *Reduce the mirrored surface*) chose the reduction; the standing was settled by
+`90-decisions.md` (2026-08-23, *A mirror obligation is all-or-nothing*) and is stated in
+`20-contract.md` § *Authored records*: a site that describes only part of a declaration is reduced
+per the 2026-08-20 decision **or** left to the full-audit path. Editing `03` to restate more of
+`04` is that decision's rejected direction, so the reduction is applied per-site and the
+alternative is the full read, not a bigger mirror.

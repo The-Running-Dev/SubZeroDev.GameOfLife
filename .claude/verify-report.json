@@ -3,27 +3,37 @@
     {
       "name": "Parse-check PowerShell scripts",
       "status": "Passed",
-      "detail": "All *.ps1 files parsed cleanly with System.Management.Automation.Language.Parser.ParseFile — zero parse errors."
+      "detail": "Parsed every *.ps1 with [System.Management.Automation.Language.Parser]::ParseFile — 33 files checked, all parsed cleanly, no syntax errors."
     },
     {
       "name": "Run Pester tests",
       "status": "Passed",
-      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 332, Failed: 0, Skipped: 0, NotRun: 0. Tests completed in 79.18s."
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 332, Failed: 0, Skipped: 0, Inconclusive: 0, NotRun: 0. Tests completed in 110.26s."
     },
     {
       "name": "Validate the core/companion split",
       "status": "Passed",
-      "detail": "Companion split OK - 22 core(s) checked, 0 companion file(s) present, 22 core(s) with no companion. State: Valid. Findings: none. Exit 0."
+      "detail": "Companion split OK - 22 core(s) checked, 0 companion file(s) present, 22 core(s) with no companion. State: Valid. Findings: none. Exit code: 0."
     },
     {
       "name": "Check the design state against the tree",
       "status": "Passed",
-      "detail": "State: Valid, Findings: none. 4 non-blocking Reported findings (MirrorStale on work/10-13, WorkStateDivergence on work/8,9,12,13,14, ProjectionStale on design/state-index.md and design/20-contract.md#invariants) downgraded from blocking by the active design freeze (design/FROZEN.md). Largest closure 7258 bytes against a 16384 ceiling. Exit code 0."
+      "detail": "State: Valid. Findings: 0. Reported: 16, all class MirrorStale/WorkStateDivergence on already-merged work items (work/8 through work/36) — no design freeze is active, so these are the genuine steady-state non-blocking classes, not downgraded findings; DowngradedCount: 0. CouldNotEvaluate: 0. Largest closure: unit/script/test-specset, 7258 bytes (ceiling 16384). Exit code: 0."
     },
     {
       "name": "Check the spec set",
       "status": "Passed",
-      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 0 findings; 0 unchecked. 8 references unresolvable (cross-repository, engine/*.md in SubZeroDev.GameEngine, not checked from this repository). Exit 0."
+      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 0 findings; 0 unchecked; 8 references unresolvable (cross-repository, engine/*.md in SubZeroDev.GameEngine, not checked from this repository — the permanent steady state per 90-decisions.md 2026-08-20, No -EnginePath). Commit: 51d8f54c8e16d99c21e1ee14a5bca9d7a4ff4c52. WorkingTree: Clean. Exit code: 0."
+    },
+    {
+      "name": "docs.ps1 -BuildOnly (Docusaurus image build)",
+      "status": "DidNotRun",
+      "reason": "Docker Desktop is not running locally (`docker info` failed) — this repository's docs build needs Docker and is not CI-gated (no `# verification: true` flag on any docs.ps1-related step in .github/workflows/*.yml), so it was skipped rather than reported as passed."
+    },
+    {
+      "name": "git diff --check",
+      "status": "Passed",
+      "detail": "git diff --check exited 0 — no trailing whitespace or conflict markers on this branch's changes."
     }
   ]
 }

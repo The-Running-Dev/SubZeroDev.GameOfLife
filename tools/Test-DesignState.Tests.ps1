@@ -1540,11 +1540,15 @@ Describe 'Test-DesignState against this repository''s own tree' {
             [IO.File]::WriteAllText($supersededPath, $stripped, [Text.UTF8Encoding]::new($false))
 
             $strippedResult = Invoke-DesignStateCheck -RepoPath $script:RepoRoot -Repository 'The-Running-Dev/SubZeroDev.GameOfLife'
-            # design/FROZEN.md exists on this tree, so per design/20-contract.md "The freeze",
-            # EnforcementUnevidenced is downgraded to reported rather than blocking - exit 0,
-            # not 1 (I21).
-            $strippedResult.ExitCode | Should -Be 0
-            $hit = @($strippedResult.Reported | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq $supersededId })
+            # I21 makes this conditional, so the expectation is derived rather than written. While
+            # design/FROZEN.md exists, EnforcementUnevidenced is downgraded to reported and the run
+            # exits 0 (design/20-contract.md, "The freeze"); without it the class blocks and the
+            # finding lands in Findings. Writing either constant pins one branch and fails on the
+            # next freeze toggle, which is what this test did twice.
+            $frozen = Test-Path -LiteralPath (Join-Path $script:RepoRoot 'design/FROZEN.md')
+            $strippedResult.ExitCode | Should -Be $(if ($frozen) { 0 } else { 1 })
+            $bucket = if ($frozen) { $strippedResult.Reported } else { $strippedResult.Findings }
+            $hit = @($bucket | Where-Object { $_.Class -eq 'EnforcementUnevidenced' -and $_.Subject -eq $supersededId })
             $hit.Count | Should -Be 1
             $hit[0].Detail | Should -Match 'SupersededBy'
         } finally {
