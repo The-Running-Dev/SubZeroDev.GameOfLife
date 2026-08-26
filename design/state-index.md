@@ -9,9 +9,9 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | Id | Kind | Anchor |
 |---|---|---|
 | `unit/command/brief-check` | command | `.claude/commands/brief-check.md` |
+| `unit/command/clean` | command | `.claude/commands/clean.md` |
 | `unit/command/contract` | command | `.claude/commands/contract.md` |
 | `unit/command/design` | command | `.claude/commands/design.md` |
-| `unit/command/done` | command | `.claude/commands/done.md` |
 | `unit/command/fix` | command | `.claude/commands/fix.md` |
 | `unit/command/freeze` | command | `.claude/commands/freeze.md` |
 | `unit/command/install` | command | `.claude/commands/install.md` |
@@ -32,6 +32,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | `unit/command/verify` | command | `.claude/commands/verify.md` |
 | `unit/document/agent-md` | document | `agent.md` |
 | `unit/document/agents-md` | document | `AGENTS.md` |
+| `unit/document/codex-profiles-md` | document | `codex/PROFILES.md` |
 | `unit/document/companions-md` | document | `.claude/COMPANIONS.md` |
 | `unit/document/design-00-brief` | document | `design/00-brief.md` |
 | `unit/document/design-10-design` | document | `design/10-design.md` |
@@ -122,7 +123,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-20-a-concept-is-a-state-bearing-entity | `unit/script/test-specset` |
 | decision/2026-08-20-agents-md-claude-md-direction-on-kit-install | `unit/document/agents-md` |
 | decision/2026-08-20-closure-distinguishes-a-mirror-obligation-from-content | `unit/script/read-specset` |
-| decision/2026-08-20-house-conventions-path-on-kit-install | `unit/document/agents-md` |
+| decision/2026-08-20-house-conventions-path-on-kit-install | — |
 | decision/2026-08-20-marker-vocabulary-four-declared-id-forms-visible-bodies-one-corpus-wide-namespace | — |
 | decision/2026-08-20-measure-session-ps1-hooks-on-kit-install | `unit/script/measure-session` |
 | decision/2026-08-20-mirror-obligations-declared-not-inferred-from-prose | `unit/script/test-specset` |
@@ -142,6 +143,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-23-an-unresolvable-subject-is-not-an-unchecked-run-ss5-splits-the-list | `unit/script/test-specset` |
 | decision/2026-08-23-kit-sync-reconciliation-agents-md-content-forks-and-three-tools-test-files-left-divergent | `unit/document/agents-md` |
 | decision/2026-08-25-s18-6-derives-its-freeze-dependent-expectation-instead-of-pinning-it | `unit/script/test-designstate` |
+| decision/2026-08-26-kit-sync-reconciliation-agents-md-tier-routing-merge-house-conventions-correction-codex-profiles-md-install-done-clean-rename | `unit/document/agents-md` |
 <!-- decision-affects:end -->
 
 ## Question affects
@@ -157,6 +159,6 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 19 | #19 | Restore missing design-state closure records | — | `19c07e04b2d610ed6539e40a3dd0c94ead429215` |
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `19c07e04b2d610ed6539e40a3dd0c94ead429215` |
+| 19 | #19 | Restore missing design-state closure records | — | `938967a8b8c06e06019cb14ac4e9487ca0e233d2` |
+| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `938967a8b8c06e06019cb14ac4e9487ca0e233d2` |
 <!-- outstanding:end -->
