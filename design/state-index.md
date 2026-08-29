@@ -161,7 +161,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 19 | #19 | Restore missing design-state closure records | — | `20124ea9b48ad0ee7ab99215a6f1d7cf118bb8a7` |
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `20124ea9b48ad0ee7ab99215a6f1d7cf118bb8a7` |
-| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `20124ea9b48ad0ee7ab99215a6f1d7cf118bb8a7` |
+| 19 | #19 | Restore missing design-state closure records | — | `8b54b10972ce339873606557f7ca2e1ffdb9c673` |
+| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `8b54b10972ce339873606557f7ca2e1ffdb9c673` |
+| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `8b54b10972ce339873606557f7ca2e1ffdb9c673` |
 <!-- outstanding:end -->
