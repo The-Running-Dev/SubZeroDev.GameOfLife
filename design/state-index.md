@@ -144,6 +144,8 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-23-kit-sync-reconciliation-agents-md-content-forks-and-three-tools-test-files-left-divergent | `unit/document/agents-md` |
 | decision/2026-08-25-s18-6-derives-its-freeze-dependent-expectation-instead-of-pinning-it | `unit/script/test-designstate` |
 | decision/2026-08-26-kit-sync-reconciliation-agents-md-tier-routing-merge-house-conventions-correction-codex-profiles-md-install-done-clean-rename | `unit/document/agents-md` |
+| decision/2026-08-29-six-ss-invariants-gain-the-tests-their-enforcement-column-already-claimed | `unit/script/test-specset` |
+| decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream | `unit/command/track` |
 <!-- decision-affects:end -->
 
 ## Question affects
@@ -159,6 +161,6 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 19 | #19 | Restore missing design-state closure records | — | `19c07e04b2d610ed6539e40a3dd0c94ead429215` |
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `19c07e04b2d610ed6539e40a3dd0c94ead429215` |
+| 19 | #19 | Restore missing design-state closure records | — | `a6d4811cc32b8d9c1e9cf5439d9f011c445fa29d` |
+| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `a6d4811cc32b8d9c1e9cf5439d9f011c445fa29d` |
 <!-- outstanding:end -->

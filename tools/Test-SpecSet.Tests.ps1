@@ -472,3 +472,185 @@ Describe 'S3.8: the report states the count checked and never claims consistency
         $line | Should -Not -Match 'consistent'
     }
 }
+
+Describe 'S1.7 / SS2: every regular expression in the system is in Read-SpecSet.ps1' {
+    It 'no match operator, -replace, -split, Select-String or [regex] occurs outside Read-SpecSet.ps1' {
+        # SS2 is the Index module boundary: extraction is the fragile part, and containing it in
+        # one file gives it one failure mode instead of four. Read-SpecSet.ps1 is the only file
+        # exempt, because it *is* the Index.
+        $operators = @('Match', 'NotMatch', 'IMatch', 'INotMatch', 'CMatch', 'CNotMatch',
+                       'Replace', 'IReplace', 'CReplace', 'Split', 'ISplit', 'CSplit')
+
+        $path = Join-Path $PSScriptRoot 'Test-SpecSet.ps1'
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$null, [ref]$null)
+
+        $binary = @($ast.FindAll({
+            param($n) $n -is [System.Management.Automation.Language.BinaryExpressionAst]
+        }, $true))
+        foreach ($node in $binary) {
+            $node.Operator.ToString() | Should -Not -BeIn $operators -Because 'SS2 puts every regular expression in Read-SpecSet.ps1'
+        }
+
+        $calls = @($ast.FindAll({
+            param($n) $n -is [System.Management.Automation.Language.CommandAst]
+        }, $true) | ForEach-Object { $_.GetCommandName() })
+        $calls | Should -Not -Contain 'Select-String'
+
+        $types = @($ast.FindAll({
+            param($n) $n -is [System.Management.Automation.Language.TypeExpressionAst] -or
+                      $n -is [System.Management.Automation.Language.TypeConstraintAst]
+        }, $true) | ForEach-Object { $_.TypeName.FullName })
+        $types | Should -Not -Contain 'regex'
+        $types | Should -Not -Contain 'System.Text.RegularExpressions.Regex'
+    }
+}
+
+Describe 'S1.8 / SS1 / SS9: neither script can be made to write, and no parameter reaches outside -CorpusPath' {
+    BeforeAll {
+        $script:SpecScripts = @('Read-SpecSet.ps1', 'Test-SpecSet.ps1') | ForEach-Object {
+            [pscustomobject]@{
+                Name = $_
+                Ast  = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot $_), [ref]$null, [ref]$null)
+            }
+        }
+    }
+
+    It 'declares no -Fix, -Write, -Apply or -EnginePath parameter, anywhere' {
+        # SS1: a checker that could fix what it finds is a generator, and a generative pass over
+        # the design documents is the loop AGENTS.md's design freeze exists to escape.
+        # SS9: -EnginePath would make the answer depend on whether a second working copy happens
+        # to be checked out beside this one, giving two authors different results on one commit.
+        $forbidden = @('Fix', 'Write', 'Apply', 'EnginePath')
+
+        foreach ($s in $script:SpecScripts) {
+            $params = @($s.Ast.FindAll({
+                param($n) $n -is [System.Management.Automation.Language.ParameterAst]
+            }, $true) | ForEach-Object { $_.Name.VariablePath.UserPath })
+
+            foreach ($name in $forbidden) {
+                $params | Should -Not -Contain $name -Because "$($s.Name) declaring -$name would put a write, or a second corpus, on the checker's surface"
+            }
+        }
+    }
+
+    It 'calls no write cmdlet at all, so no corpus path can reach one' {
+        # Stronger than the contract's wording and deliberately so: the scripts call no write
+        # cmdlet whatsoever, which is the only form of "no write cmdlet takes a corpus path"
+        # an AST can decide without resolving a path expression at parse time.
+        $writeCmdlets = @('Set-Content', 'Add-Content', 'Out-File', 'New-Item', 'Remove-Item',
+                          'Copy-Item', 'Move-Item', 'Rename-Item', 'Clear-Content',
+                          'Export-Csv', 'Export-Clixml', 'Tee-Object')
+
+        foreach ($s in $script:SpecScripts) {
+            $calls = @($s.Ast.FindAll({
+                param($n) $n -is [System.Management.Automation.Language.CommandAst]
+            }, $true) | ForEach-Object { $_.GetCommandName() })
+
+            foreach ($cmdletName in $writeCmdlets) {
+                $calls | Should -Not -Contain $cmdletName -Because "$($s.Name) is read-only by contract (SS1)"
+            }
+        }
+    }
+
+    It 'uses no redirection operator, which would write without naming a cmdlet' {
+        foreach ($s in $script:SpecScripts) {
+            # `2>$null` is a stream discard, not a file write, and both scripts use it to
+            # silence git. Anything redirected anywhere else is the write SS1 forbids.
+            $redirections = @($s.Ast.FindAll({
+                param($n) $n -is [System.Management.Automation.Language.FileRedirectionAst]
+            }, $true) | Where-Object { $_.Location.Extent.Text -ne '$null' })
+            $redirections.Count | Should -Be 0 -Because "$($s.Name) redirecting to a file is a write SS1 forbids"
+        }
+    }
+}
+
+Describe 'S1.6 / SS10: the report names the commit it ran against and whether the tree was clean' {
+    It 'carries a Commit and a WorkingTree on a real run' {
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+        $result.PSObject.Properties.Name | Should -Contain 'Commit'
+        $result.PSObject.Properties.Name | Should -Contain 'WorkingTree'
+        $result.Commit.Length | Should -Be 40
+        $result.WorkingTree | Should -BeIn @('Clean', 'Dirty')
+    }
+
+    It 'stamps the checker''s own repository, so the working directory cannot change the answer' {
+        # Get-SpecSetGitInfo resolves the repository from $PSScriptRoot, not from the caller's
+        # location and not from -CorpusPath. A run from elsewhere therefore stamps the same
+        # commit rather than losing it, and NotAGitRepository is reachable only when the
+        # checker itself is outside a repository - not when the caller is.
+        $outside = Join-Path ([System.IO.Path]::GetTempPath()) ([guid]::NewGuid().Guid)
+        $corpus = Join-Path $outside 'corpus'
+        New-Item -ItemType Directory -Path $corpus -Force | Out-Null
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n" -NoNewline
+        try {
+            $here = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
+            Push-Location $outside
+            $there = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
+            $there.Commit | Should -Be $here.Commit
+            $there.WorkingTree | Should -Be $here.WorkingTree
+        } finally {
+            Pop-Location
+            Remove-Item -LiteralPath $outside -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+Describe 'SS8: closure is derived from a declaration form and can be set by nothing else' {
+    It 'no parameter or environment variable names closure' {
+        # A hand-maintained closed/open flag is the second copy this whole design exists to
+        # avoid, so the enforcement is that no surface exists to set one through.
+        foreach ($name in @('Read-SpecSet.ps1', 'Test-SpecSet.ps1')) {
+            $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot $name), [ref]$null, [ref]$null)
+
+            $params = @($ast.FindAll({
+                param($n) $n -is [System.Management.Automation.Language.ParameterAst]
+            }, $true) | ForEach-Object { $_.Name.VariablePath.UserPath })
+            @($params | Where-Object { $_ -like '*Closed*' -or $_ -like '*Closure*' -or $_ -like '*Open*' }).Count |
+                Should -Be 0 -Because "$name exposing a closure parameter would let an author override a derived property (SS8)"
+
+            $envReads = @($ast.FindAll({
+                param($n) $n -is [System.Management.Automation.Language.VariableExpressionAst] -and
+                          $n.VariablePath.IsDriveQualified -and $n.VariablePath.DriveName -eq 'env'
+            }, $true))
+            $envReads.Count | Should -Be 0 -Because "$name reading an environment variable would put closure, or anything else, outside the declaration's own form"
+        }
+    }
+
+    It 'derives closure from form alone: a named-field interface is closed, a keyed map is open' {
+        $corpus = Join-Path (Split-Path $PSScriptRoot -Parent) 'docs/docs/games'
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        ($index.Declarations | Where-Object QualifiedName -eq 'AttributeState').IsClosed | Should -BeTrue
+        ($index.Declarations | Where-Object QualifiedName -eq 'PlayerState.skills').IsClosed | Should -BeFalse
+    }
+}
+
+Describe 'SS12: every marker is an HTML comment, so removing the checker leaves valid markdown' {
+    It 'every declared marker in the corpus is a complete HTML comment carrying nothing else' {
+        $corpus = Join-Path (Split-Path $PSScriptRoot -Parent) 'docs/docs/games'
+        $markers = @(Get-ChildItem -LiteralPath $corpus -Filter '*.md' | ForEach-Object {
+            Select-String -LiteralPath $_.FullName -Pattern ':declared:(start|end)'
+        })
+        $markers.Count | Should -BeGreaterThan 0
+
+        foreach ($m in $markers) {
+            # A region body is visible prose, and an inline region puts its markers on the same
+            # line as the sentence they wrap - so the marker does not own its line. What SS12
+            # requires is that every marker is a closed HTML comment, which renders nothing.
+            foreach ($marker in [regex]::Matches($m.Line, '[A-Za-z][\w.-]*:declared:(start|end)')) {
+                $before = $m.Line.Substring(0, $marker.Index)
+                $after = $m.Line.Substring($marker.Index + $marker.Length)
+                $before | Should -BeLike '*<!--*' -Because "$($m.Filename):$($m.LineNumber) marker $($marker.Value) must open an HTML comment (SS12)"
+                $after | Should -BeLike '*-->*' -Because "$($m.Filename):$($m.LineNumber) marker $($marker.Value) must close its HTML comment (SS12)"
+                $before.Substring($before.LastIndexOf('<!--')) | Should -Not -BeLike '*-->*' -Because "$($m.Filename):$($m.LineNumber) marker $($marker.Value) must sit inside the comment, not after it (SS12)"
+            }
+            ([regex]::Matches($m.Line, '<!--')).Count | Should -Be ([regex]::Matches($m.Line, '-->')).Count -Because "$($m.Filename):$($m.LineNumber) leaves an HTML comment unclosed (SS12)"
+        }
+    }
+
+    It 'the docs build has no dependency on the checker' {
+        $dockerfile = Join-Path (Split-Path $PSScriptRoot -Parent) 'docs/Dockerfile'
+        $content = Get-Content -LiteralPath $dockerfile -Raw
+        $content | Should -Not -BeLike '*SpecSet*'
+        $content | Should -Not -BeLike '*tools/*'
+    }
+}
