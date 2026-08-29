@@ -52,7 +52,7 @@ Additionally, out of scope for this repository permanently:
 
 ## Environment
 
-Single author, Mac host under `/Users/ben/Dropbox/Projects/`. Docs-only repository: no runtime,
+Single author, Windows host under `D:\Dropbox\Projects\`. Docs-only repository: no runtime,
 no concurrency, no data volume, no users at rest. The deliverable is a Docusaurus site built
 from `docs/` via Docker (`docs.ps1`). PowerShell Core for scripts. Offline-capable; nothing here
 depends on a network at build time beyond pulling the base image.

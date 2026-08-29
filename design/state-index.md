@@ -144,6 +144,8 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-23-kit-sync-reconciliation-agents-md-content-forks-and-three-tools-test-files-left-divergent | `unit/document/agents-md` |
 | decision/2026-08-25-s18-6-derives-its-freeze-dependent-expectation-instead-of-pinning-it | `unit/script/test-designstate` |
 | decision/2026-08-26-kit-sync-reconciliation-agents-md-tier-routing-merge-house-conventions-correction-codex-profiles-md-install-done-clean-rename | `unit/document/agents-md` |
+| decision/2026-08-29-six-ss-invariants-gain-the-tests-their-enforcement-column-already-claimed | `unit/script/test-specset` |
+| decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream | `unit/command/track` |
 <!-- decision-affects:end -->
 
 ## Question affects

@@ -5,7 +5,7 @@ Anchor: .claude/commands/track.md
 Consumes: contract/test-designdrift, contract/update-workmirror
 Exposes:
 Binds: I28
-Live:
+Live: decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream
 Archival:
 Questions:
 Work:
