@@ -566,7 +566,7 @@ unresolvable entry asserts nothing about the reference except that this reposito
 
 | Reason | Raised when | Caller does |
 |---|---|---|
-| `NotAGitRepository` | The commit stamp cannot be read | Run from inside the repository |
+| `NotAGitRepository` | The commit stamp cannot be read — the **checker's own** repository is resolved from the script's location, not from the caller's, so the working directory cannot cause this | Restore the checker to a checkout; a run from elsewhere is not the cause |
 | Unknown state | `Get-SpecSetExitCode` receives a state it does not know | Nothing — it throws; this is a defect in the caller |
 
 **Status 2 takes precedence over 1** (SS5), matching `Test-Companion.ps1` and `Test-DesignState.ps1`.
