@@ -951,9 +951,9 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | `src/published-surface.test.ts` |
 | **CP2** | `content/` has exactly one writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
 | **CP3** | Nothing in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
-| **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | — |
+| **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | `src/export-content.test.ts` |
 | **CP5** | Two exports from the same sources and the same pin produce byte-identical files | Exporter | Code | `.github/workflows/verify.yml`, step *Re-export content and fail if the committed JSON is stale* |
-| **CP6** | Every `.json` under `content/` the publication catalog does not name is removed by the export | Exporter | Code | — |
+| **CP6** | Every `.json` under `content/` the publication catalog does not name is removed by the export | Exporter | Code | `src/export-content.test.ts` |
 | **CP7** | Every collection `SimulationCampaignSource` requires is present on every campaign source; an unwritten one is empty, never absent | Campaign sources | Code | `src/campaigns/stable-life.test.ts` |
 | **CP8** | No file under `content/` is hand-edited | The author | Instruction — the next export overwriting it is the only consequence, and making it an error would forbid the catalog-owns-the-directory behaviour CP6 requires | — |
 | **CP9** | No program in this repository resolves a `§` citation outside the corpus, and the spec-set checker keeps exactly one corpus root | Index, Campaign sources | Instruction — widening the root is a contract amendment, not a slice's call | — |
@@ -962,7 +962,7 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | **CP12** | The typecheck runs before the export in every composed invocation and in CI | `package.json`, workflow | Code | — |
 | **CP13** | No content-path step exits 0 for a comparison or a build it could not make | All | Code | — |
 | **CP14** | The engine pin moves only in a commit that also regenerates the export | The author | Instruction | — |
-| **CP15** | No artifact under `content/` records provenance; the publishing commit and the gitlink it carries are the answer | Exporter | Code — the only files are campaigns and the manifest | — |
+| **CP15** | No artifact under `content/` records provenance; the publishing commit and the gitlink it carries are the answer | Exporter | Code — the only files are campaigns and the manifest | `src/export-content.test.ts` |
 
 **A `Code` row whose `Evidence` cell is an em dash is a requirement this contract asserts and no
 test yet enforces, and it may not be trusted without checking.** That is what the SS table's
