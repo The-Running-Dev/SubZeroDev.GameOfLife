@@ -3,57 +3,47 @@
     {
       "name": "Parse-check PowerShell scripts",
       "status": "Passed",
-      "detail": "Get-ChildItem -Path . -Recurse -Filter *.ps1 | [System.Management.Automation.Language.Parser]::ParseFile per file. 99 files checked, all parsed cleanly, no syntax errors."
+      "detail": "Every *.ps1 under the repository parsed with System.Management.Automation.Language.Parser::ParseFile with zero errors."
     },
     {
       "name": "Run Pester tests",
       "status": "Passed",
-      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 350, Failed: 0, Skipped: 0, NotRun: 0. Tests completed in 312.21s (UserDuration 00:04:45.07)."
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests Passed: 350, Failed: 0, Skipped: 0, NotRun: 0. Tests completed in 257.13s."
     },
     {
       "name": "Validate the core/companion split",
       "status": "Passed",
-      "detail": "Companion split OK - 23 core(s) checked, 0 companion file(s) present, 23 core(s) with no companion. State: Valid. Findings: none. Exit code: 0."
+      "detail": "./tools/Test-Companion.ps1: Companion split OK - 23 core(s) checked, 0 companion file(s) present, 23 core(s) with no companion. State: Valid, Findings: {}, exit 0."
     },
     {
       "name": "Check the design state against the tree",
       "status": "Passed",
-      "detail": "State: Valid (exit 0). Findings (blocking): 0. Reported (non-blocking): 26, all class MirrorStale on work/8 through work/91, each because MirroredAt still names an earlier commit rather than this branch's own commit a90bb4a446ce5baf505c5ed9a5d8bf81a4a4fd6c, expected on an unmerged feature branch, not a design freeze or a downgrade (DowngradedCount: 0). CouldNotEvaluate: 0. Largest closure: unit/document/design-20-contract, 8601 bytes (ceiling 16384)."
+      "detail": "./tools/Test-DesignState.ps1: Findings (0). Reported (27) - all MirrorStale/WorkStateDivergence, both non-blocking classes. Could not evaluate (0). Exit code: 0."
     },
     {
       "name": "Check the spec set",
       "status": "Passed",
-      "detail": "Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 0 findings; 0 unchecked; 8 references unresolvable (cross-repository, engine/*.md in SubZeroDev.GameEngine, not checked from this repository). Commit: a90bb4a446ce5baf505c5ed9a5d8bf81a4a4fd6c. WorkingTree: Dirty at the time this gate ran (only .claude/gates.json, refreshed by this same verify pass for the new content-path gates below; no source file was uncommitted). Exit code: 0."
+      "detail": "./tools/Test-SpecSet.ps1: Spec-set: Valid; 8 documents; 936 declarations; 2 mirror obligations checked; 8 references unresolvable (cross-repository, not checked, per SS9 - never a failure). Findings: {}. Exit 0."
     },
     {
       "name": "Build the pinned engine",
       "status": "Passed",
-      "detail": "npm run setup (npm --prefix engine/src/engine ci && npm --prefix engine/src/engine run build) — exit 0. Installed 140 packages in 6s (npm audit reported 1 pre-existing high-severity advisory in the engine submodule's own dependency tree, unrelated to this change and not part of this gate). Engine built via `npm run clean && tsc -p tsconfig.build.json` with no errors."
+      "detail": "npm run setup: npm --prefix engine/src/engine ci (added 140 packages) && npm --prefix engine/src/engine run build (tsc -p tsconfig.build.json) completed with exit code 0."
     },
     {
       "name": "Typecheck the campaign sources",
       "status": "Passed",
-      "detail": "npm run typecheck (tsc --noEmit) — exit 0, no type errors."
+      "detail": "npm run typecheck (tsc --noEmit) completed with no output and exit code 0."
     },
     {
       "name": "Test the campaign sources",
       "status": "Passed",
-      "detail": "npm test (vitest run) — Test Files 2 passed (2), Tests 11 passed (11), Duration 2.88s. Includes the new src/published-surface.test.ts (4 tests: CP1, CP2 x2, CP3) alongside the existing src/campaigns/stable-life.test.ts (7 tests)."
+      "detail": "npm test (vitest run): Test Files 3 passed (3), Tests 14 passed (14). Duration 3.15s."
     },
     {
       "name": "Re-export content and fail if the committed JSON is stale",
       "status": "Passed",
-      "detail": "npm run export:content && npm run check:clean — exit 0. export-content.ts: 'Exported 1 campaign(s) to content/'. check-clean.mjs: 'content/ matches the sources.' — this slice touches no campaign source, so the committed content/ was already current."
-    },
-    {
-      "name": "git diff --check",
-      "status": "Passed",
-      "detail": "git diff --check exited 0 — no trailing whitespace or conflict markers on this branch's changes."
-    },
-    {
-      "name": "docs.ps1 -BuildOnly (Docusaurus image build)",
-      "status": "DidNotRun",
-      "reason": "Not CI-gated (no `# verification: true` flag on any docs.ps1-related step in .github/workflows/*.yml). This change touches no docs/ files, so the build was not run rather than spending an unrelated Docker build cycle on it."
+      "detail": "npm run export:content (Exported 1 campaign(s) to content/) && npm run check:clean (content/ matches the sources.) both exited 0."
     }
   ]
 }

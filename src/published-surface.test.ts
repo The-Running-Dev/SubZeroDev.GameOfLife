@@ -193,9 +193,13 @@ function firstArgument(rawArgs: string): string {
 }
 
 describe("the single writer (CP2)", () => {
-  it("is the only file under src/ or scripts/ that writes or deletes a file", () => {
+  it("is the only production file under src/ or scripts/ that writes or deletes a file", () => {
+    // A test fixture writing into content/ to prove the exporter cleans it up (S13.1) is
+    // not a second writer in the sense CP2 protects against — CP2 governs what is
+    // published, not what a test does to its own fixture — so test files are excluded
+    // here and only here; CP1 and CP3 below still check them like any other source.
     const writers: string[] = [];
-    for (const file of files) {
+    for (const file of files.filter((f) => !f.endsWith(".test.ts"))) {
       const text = readFileSync(file, "utf8");
       const { named, aliases } = fsBindingsOf(text);
       const writeNames = WRITE_OR_DELETE_FNS.filter((n) => named.has(n));

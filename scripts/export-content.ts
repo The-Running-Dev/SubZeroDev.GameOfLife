@@ -38,14 +38,14 @@ import {
   stableLifeCatalog,
 } from "../src/campaigns/stable-life.js";
 
-interface Entry {
+export interface Entry {
   readonly file: string;
   readonly build: () => CommandResult<BuiltCampaign>;
   readonly catalog: PortableCatalog;
 }
 
 /** The publication catalog, in the order a host should present it. */
-const entries: readonly Entry[] = [
+export const entries: readonly Entry[] = [
   {
     file: "stable-life.json",
     build: buildStableLifeCampaign,
@@ -56,7 +56,20 @@ const entries: readonly Entry[] = [
 const kinds = { simulation: simulationKind } as unknown as KindRegistry;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const outputDir = path.join(here, "..", "content");
+export const outputDir = path.join(here, "..", "content");
+
+/** Raised with the contract's own reason (`design/20-contract.md` § *Content path
+ *  errors*), so a failure reproduces the engine's errors under a name that error table
+ *  states rather than a summarised sentence. */
+export class ExportError extends Error {
+  constructor(
+    readonly reason: "CampaignDidNotBuild" | "ValidationRejected",
+    message: string,
+  ) {
+    super(message);
+    this.name = "ExportError";
+  }
+}
 
 /** Two spaces and a trailing newline — the shape a JSON file has when a human has to read
  *  the diff, which is the only reason these are committed rather than built on demand. */
@@ -64,12 +77,22 @@ function serialize(value: unknown): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-async function main(): Promise<void> {
+/**
+ * Builds and validates every entry before writing anything (CP4), then makes `outputDir`
+ * match the catalog exactly — every entry's file plus `manifest.json`, and nothing else
+ * (CP6, CP15). A build or validation failure throws an `ExportError` before any write or
+ * delete, so `outputDir` is left exactly as this call found it.
+ */
+export async function exportContent(
+  catalogEntries: readonly Entry[],
+  outputDir: string,
+): Promise<readonly PortableManifestEntry[]> {
   // Build and validate everything before writing anything.
-  const built = entries.map((entry) => {
+  const built = catalogEntries.map((entry) => {
     const result = entry.build();
     if (!result.ok || !result.value) {
-      throw new Error(
+      throw new ExportError(
+        "CampaignDidNotBuild",
         `${entry.file}: campaign did not build — ${JSON.stringify(result.errors, null, 2)}`,
       );
     }
@@ -81,7 +104,10 @@ async function main(): Promise<void> {
     kinds,
   );
   if (!registry.ok) {
-    throw new Error(`validation failed — ${JSON.stringify(registry.errors, null, 2)}`);
+    throw new ExportError(
+      "ValidationRejected",
+      `validation failed — ${JSON.stringify(registry.errors, null, 2)}`,
+    );
   }
 
   const manifestEntries: PortableManifestEntry[] = [];
@@ -108,7 +134,7 @@ async function main(): Promise<void> {
   files.set("manifest.json", serialize(manifest));
 
   // Remove any previously published file the catalog no longer names, so a renamed or
-  // retired campaign cannot linger in `content/` as a stale document a host still fetches.
+  // retired campaign cannot linger in outputDir as a stale document a host still fetches.
   await mkdir(outputDir, { recursive: true });
   for (const existing of await readdir(outputDir)) {
     if (existing.endsWith(".json") && !files.has(existing)) {
@@ -120,7 +146,20 @@ async function main(): Promise<void> {
     await writeFile(path.join(outputDir, file), body, "utf8");
   }
 
+  return manifestEntries;
+}
+
+async function main(): Promise<void> {
+  const manifestEntries = await exportContent(entries, outputDir);
   console.log(`Exported ${manifestEntries.length} campaign(s) to content/`);
 }
 
-await main();
+// Guards the entry point so importing this module — from the test suite that exercises
+// `exportContent` directly — never triggers a real export as a side effect of import.
+const isMainModule =
+  process.argv[1] !== undefined &&
+  fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+
+if (isMainModule) {
+  await main();
+}
