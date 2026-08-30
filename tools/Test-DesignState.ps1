@@ -1072,6 +1072,29 @@ function Test-CommitIsAncestor {
     }
 }
 
+function Invoke-Gh {
+    param([Parameter(Mandatory)][string[]] $Arguments, [string] $Command = 'gh')
+
+    # Invoke via Process, not the `&` call operator: PowerShell decodes a captured child's
+    # stdout using [Console]::OutputEncoding, which on Windows defaults to the OEM code page
+    # rather than the UTF-8 gh actually writes. Left unset, a non-ASCII byte in an issue title
+    # (an em dash) comes back mis-decoded and WorkStateDivergence's title comparison below
+    # false-positives - the same class of bug Invoke-Projector (above) and
+    # Update-WorkMirror.ps1's own Invoke-Gh already exist to avoid.
+    $psi = [System.Diagnostics.ProcessStartInfo]::new()
+    $psi.FileName = $Command
+    foreach ($arg in $Arguments) { $psi.ArgumentList.Add($arg) }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.UseShellExecute = $false
+    $psi.StandardOutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $proc = [System.Diagnostics.Process]::Start($psi)
+    $stdout = $proc.StandardOutput.ReadToEnd()
+    $proc.StandardError.ReadToEnd() | Out-Null
+    $proc.WaitForExit()
+    [pscustomobject]@{ ExitCode = $proc.ExitCode; StdOut = $stdout }
+}
+
 function Test-TrackerAvailable {
     param([string] $Repository)
     $ghArgs = @('issue', 'list', '--state', 'all', '--limit', '1', '--json', 'number')
@@ -1109,13 +1132,13 @@ function Test-TrackerClasses {
             if ([string]::IsNullOrWhiteSpace($number)) { continue }
             $ghArgs = @('issue', 'view', $number, '--json', 'title,state')
             if ($Repository) { $ghArgs += @('-R', $Repository) }
-            $json = & gh @ghArgs 2>$null
-            if ($LASTEXITCODE -ne 0 -or -not $json) {
+            $ghResult = Invoke-Gh -Arguments $ghArgs
+            if ($ghResult.ExitCode -ne 0 -or -not $ghResult.StdOut) {
                 $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'TrackerUnavailable' -Detail "could not read issue #$number for $($ref.Id)"))
                 continue
             }
             try {
-                $issue = ($json -join "`n") | ConvertFrom-Json
+                $issue = $ghResult.StdOut | ConvertFrom-Json
             } catch {
                 $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'TrackerUnavailable' -Detail "unparseable gh output for issue #$number"))
                 continue
