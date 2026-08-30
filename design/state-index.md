@@ -169,5 +169,17 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
+| 8 | #80 | S12 — Nothing reaches past the engine's published surface, and nothing reads the published output | S12.1, S12.2, S12.3, S12.4, S12.5, S12.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 9 | #81 | S13 — A failed export cannot leave half a catalog published, and a retired campaign disappears | S13.1, S13.2, S13.3, S13.4, S13.5 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 10 | #82 | S14 — The content gate cannot be relaxed, reordered, or made to pass without running | S14.1, S14.2, S14.3, S14.4, S14.5, S14.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 11 | #83 | S15 — There is work to take, and a way up from it | S15.1, S15.2, S15.3, S15.4, S15.5, S15.6, S15.7 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 12 | #84 | S16 — Weeks stop being identical: work, money and paperwork go wrong on their own | S16.1, S16.2, S16.3, S16.4, S16.5, S16.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 13 | #85 | S17 — Education is something a player can actually buy, attend, and fail | S17.1, S17.2, S17.3, S17.4, S17.5, S17.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 14 | #86 | S18 — There is somewhere better to live, and a bill for staying there | S18.1, S18.2, S18.3, S18.4, S18.5 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 15 | #87 | S19 — A player can spend money on something other than survival | S19.1, S19.2, S19.3, S19.4, S19.5 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 16 | #88 | S20 — There are other people, and they remember | S20.1, S20.2, S20.3, S20.4, S20.5, S20.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 17 | #89 | S21 — The rest of the week goes wrong too: home, health, people and pure absurdity | S21.1, S21.2, S21.3, S21.4, S21.5, S21.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 18 | #90 | S22 — A player does not start from nowhere | S22.1, S22.2, S22.3, S22.4, S22.5, S22.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
+| 19 | #91 | S23 — The scenario is finishable, and there is more than one thing to aim at | S23.1, S23.2, S23.3, S23.4, S23.5, S23.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `c97bb3bf808924068e35788b32a352f0e7cb3d64` |
 <!-- outstanding:end -->
