@@ -9,11 +9,12 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: jobs, courses, items, events, NPCs,
- * opportunities, achievements, headlines, employers, backgrounds, traits and skills. Each
- * is its own authoring slice against §16.1's content targets. The collections are present
- * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
- * and an empty one is an honest statement that the content is unwritten.
+ * What it deliberately does not yet carry: courses, items, events, NPCs, opportunities,
+ * achievements, headlines, backgrounds and traits (jobs, employers and skills were added by
+ * S15). Each remaining collection is its own authoring slice against §16.1's content
+ * targets. They are present and empty rather than absent, because `SimulationCampaignSource`
+ * requires all seventeen and an empty one is an honest statement that the content is
+ * unwritten.
  *
  * **One completion requirement from §16.3 is not expressible today.** "Education:
  * certificate or better" needs a condition over `player.education.credentials`, which is a
@@ -172,6 +173,342 @@ const housing: SimulationCampaignSource["housing"] = [
 ];
 
 /**
+ * §16.4's wage table, by tier. Cited once here rather than re-typed into each job's
+ * `compensation`, so a rate change touches one place. Part-time pays 55% of the full-time
+ * rate for 5 time units (§16.4); `JobDefinition` has no separate part-time variant, and
+ * doubling the eight jobs S15.1 targets to author one would blow the §16.1 content count,
+ * so the part-time figure stays a computed constant here rather than authored content.
+ */
+const WAGE_TABLE_CENTS: Record<"entry" | "skilled" | "professional" | "senior", number> = {
+  entry: DOLLARS(210),
+  skilled: DOLLARS(340),
+  professional: DOLLARS(520),
+  senior: DOLLARS(780),
+};
+
+/**
+ * §3.5 — skills referenced by the job requirements below. Only the three actually named by
+ * a requirement are authored; the rest of §3.5's example list is unclaimed content, not an
+ * omission. Ids are bare (`cooking`, not `skill-cooking`) because `player.skills.<id>`
+ * (`derived.ts`) keys directly off `SkillDefinition.id` — a prefix here would desync the id
+ * from the field every requirement below reads it through.
+ */
+const skills: SimulationCampaignSource["skills"] = [
+  {
+    id: "cooking",
+    name: { key: "stable-life.skill.cooking.name", text: "Cooking" },
+    category: "trade",
+    decayPerWeek: 0,
+  },
+  {
+    id: "management",
+    name: { key: "stable-life.skill.management.name", text: "Management" },
+    category: "administrative",
+    decayPerWeek: 0,
+  },
+  {
+    id: "programming",
+    name: { key: "stable-life.skill.programming.name", text: "Programming" },
+    category: "technical",
+    decayPerWeek: 0,
+  },
+];
+
+/**
+ * §16.1 — the eight jobs, in the three §16.1 career paths. Titles for two of the three
+ * paths are §6.6's own worked examples verbatim (the third, `career-retail`, is its first
+ * rung only — an eight-job budget across three paths does not stretch to all of every
+ * example chain). Tiers are §6.1's four names; `professional`/`senior` postings are
+ * `contested: true` per §6.4's "finite and competed for. See §14.3."
+ */
+const jobs: SimulationCampaignSource["jobs"] = [
+  // career-food-service — §6.6's first example chain, first three rungs.
+  {
+    id: "job-dishwasher",
+    title: { key: "stable-life.job.dishwasher.title", text: "Dishwasher" },
+    description: {
+      key: "stable-life.job.dishwasher.description",
+      text: "Entry tier. No credential required, per §6.1 — just a sink and a willingness.",
+    },
+    employerId: "employer-greasy-spoon-diner",
+    careerPathId: "career-food-service",
+    tier: "entry",
+    schedule: { weeklyTimeCost: 10, flexibility: 10 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.entry },
+    requirements: [],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [
+      {
+        toJobId: "job-line-cook",
+        minimumWeeksInRole: 8,
+        minimumPerformance: 40,
+        requirements: [],
+        contested: false,
+        baseChance: 85,
+      },
+    ],
+    terminationRules: [],
+    contested: false,
+    tags: ["career-food-service"],
+  },
+  {
+    id: "job-line-cook",
+    title: { key: "stable-life.job.line-cook.title", text: "Line Cook" },
+    description: {
+      key: "stable-life.job.line-cook.description",
+      text: "Skilled tier — §6.1's \"demonstrated skill\" is the Cooking skill, per §6.2's requirements list.",
+    },
+    employerId: "employer-greasy-spoon-diner",
+    careerPathId: "career-food-service",
+    tier: "skilled",
+    schedule: { weeklyTimeCost: 9, flexibility: 20 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.skilled },
+    requirements: [
+      {
+        type: "skill",
+        condition: { field: "player.skills.cooking", operator: "greater_or_equal", value: 25 },
+        failureCode: "requirement_unmet",
+        messageKey: "stable-life.job.line-cook.requirement.cooking",
+      },
+    ],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [
+      {
+        toJobId: "job-shift-supervisor",
+        minimumWeeksInRole: 12,
+        minimumPerformance: 55,
+        requirements: [
+          {
+            type: "skill",
+            condition: { field: "player.skills.management", operator: "greater_or_equal", value: 40 },
+            failureCode: "requirement_unmet",
+            messageKey: "stable-life.job.shift-supervisor.requirement.management",
+          },
+        ],
+        contested: true,
+        baseChance: 50,
+      },
+    ],
+    terminationRules: [],
+    contested: false,
+    tags: ["career-food-service"],
+  },
+  {
+    id: "job-shift-supervisor",
+    title: { key: "stable-life.job.shift-supervisor.title", text: "Shift Supervisor" },
+    description: {
+      key: "stable-life.job.shift-supervisor.description",
+      text: "Professional tier. §6.4: open positions here are finite and competed for.",
+    },
+    employerId: "employer-greasy-spoon-diner",
+    careerPathId: "career-food-service",
+    tier: "professional",
+    schedule: { weeklyTimeCost: 8, flexibility: 30 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.professional },
+    requirements: [
+      {
+        type: "skill",
+        condition: { field: "player.skills.management", operator: "greater_or_equal", value: 40 },
+        failureCode: "requirement_unmet",
+        messageKey: "stable-life.job.shift-supervisor.requirement.management",
+      },
+    ],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [],
+    terminationRules: [],
+    contested: true,
+    positionsAvailable: 2,
+    tags: ["career-food-service"],
+  },
+
+  // career-clerical — §6.6's second example chain, in full, including its own joke title.
+  {
+    id: "job-data-entry-clerk",
+    title: { key: "stable-life.job.data-entry-clerk.title", text: "Data Entry Clerk" },
+    description: {
+      key: "stable-life.job.data-entry-clerk.description",
+      text: "Entry tier. No credential required, per §6.1.",
+    },
+    employerId: "employer-civic-data-office",
+    careerPathId: "career-clerical",
+    tier: "entry",
+    schedule: { weeklyTimeCost: 10, flexibility: 10 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.entry },
+    requirements: [],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [
+      {
+        toJobId: "job-systems-administrator",
+        minimumWeeksInRole: 8,
+        minimumPerformance: 40,
+        requirements: [],
+        contested: false,
+        baseChance: 85,
+      },
+    ],
+    terminationRules: [],
+    contested: false,
+    tags: ["career-clerical"],
+  },
+  {
+    id: "job-systems-administrator",
+    title: { key: "stable-life.job.systems-administrator.title", text: "Systems Administrator" },
+    description: {
+      key: "stable-life.job.systems-administrator.description",
+      text: "Skilled tier — §6.1's \"demonstrated skill\" is the Programming skill, per §6.2.",
+    },
+    employerId: "employer-civic-data-office",
+    careerPathId: "career-clerical",
+    tier: "skilled",
+    schedule: { weeklyTimeCost: 9, flexibility: 25 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.skilled },
+    requirements: [
+      {
+        type: "skill",
+        condition: { field: "player.skills.programming", operator: "greater_or_equal", value: 25 },
+        failureCode: "requirement_unmet",
+        messageKey: "stable-life.job.systems-administrator.requirement.programming",
+      },
+    ],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [
+      {
+        toJobId: "job-infrastructure-engineer",
+        minimumWeeksInRole: 12,
+        minimumPerformance: 55,
+        requirements: [
+          {
+            type: "skill",
+            condition: { field: "player.skills.programming", operator: "greater_or_equal", value: 55 },
+            failureCode: "requirement_unmet",
+            messageKey: "stable-life.job.infrastructure-engineer.requirement.programming",
+          },
+        ],
+        contested: true,
+        baseChance: 55,
+      },
+    ],
+    terminationRules: [],
+    contested: false,
+    tags: ["career-clerical"],
+  },
+  {
+    id: "job-infrastructure-engineer",
+    title: { key: "stable-life.job.infrastructure-engineer.title", text: "Infrastructure Engineer" },
+    description: {
+      key: "stable-life.job.infrastructure-engineer.description",
+      text: "Professional tier. §6.4: open positions here are finite and competed for.",
+    },
+    employerId: "employer-civic-data-office",
+    careerPathId: "career-clerical",
+    tier: "professional",
+    schedule: { weeklyTimeCost: 8, flexibility: 35 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.professional },
+    requirements: [
+      {
+        type: "skill",
+        condition: { field: "player.skills.programming", operator: "greater_or_equal", value: 55 },
+        failureCode: "requirement_unmet",
+        messageKey: "stable-life.job.infrastructure-engineer.requirement.programming",
+      },
+    ],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [
+      {
+        toJobId: "job-wifi-scapegoat",
+        minimumWeeksInRole: 16,
+        minimumPerformance: 65,
+        requirements: [],
+        contested: true,
+        baseChance: 35,
+      },
+    ],
+    terminationRules: [],
+    contested: true,
+    positionsAvailable: 2,
+    tags: ["career-clerical"],
+  },
+  {
+    id: "job-wifi-scapegoat",
+    title: { key: "stable-life.job.wifi-scapegoat.title", text: "Person Blamed When Wi-Fi Stops" },
+    description: {
+      key: "stable-life.job.wifi-scapegoat.description",
+      text: "Senior tier — §6.1: scarce, track record plus reputation. §6.6's own joke ending for this chain.",
+    },
+    employerId: "employer-civic-data-office",
+    careerPathId: "career-clerical",
+    tier: "senior",
+    schedule: { weeklyTimeCost: 8, flexibility: 40 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.senior },
+    requirements: [],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [],
+    terminationRules: [],
+    contested: true,
+    positionsAvailable: 1,
+    tags: ["career-clerical"],
+  },
+
+  // career-retail — §6.6's third example chain, first rung only (see file-level note above).
+  {
+    id: "job-retail-associate",
+    title: { key: "stable-life.job.retail-associate.title", text: "Retail Associate" },
+    description: {
+      key: "stable-life.job.retail-associate.description",
+      text: "Entry tier. No credential required, per §6.1.",
+    },
+    employerId: "employer-bright-mart-retail",
+    careerPathId: "career-retail",
+    tier: "entry",
+    schedule: { weeklyTimeCost: 10, flexibility: 15 },
+    compensation: { baseWeeklyPayCents: WAGE_TABLE_CENTS.entry },
+    requirements: [],
+    performance: { factors: [], weeklyDriftToward: 50, minimumAcceptable: 30 },
+    promotionPaths: [],
+    terminationRules: [],
+    contested: false,
+    tags: ["career-retail"],
+  },
+];
+
+/** §6 names no field this pinned engine cannot express — `Requirement`, `PerformanceFactor`,
+ *  `PromotionPath` and `TerminationRule` already cover §6.2–§6.5 in full. Nothing is omitted
+ *  here under CP10; the empty `performance.factors` and `terminationRules` above are this
+ *  slice's own scope choice (S16 is where weeks, and job outcomes within them, start going
+ *  wrong on their own), not an engine gap. */
+
+/**
+ * §16.1/§6 — the three employers the eight jobs above name. `npcIds` stays empty; NPCs are
+ * S20, not this slice.
+ */
+const employers: SimulationCampaignSource["employers"] = [
+  {
+    id: "employer-greasy-spoon-diner",
+    name: { key: "stable-life.employer.greasy-spoon-diner.name", text: "The Greasy Spoon Diner" },
+    sector: "food-service",
+    reputation: 40,
+    jobIds: ["job-dishwasher", "job-line-cook", "job-shift-supervisor"],
+    npcIds: [],
+  },
+  {
+    id: "employer-civic-data-office",
+    name: { key: "stable-life.employer.civic-data-office.name", text: "Civic Data Office" },
+    sector: "clerical",
+    reputation: 55,
+    jobIds: ["job-data-entry-clerk", "job-systems-administrator", "job-infrastructure-engineer", "job-wifi-scapegoat"],
+    npcIds: [],
+  },
+  {
+    id: "employer-bright-mart-retail",
+    name: { key: "stable-life.employer.bright-mart-retail.name", text: "BrightMart Retail" },
+    sector: "retail",
+    reputation: 50,
+    jobIds: ["job-retail-associate"],
+    npcIds: [],
+  },
+];
+
+/**
  * §16.3's completion requirements, minus the credential one the condition language cannot
  * express yet (see the file header). `highestTierAchieved` is a string, so "skilled or
  * better" is authored as the explicit set rather than an ordering comparison — the tier
@@ -245,7 +582,7 @@ export const stableLifeSource: SimulationCampaignSource = {
     text: "Life in the Fast Lane — the Stable Life scenario. Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   },
 
-  jobs: [],
+  jobs,
   courses: [],
   housing,
   items: [],
@@ -257,11 +594,11 @@ export const stableLifeSource: SimulationCampaignSource = {
   opportunities: [],
   achievements: [],
   headlines: [],
-  employers: [],
+  employers,
   locations,
   backgrounds: [],
   traits: [],
-  skills: [],
+  skills,
 
   scenarioId: STABLE_LIFE_SCENARIO_ID,
   goalFailurePrecedence: "goals_win",
@@ -294,7 +631,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map and the scenario are authored; jobs, courses, events and possessions are not yet written.",
+    "Seed content. The map, the scenario and the career ladder are authored; courses, events and possessions are not yet written.",
   featured: false,
   hidden: true,
 } as const;

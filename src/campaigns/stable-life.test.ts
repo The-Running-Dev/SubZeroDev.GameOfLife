@@ -93,14 +93,98 @@ describe("Stable Life — the authoring path", () => {
   });
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
-    // The seed leaves fourteen collections empty on purpose. This asserts they are present
-    // and empty rather than quietly populated by a later edit that skipped the spec.
+    // §16.1's jobs/employers/skills targets are now authored (S15); the rest are still an
+    // honest statement that the content is unwritten.
     const empty = [
-      "jobs", "courses", "items", "events", "npcs", "opportunities", "achievements",
-      "headlines", "employers", "backgrounds", "traits", "skills",
+      "courses", "items", "events", "npcs", "opportunities", "achievements",
+      "headlines", "backgrounds", "traits",
     ] as const;
     for (const key of empty) {
       expect(stableLifeSource[key], `${key} should still be unwritten`).toEqual([]);
     }
+  });
+});
+
+describe("Stable Life — jobs, employers and skills (S15)", () => {
+  const jobs = stableLifeSource.jobs;
+  const employers = stableLifeSource.employers;
+  const skills = stableLifeSource.skills;
+  const VALID_TIERS = ["entry", "skilled", "professional", "senior"] as const;
+  const TIER_RANK: Record<(typeof VALID_TIERS)[number], number> = {
+    entry: 0, skilled: 1, professional: 2, senior: 3,
+  };
+
+  it("has 8 jobs, each at one of the four §6.1 tiers (S15.1)", () => {
+    expect(jobs).toHaveLength(8);
+    for (const job of jobs) {
+      expect(VALID_TIERS, `${job.id}'s tier`).toContain(job.tier);
+    }
+  });
+
+  it("carries exactly 3 career paths, each an ascending tier sequence chained by promotionPaths (S15.2)", () => {
+    const careerPathIds = new Set(jobs.map((job) => job.careerPathId));
+    expect(careerPathIds.size).toBe(3);
+
+    for (const careerPathId of careerPathIds) {
+      const path = jobs
+        .filter((job) => job.careerPathId === careerPathId)
+        .sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier]);
+      for (let i = 0; i + 1 < path.length; i++) {
+        const [current, next] = [path[i]!, path[i + 1]!];
+        expect(TIER_RANK[next.tier], `${careerPathId}: ${current.id} -> ${next.id}`).toBeGreaterThan(
+          TIER_RANK[current.tier],
+        );
+        expect(
+          current.promotionPaths.some((p) => p.toJobId === next.id),
+          `${current.id} should have a promotionPaths entry linking to ${next.id}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("names only employers and skills that exist, by iterating the collections (S15.3)", () => {
+    const employerIds = new Set(employers.map((e) => e.id));
+    const skillIds = new Set(skills.map((s) => s.id));
+    for (const job of jobs) {
+      expect(employerIds.has(job.employerId), `${job.id} names employer ${job.employerId}`).toBe(true);
+      for (const requirement of job.requirements) {
+        if (requirement.type === "skill" && "field" in requirement.condition) {
+          const skillId = requirement.condition.field.replace("player.skills.", "");
+          expect(skillIds.has(skillId), `${job.id} names skill ${skillId}`).toBe(true);
+        }
+      }
+    }
+    // Every employer's jobIds round-trip back to a job that names it.
+    for (const employer of employers) {
+      for (const jobId of employer.jobIds) {
+        const job = jobs.find((j) => j.id === jobId);
+        expect(job?.employerId, `${employer.id} names job ${jobId}`).toBe(employer.id);
+      }
+    }
+  });
+
+  it("matches §16.4's wage table exactly, and prices part-time at 55% for 5 units (S15.4)", () => {
+    const fullTimeByTier: Record<string, number> = {};
+    for (const job of jobs) {
+      fullTimeByTier[job.tier] = job.compensation.baseWeeklyPayCents;
+    }
+    expect(fullTimeByTier.entry).toBe(21_000);
+    expect(fullTimeByTier.skilled).toBe(34_000);
+    expect(fullTimeByTier.professional).toBe(52_000);
+    expect(fullTimeByTier.senior).toBe(78_000);
+
+    expect(Math.round(fullTimeByTier.entry! * 0.55)).toBe(11_550);
+    expect(Math.round(fullTimeByTier.skilled! * 0.55)).toBe(18_700);
+    expect(Math.round(fullTimeByTier.professional! * 0.55)).toBe(28_600);
+    expect(Math.round(fullTimeByTier.senior! * 0.55)).toBe(42_900);
+  });
+
+  it("builds and validates with jobs, employers and skills wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
   });
 });
