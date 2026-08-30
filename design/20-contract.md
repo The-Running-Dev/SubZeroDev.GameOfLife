@@ -958,9 +958,9 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | **CP8** | No file under `content/` is hand-edited | The author | Instruction — the next export overwriting it is the only consequence, and making it an error would forbid the catalog-owns-the-directory behaviour CP6 requires | — |
 | **CP9** | No program in this repository resolves a `§` citation outside the corpus, and the spec-set checker keeps exactly one corpus root | Index, Campaign sources | Instruction — widening the root is a contract amendment, not a slice's call | — |
 | **CP10** | Where the pinned engine cannot express a requirement the corpus states, the campaign omits it visibly and names the omission, and the gap is raised in the engine repository rather than worked around here | Campaign sources | Instruction — the brief's non-goal is the enforcement available | — |
-| **CP11** | The clean check compares only `content/`, and no parameter widens or relaxes the comparison | Clean check | Code | — |
-| **CP12** | The typecheck runs before the export in every composed invocation and in CI | `package.json`, workflow | Code | — |
-| **CP13** | No content-path step exits 0 for a comparison or a build it could not make | All | Code | — |
+| **CP11** | The clean check compares only `content/`, and no parameter widens or relaxes the comparison | Clean check | Code | `src/check-clean.test.ts` |
+| **CP12** | The typecheck runs before the export in every composed invocation and in CI | `package.json`, workflow | Code | `src/check-clean.test.ts` |
+| **CP13** | No content-path step exits 0 for a comparison or a build it could not make | All | Code | `src/check-clean.test.ts` |
 | **CP14** | The engine pin moves only in a commit that also regenerates the export | The author | Instruction | — |
 | **CP15** | No artifact under `content/` records provenance; the publishing commit and the gitlink it carries are the answer | Exporter | Code — the only files are campaigns and the manifest | `src/export-content.test.ts` |
 
