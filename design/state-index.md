@@ -162,6 +162,6 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `40786ae62fada2df00291ee1d768094389bb65d8` |
-| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `40786ae62fada2df00291ee1d768094389bb65d8` |
+| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `6650932e3ca881632ae245649bb125f73357798e` |
+| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `6650932e3ca881632ae245649bb125f73357798e` |
 <!-- outstanding:end -->
