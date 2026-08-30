@@ -20,6 +20,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | `unit/command/kit-help` | command | `.claude/commands/kit-help.md` |
 | `unit/command/kit-sync` | command | `.claude/commands/kit-sync.md` |
 | `unit/command/make-human-docs` | command | `.claude/commands/make-human-docs.md` |
+| `unit/command/next` | command | `.claude/commands/next.md` |
 | `unit/command/pr` | command | `.claude/commands/pr.md` |
 | `unit/command/reconcile` | command | `.claude/commands/reconcile.md` |
 | `unit/command/redteam` | command | `.claude/commands/redteam.md` |
@@ -148,7 +149,9 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-29-six-ss-invariants-gain-the-tests-their-enforcement-column-already-claimed | `unit/script/test-specset` |
 | decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream | `unit/command/track` |
 | decision/2026-08-30-a-published-campaign-s-provenance-stays-in-git-not-in-the-artifact | `unit/document/design-10-design`, `unit/document/design-20-contract` |
-| decision/2026-08-30-kit-sync-adopts-the-upstream-62-fix-the-local-encoding-fork-is-retired | — |
+| decision/2026-08-30-kit-sync-adopts-the-upstream-62-fix-the-local-encoding-fork-is-retired | `unit/document/agents-md` |
+| decision/2026-08-30-kit-sync-fast-forwards-to-aedb94c-and-s19-s-ceiling-change-is-deferred | `unit/script/test-designstate` |
+| decision/2026-08-30-kit-sync-merges-four-agents-md-additions-no-other-kit-owned-file-diverged | `unit/document/agents-md` |
 | decision/2026-08-30-life-in-the-fast-lane-s-campaign-content-is-owned-in-this-repository-not-in-a-separate-content-repository | `unit/document/agents-md`, `unit/document/design-00-brief`, `unit/document/design-20-contract` |
 | decision/2026-08-30-section-citations-from-campaign-sources-into-the-corpus-stay-unchecked | `unit/document/design-10-design`, `unit/document/design-20-contract` |
 | decision/2026-08-30-the-content-path-is-contracted-as-a-third-scope-with-its-own-cp-invariant-namespace | `unit/document/design-20-contract` |
