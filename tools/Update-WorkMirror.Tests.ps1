@@ -109,7 +109,7 @@ Describe 'Update-WorkMirror' {
             $text | Should -Match 'Criteria: S14\.1, S14\.2'
         }
 
-        It 'stamps MirroredAt even when a write changes no other field' {
+        It 'does not rewrite a record, and does not restamp MirroredAt, when no mirrored field changed' {
             $repo = New-RepoRoot
             Mock Get-OpenIssueList { [pscustomobject]@{
                 Issues  = @((New-Issue -Number 57 -Title 'S14 — Work state' -Body "- [ ] **S14.1** first"))
@@ -120,10 +120,34 @@ Describe 'Update-WorkMirror' {
             Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
 
             Mock Get-CurrentWorkMirrorSha { 'sha0002' }
+            $r = Invoke-WorkMirrorUpdate -RepoPath $repo
+
+            $text = Get-Content -LiteralPath (Join-Path $repo 'design/state/work/57.md') -Raw
+            $text | Should -Match 'MirroredAt: sha0001'
+            $r.Written.Count | Should -Be 0
+        }
+
+        It 'rewrites a record and restamps MirroredAt when a mirrored field changed' {
+            $repo = New-RepoRoot
+            Mock Get-OpenIssueList { [pscustomobject]@{
+                Issues  = @((New-Issue -Number 57 -Title 'S14 — Work state' -Body "- [ ] **S14.1** first"))
+                Failure = $null
+            } }
+            Mock Get-ProjectItemPositions { $null }
+            Mock Get-CurrentWorkMirrorSha { 'sha0001' }
             Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
+
+            Mock Get-OpenIssueList { [pscustomobject]@{
+                Issues  = @((New-Issue -Number 57 -Title 'S14 — Work state, renamed' -Body "- [ ] **S14.1** first"))
+                Failure = $null
+            } }
+            Mock Get-CurrentWorkMirrorSha { 'sha0002' }
+            $r = Invoke-WorkMirrorUpdate -RepoPath $repo
 
             $text = Get-Content -LiteralPath (Join-Path $repo 'design/state/work/57.md') -Raw
             $text | Should -Match 'MirroredAt: sha0002'
+            $text | Should -Match 'Title: S14 — Work state, renamed'
+            $r.Written.Count | Should -Be 1
         }
 
         It 'writes never carry an Issue, Milestone or git side effect - fields are the closed WorkRef vocabulary only' {
@@ -139,6 +163,54 @@ Describe 'Update-WorkMirror' {
 
             $text = Get-Content -LiteralPath (Join-Path $repo 'design/state/work/3.md') -Raw
             $text | Should -Match 'Criteria:\s*$'
+        }
+    }
+
+    Context 'closed-issue refresh' {
+        It 'rewrites a stale on-disk WorkRef to State: CLOSED when its issue drops off the open list' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $workDir '9.md') -Value "# work/9`nIssue: 9`nTitle: Closed thing`nState: OPEN`nRank: 9`nMirroredAt: sha0001`nCriteria:`n"
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
+            Mock Get-IssuesByNumber { @((New-Issue -Number 9 -Title 'Closed thing' -State 'CLOSED')) }
+            Mock Get-CurrentWorkMirrorSha { 'sha0002' }
+
+            $r = Invoke-WorkMirrorUpdate -RepoPath $repo
+
+            $text = Get-Content -LiteralPath (Join-Path $workDir '9.md') -Raw
+            $text | Should -Match 'State: CLOSED'
+            $text | Should -Match 'MirroredAt: sha0002'
+            $r.Written.Count | Should -Be 1
+        }
+
+        It 'only re-fetches issue numbers that already have an on-disk WorkRef, not the whole tracker' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $workDir '9.md') -Value "# work/9`nIssue: 9`nTitle: Closed thing`nState: OPEN`nRank: 9`nMirroredAt: sha0001`nCriteria:`n"
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
+            Mock Get-IssuesByNumber { @((New-Issue -Number 9 -Title 'Closed thing' -State 'CLOSED')) }
+            Mock Get-CurrentWorkMirrorSha { 'sha0002' }
+
+            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
+
+            Should -Invoke Get-IssuesByNumber -ParameterFilter { @($Numbers) -join ',' -eq '9' } -Times 1 -Exactly
+        }
+
+        It 'leaves an already-closed on-disk record untouched when nothing about it changed' {
+            $repo = New-RepoRoot
+            $workDir = Join-Path $repo 'design/state/work'
+            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $workDir '9.md') -Value "# work/9`nIssue: 9`nTitle: Closed thing`nState: CLOSED`nRank: 9`nMirroredAt: sha0001`nCriteria:`n"
+            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
+            Mock Get-IssuesByNumber { @((New-Issue -Number 9 -Title 'Closed thing' -State 'CLOSED')) }
+            Mock Get-CurrentWorkMirrorSha { 'sha0002' }
+
+            $r = Invoke-WorkMirrorUpdate -RepoPath $repo
+
+            (Get-Content -LiteralPath (Join-Path $workDir '9.md') -Raw) | Should -Match 'MirroredAt: sha0001'
+            $r.Written.Count | Should -Be 0
         }
     }
 
@@ -204,72 +276,6 @@ Describe 'Update-WorkMirror' {
         }
     }
 
-    Context 'refreshing a WorkRef after its issue closes (#29)' {
-        It 'rewrites an existing record to State: CLOSED once its issue drops out of the open list' {
-            $repo = New-RepoRoot
-            $workDir = Join-Path $repo 'design/state/work'
-            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $workDir '10.md') -Value "# work/10`nIssue: 10`nTitle: S3 - old title`nState: OPEN`nRank: 10`nMirroredAt: oldsha`nCriteria: S3.1`n"
-            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
-            Mock Get-ProjectItemPositions { $null }
-            Mock Get-CurrentWorkMirrorSha { 'newsha' }
-            Mock Get-IssuesByNumber { @((New-Issue -Number 10 -Title 'S3 - old title' -State 'CLOSED' -Body "- [x] **S3.1** done")) }
-
-            $r = Invoke-WorkMirrorUpdate -RepoPath $repo
-
-            $r.State | Should -Be 'Clean'
-            $text = Get-Content -LiteralPath (Join-Path $workDir '10.md') -Raw
-            $text | Should -Match 'State: CLOSED'
-            $text | Should -Match 'MirroredAt: newsha'
-        }
-
-        It 'only re-fetches issue numbers that already have an on-disk WorkRef, not the whole tracker' {
-            $repo = New-RepoRoot
-            $workDir = Join-Path $repo 'design/state/work'
-            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $workDir '10.md') -Value "# work/10`nIssue: 10`nTitle: t`nState: OPEN`nRank: 10`nMirroredAt: oldsha`nCriteria:`n"
-            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
-            Mock Get-ProjectItemPositions { $null }
-            Mock Get-CurrentWorkMirrorSha { 'newsha' }
-            Mock Get-IssuesByNumber { @() }
-
-            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
-
-            Should -Invoke Get-IssuesByNumber -Times 1 -ParameterFilter { @($Numbers) -join ',' -eq '10' }
-        }
-
-        It 'leaves an existing record untouched when the closed-issue re-fetch itself cannot resolve it' {
-            $repo = New-RepoRoot
-            $workDir = Join-Path $repo 'design/state/work'
-            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-            $original = "# work/10`nIssue: 10`nTitle: t`nState: OPEN`nRank: 10`nMirroredAt: oldsha`nCriteria:`n"
-            Set-Content -LiteralPath (Join-Path $workDir '10.md') -Value $original -NoNewline
-            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @(); Failure = $null } }
-            Mock Get-ProjectItemPositions { $null }
-            Mock Get-CurrentWorkMirrorSha { 'newsha' }
-            Mock Get-IssuesByNumber { @() }
-
-            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
-
-            (Get-Content -LiteralPath (Join-Path $workDir '10.md') -Raw) | Should -Be $original
-        }
-
-        It 'does not re-fetch an open issue that already came back from Get-OpenIssueList' {
-            $repo = New-RepoRoot
-            $workDir = Join-Path $repo 'design/state/work'
-            New-Item -ItemType Directory -Path $workDir -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $workDir '9.md') -Value "# work/9`nIssue: 9`nTitle: t`nState: OPEN`nRank: 9`nMirroredAt: oldsha`nCriteria:`n"
-            Mock Get-OpenIssueList { [pscustomobject]@{ Issues = @((New-Issue -Number 9 -Title 't')); Failure = $null } }
-            Mock Get-ProjectItemPositions { $null }
-            Mock Get-CurrentWorkMirrorSha { 'newsha' }
-            Mock Get-IssuesByNumber { throw 'must not be called for a still-open issue' }
-
-            Invoke-WorkMirrorUpdate -RepoPath $repo | Out-Null
-
-            (Get-Content -LiteralPath (Join-Path $workDir '9.md') -Raw) | Should -Match 'MirroredAt: newsha'
-        }
-    }
-
     Context 'invocation shape (S14.6)' {
         It 'is the only script under tools/ that invokes gh issue create, gh label, gh milestone, or git commit' {
             $text = Get-Content -LiteralPath $script:ScriptPath -Raw
@@ -278,42 +284,6 @@ Describe 'Update-WorkMirror' {
             $text | Should -Not -Match 'gh\s+milestone'
             $text | Should -Not -Match 'git\s+commit'
             $text | Should -Not -Match 'git\s+push'
-        }
-    }
-
-    Context 'Invoke-Gh decodes the child process output as UTF-8 regardless of the console default (#48)' {
-        <#
-          gh itself needs auth this environment cannot guarantee, so this points Invoke-Gh's
-          -Command at git instead - a process this repository can always run, and one whose
-          "show a blob containing an em dash" output exercises the exact same
-          ProcessStartInfo/StandardOutputEncoding path Invoke-Gh uses for gh. The `&` call
-          operator Invoke-Gh replaced decoded a captured child's stdout using
-          [Console]::OutputEncoding, which on Windows defaults to the OEM code page rather
-          than the UTF-8 the child actually writes - this is the regression test for that:
-          it fails under the pre-fix `&`-based implementation and passes under Invoke-Gh.
-        #>
-        BeforeAll {
-            $script:EncodingRepo = Join-Path $TestDrive 'encoding-repo'
-            New-Item -ItemType Directory -Path $script:EncodingRepo -Force | Out-Null
-            & git -C $script:EncodingRepo init --quiet 2>$null
-            & git -C $script:EncodingRepo config user.email 'test@example.com' 2>$null
-            & git -C $script:EncodingRepo config user.name 'Test' 2>$null
-            Set-Content -LiteralPath (Join-Path $script:EncodingRepo 'file.md') -Value "line one em dash `u{2014} end" -NoNewline -Encoding utf8NoBOM
-            & git -C $script:EncodingRepo add file.md 2>$null
-            & git -C $script:EncodingRepo commit -m 'em dash' --quiet 2>$null
-        }
-
-        It 'decodes a non-ASCII child process output correctly even when Console.OutputEncoding is a non-UTF8 code page' {
-            $original = [Console]::OutputEncoding
-            try {
-                [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(437)
-                $result = Invoke-Gh -Command 'git' -Arguments @('-C', $script:EncodingRepo, 'show', 'HEAD:file.md')
-            } finally {
-                [Console]::OutputEncoding = $original
-            }
-
-            $result.ExitCode | Should -Be 0
-            $result.StdOut | Should -Be "line one em dash `u{2014} end"
         }
     }
 }

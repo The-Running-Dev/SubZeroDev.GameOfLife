@@ -147,6 +147,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-26-kit-sync-reconciliation-agents-md-tier-routing-merge-house-conventions-correction-codex-profiles-md-install-done-clean-rename | `unit/document/agents-md` |
 | decision/2026-08-29-six-ss-invariants-gain-the-tests-their-enforcement-column-already-claimed | `unit/script/test-specset` |
 | decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream | `unit/command/track` |
+| decision/2026-08-30-kit-sync-adopts-the-upstream-62-fix-the-local-encoding-fork-is-retired | — |
 <!-- decision-affects:end -->
 
 ## Question affects

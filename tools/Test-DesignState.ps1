@@ -946,22 +946,20 @@ function Invoke-Projector {
     if (-not (Test-Path -LiteralPath $projectorPath)) {
         return [pscustomobject]@{ Ran = $false; Detail = 'tools/Update-DesignProjection.ps1 does not exist'; Regions = @() }
     }
+    <#
+        A nested pwsh's stdout is native-command output too, decoded via
+        [Console]::OutputEncoding the same as gh's - the OEM code page on this host, not the
+        UTF-8 the child actually writes. A projected region carrying a non-ASCII byte (the em
+        dashes throughout 20-contract.md, or a mirrored issue title) came back corrupted, so
+        every comparison against the tree's real UTF-8 copy mismatched and ProjectionStale
+        fired on content that was never actually stale. Same fix as Invoke-GhRaw: an explicit
+        UTF-8 StandardOutputEncoding via ProcessStartInfo, sidestepping the console.
+    #>
+    $raw = $null
     try {
-        # Invoke via Process, not the `&` call operator: PowerShell decodes a captured
-        # child's stdout using [Console]::OutputEncoding, which on Windows defaults to the
-        # OEM code page (e.g. ibm437) rather than the UTF-8 the projector writes. Left
-        # unset, every non-ASCII byte the projector renders (an em dash, a section sign)
-        # comes back mis-decoded, and every region comparison below reports a false
-        # ProjectionStale (the same class of bug tools/Sync-Kit.ps1's Invoke-GitRaw exists
-        # to avoid for git).
         $psi = [System.Diagnostics.ProcessStartInfo]::new()
-        $psi.FileName = 'pwsh'
-        $psi.ArgumentList.Add('-NoProfile')
-        $psi.ArgumentList.Add('-File')
-        $psi.ArgumentList.Add($projectorPath)
-        $psi.ArgumentList.Add('-Path')
-        $psi.ArgumentList.Add($RepoPath)
-        $psi.ArgumentList.Add('-DryRun')
+        $psi.FileName = (Get-Process -Id $PID).Path
+        foreach ($a in @('-NoProfile', '-File', $projectorPath, '-Path', $RepoPath, '-DryRun')) { $psi.ArgumentList.Add($a) }
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
         $psi.UseShellExecute = $false
@@ -980,7 +978,7 @@ function Invoke-Projector {
     $regions = @()
     try {
         if ($raw) {
-            $regions = @(($raw -join "`n") | ConvertFrom-Json)
+            $regions = @($raw | ConvertFrom-Json)
         }
     } catch {
         return [pscustomobject]@{ Ran = $false; Detail = "unparseable projector output: $($_.Exception.Message)"; Regions = @() }
@@ -1072,18 +1070,21 @@ function Test-CommitIsAncestor {
     }
 }
 
-function Invoke-Gh {
-    param([Parameter(Mandatory)][string[]] $Arguments, [string] $Command = 'gh')
-
-    # Invoke via Process, not the `&` call operator: PowerShell decodes a captured child's
-    # stdout using [Console]::OutputEncoding, which on Windows defaults to the OEM code page
-    # rather than the UTF-8 gh actually writes. Left unset, a non-ASCII byte in an issue title
-    # (an em dash) comes back mis-decoded and WorkStateDivergence's title comparison below
-    # false-positives - the same class of bug Invoke-Projector (above) and
-    # Update-WorkMirror.ps1's own Invoke-Gh already exist to avoid.
+function Invoke-GhRaw {
+    <#
+        gh writes UTF-8. PowerShell's native-command capture (`& gh @args`) decodes that
+        stdout using [Console]::OutputEncoding, which on a Windows host defaults to the OEM
+        code page (ibm437) rather than UTF-8 - the same class of bug Sync-Kit.ps1's
+        Invoke-GitRaw fixed for git's output (#20), never applied to gh. A non-ASCII byte in
+        an issue title then decodes to the wrong character and WorkStateDivergence misfires
+        comparing a correctly-mirrored title against a corrupted live read. Routing through
+        ProcessStartInfo with an explicit UTF-8 StandardOutputEncoding sidesteps the console
+        entirely.
+    #>
+    param([string[]] $GhArgs)
     $psi = [System.Diagnostics.ProcessStartInfo]::new()
-    $psi.FileName = $Command
-    foreach ($arg in $Arguments) { $psi.ArgumentList.Add($arg) }
+    $psi.FileName = 'gh'
+    foreach ($a in $GhArgs) { $psi.ArgumentList.Add($a) }
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.UseShellExecute = $false
@@ -1092,7 +1093,7 @@ function Invoke-Gh {
     $stdout = $proc.StandardOutput.ReadToEnd()
     $proc.StandardError.ReadToEnd() | Out-Null
     $proc.WaitForExit()
-    [pscustomobject]@{ ExitCode = $proc.ExitCode; StdOut = $stdout }
+    [pscustomobject]@{ Output = $stdout; ExitCode = $proc.ExitCode }
 }
 
 function Test-TrackerAvailable {
@@ -1100,8 +1101,8 @@ function Test-TrackerAvailable {
     $ghArgs = @('issue', 'list', '--state', 'all', '--limit', '1', '--json', 'number')
     if ($Repository) { $ghArgs += @('-R', $Repository) }
     try {
-        & gh @ghArgs 2>$null | Out-Null
-        return ($LASTEXITCODE -eq 0)
+        $result = Invoke-GhRaw -GhArgs $ghArgs
+        return ($result.ExitCode -eq 0)
     } catch {
         return $false
     }
@@ -1130,15 +1131,13 @@ function Test-TrackerClasses {
         foreach ($ref in $workRefs) {
             $number = $ref.Scalars['Issue']
             if ([string]::IsNullOrWhiteSpace($number)) { continue }
-            $ghArgs = @('issue', 'view', $number, '--json', 'title,state')
-            if ($Repository) { $ghArgs += @('-R', $Repository) }
-            $ghResult = Invoke-Gh -Arguments $ghArgs
-            if ($ghResult.ExitCode -ne 0 -or -not $ghResult.StdOut) {
+            $issueResult = Invoke-GhRaw -GhArgs @('issue', 'view', $number, '--json', 'title,state')
+            if ($issueResult.ExitCode -ne 0 -or -not $issueResult.Output) {
                 $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'TrackerUnavailable' -Detail "could not read issue #$number for $($ref.Id)"))
                 continue
             }
             try {
-                $issue = $ghResult.StdOut | ConvertFrom-Json
+                $issue = $issueResult.Output | ConvertFrom-Json
             } catch {
                 $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'TrackerUnavailable' -Detail "unparseable gh output for issue #$number"))
                 continue
@@ -1217,8 +1216,11 @@ function Invoke-DesignStateCheck {
         $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'RecordUnparseable' -Detail "$($f.Path):$($f.Line): $($f.Text)"))
     }
 
-    if ($graph.Root -eq '' -or $graph.Records.Count -eq 0) {
-        $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'StateSetAbsent' -Detail 'design/state/ is missing or holds zero records'))
+    # WorkRef is mirrored into every target on every /track run regardless of adoption (#113),
+    # so it never counts toward "the state set is present" - only the other five kinds do.
+    $adoptedRecordCount = @($graph.Records | Where-Object { $_.Kind -ne 'WorkRef' }).Count
+    if ($graph.Root -eq '' -or $adoptedRecordCount -eq 0) {
+        $couldNotEvaluate.Add((New-CouldNotEvaluate -Reason 'StateSetAbsent' -Detail 'design/state/ is missing or holds no records other than WorkRef mirrors'))
         return New-DesignStateResult -Findings @() -Reported @() -CouldNotEvaluate @($couldNotEvaluate) -ExitCode 2 -LargestClosure $null -ReportLines @('StateSetAbsent: nothing to check.')
     }
 
