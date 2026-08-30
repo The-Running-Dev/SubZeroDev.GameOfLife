@@ -172,8 +172,6 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 10 | #82 | S14 — The content gate cannot be relaxed, reordered, or made to pass without running | S14.1, S14.2, S14.3, S14.4, S14.5, S14.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
-| 11 | #83 | S15 — There is work to take, and a way up from it | S15.1, S15.2, S15.3, S15.4, S15.5, S15.6, S15.7 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 12 | #84 | S16 — Weeks stop being identical: work, money and paperwork go wrong on their own | S16.1, S16.2, S16.3, S16.4, S16.5, S16.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 13 | #85 | S17 — Education is something a player can actually buy, attend, and fail | S17.1, S17.2, S17.3, S17.4, S17.5, S17.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 14 | #86 | S18 — There is somewhere better to live, and a bill for staying there | S18.1, S18.2, S18.3, S18.4, S18.5 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
