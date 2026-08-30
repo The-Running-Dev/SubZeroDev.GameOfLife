@@ -4,7 +4,7 @@
     "title": "Life in the Fast Lane — Stable Life",
     "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "duration": "52 weeks",
-    "contentNotice": "Seed content. The map and the scenario are authored; jobs, courses, events and possessions are not yet written.",
+    "contentNotice": "Seed content. The map, the scenario and the career ladder are authored; courses, events and possessions are not yet written.",
     "featured": false,
     "hidden": true
   },
@@ -15,7 +15,338 @@
     "kindId": "simulation",
     "content": {
       "descriptionKey": "stable-life.campaign.description",
-      "jobs": [],
+      "jobs": [
+        {
+          "id": "job-dishwasher",
+          "employerId": "employer-greasy-spoon-diner",
+          "careerPathId": "career-food-service",
+          "tier": "entry",
+          "schedule": {
+            "weeklyTimeCost": 10,
+            "flexibility": 10
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 21000
+          },
+          "requirements": [],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [
+            {
+              "toJobId": "job-line-cook",
+              "minimumWeeksInRole": 8,
+              "minimumPerformance": 40,
+              "requirements": [],
+              "contested": false,
+              "baseChance": 85
+            }
+          ],
+          "terminationRules": [],
+          "contested": false,
+          "tags": [
+            "career-food-service"
+          ],
+          "titleKey": "stable-life.job.dishwasher.title",
+          "descriptionKey": "stable-life.job.dishwasher.description"
+        },
+        {
+          "id": "job-line-cook",
+          "employerId": "employer-greasy-spoon-diner",
+          "careerPathId": "career-food-service",
+          "tier": "skilled",
+          "schedule": {
+            "weeklyTimeCost": 9,
+            "flexibility": 20
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 34000
+          },
+          "requirements": [
+            {
+              "type": "skill",
+              "condition": {
+                "field": "player.skills.cooking",
+                "operator": "greater_or_equal",
+                "value": 25
+              },
+              "failureCode": "requirement_unmet",
+              "messageKey": "stable-life.job.line-cook.requirement.cooking"
+            }
+          ],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [
+            {
+              "toJobId": "job-shift-supervisor",
+              "minimumWeeksInRole": 12,
+              "minimumPerformance": 55,
+              "requirements": [
+                {
+                  "type": "skill",
+                  "condition": {
+                    "field": "player.skills.management",
+                    "operator": "greater_or_equal",
+                    "value": 40
+                  },
+                  "failureCode": "requirement_unmet",
+                  "messageKey": "stable-life.job.shift-supervisor.requirement.management"
+                }
+              ],
+              "contested": true,
+              "baseChance": 50
+            }
+          ],
+          "terminationRules": [],
+          "contested": false,
+          "tags": [
+            "career-food-service"
+          ],
+          "titleKey": "stable-life.job.line-cook.title",
+          "descriptionKey": "stable-life.job.line-cook.description"
+        },
+        {
+          "id": "job-shift-supervisor",
+          "employerId": "employer-greasy-spoon-diner",
+          "careerPathId": "career-food-service",
+          "tier": "professional",
+          "schedule": {
+            "weeklyTimeCost": 8,
+            "flexibility": 30
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 52000
+          },
+          "requirements": [
+            {
+              "type": "skill",
+              "condition": {
+                "field": "player.skills.management",
+                "operator": "greater_or_equal",
+                "value": 40
+              },
+              "failureCode": "requirement_unmet",
+              "messageKey": "stable-life.job.shift-supervisor.requirement.management"
+            }
+          ],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [],
+          "terminationRules": [],
+          "contested": true,
+          "positionsAvailable": 2,
+          "tags": [
+            "career-food-service"
+          ],
+          "titleKey": "stable-life.job.shift-supervisor.title",
+          "descriptionKey": "stable-life.job.shift-supervisor.description"
+        },
+        {
+          "id": "job-data-entry-clerk",
+          "employerId": "employer-civic-data-office",
+          "careerPathId": "career-clerical",
+          "tier": "entry",
+          "schedule": {
+            "weeklyTimeCost": 10,
+            "flexibility": 10
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 21000
+          },
+          "requirements": [],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [
+            {
+              "toJobId": "job-systems-administrator",
+              "minimumWeeksInRole": 8,
+              "minimumPerformance": 40,
+              "requirements": [],
+              "contested": false,
+              "baseChance": 85
+            }
+          ],
+          "terminationRules": [],
+          "contested": false,
+          "tags": [
+            "career-clerical"
+          ],
+          "titleKey": "stable-life.job.data-entry-clerk.title",
+          "descriptionKey": "stable-life.job.data-entry-clerk.description"
+        },
+        {
+          "id": "job-systems-administrator",
+          "employerId": "employer-civic-data-office",
+          "careerPathId": "career-clerical",
+          "tier": "skilled",
+          "schedule": {
+            "weeklyTimeCost": 9,
+            "flexibility": 25
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 34000
+          },
+          "requirements": [
+            {
+              "type": "skill",
+              "condition": {
+                "field": "player.skills.programming",
+                "operator": "greater_or_equal",
+                "value": 25
+              },
+              "failureCode": "requirement_unmet",
+              "messageKey": "stable-life.job.systems-administrator.requirement.programming"
+            }
+          ],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [
+            {
+              "toJobId": "job-infrastructure-engineer",
+              "minimumWeeksInRole": 12,
+              "minimumPerformance": 55,
+              "requirements": [
+                {
+                  "type": "skill",
+                  "condition": {
+                    "field": "player.skills.programming",
+                    "operator": "greater_or_equal",
+                    "value": 55
+                  },
+                  "failureCode": "requirement_unmet",
+                  "messageKey": "stable-life.job.infrastructure-engineer.requirement.programming"
+                }
+              ],
+              "contested": true,
+              "baseChance": 55
+            }
+          ],
+          "terminationRules": [],
+          "contested": false,
+          "tags": [
+            "career-clerical"
+          ],
+          "titleKey": "stable-life.job.systems-administrator.title",
+          "descriptionKey": "stable-life.job.systems-administrator.description"
+        },
+        {
+          "id": "job-infrastructure-engineer",
+          "employerId": "employer-civic-data-office",
+          "careerPathId": "career-clerical",
+          "tier": "professional",
+          "schedule": {
+            "weeklyTimeCost": 8,
+            "flexibility": 35
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 52000
+          },
+          "requirements": [
+            {
+              "type": "skill",
+              "condition": {
+                "field": "player.skills.programming",
+                "operator": "greater_or_equal",
+                "value": 55
+              },
+              "failureCode": "requirement_unmet",
+              "messageKey": "stable-life.job.infrastructure-engineer.requirement.programming"
+            }
+          ],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [
+            {
+              "toJobId": "job-wifi-scapegoat",
+              "minimumWeeksInRole": 16,
+              "minimumPerformance": 65,
+              "requirements": [],
+              "contested": true,
+              "baseChance": 35
+            }
+          ],
+          "terminationRules": [],
+          "contested": true,
+          "positionsAvailable": 2,
+          "tags": [
+            "career-clerical"
+          ],
+          "titleKey": "stable-life.job.infrastructure-engineer.title",
+          "descriptionKey": "stable-life.job.infrastructure-engineer.description"
+        },
+        {
+          "id": "job-wifi-scapegoat",
+          "employerId": "employer-civic-data-office",
+          "careerPathId": "career-clerical",
+          "tier": "senior",
+          "schedule": {
+            "weeklyTimeCost": 8,
+            "flexibility": 40
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 78000
+          },
+          "requirements": [],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [],
+          "terminationRules": [],
+          "contested": true,
+          "positionsAvailable": 1,
+          "tags": [
+            "career-clerical"
+          ],
+          "titleKey": "stable-life.job.wifi-scapegoat.title",
+          "descriptionKey": "stable-life.job.wifi-scapegoat.description"
+        },
+        {
+          "id": "job-retail-associate",
+          "employerId": "employer-bright-mart-retail",
+          "careerPathId": "career-retail",
+          "tier": "entry",
+          "schedule": {
+            "weeklyTimeCost": 10,
+            "flexibility": 15
+          },
+          "compensation": {
+            "baseWeeklyPayCents": 21000
+          },
+          "requirements": [],
+          "performance": {
+            "factors": [],
+            "weeklyDriftToward": 50,
+            "minimumAcceptable": 30
+          },
+          "promotionPaths": [],
+          "terminationRules": [],
+          "contested": false,
+          "tags": [
+            "career-retail"
+          ],
+          "titleKey": "stable-life.job.retail-associate.title",
+          "descriptionKey": "stable-life.job.retail-associate.description"
+        }
+      ],
       "courses": [],
       "housing": [
         {
@@ -127,7 +458,43 @@
       "opportunities": [],
       "achievements": [],
       "headlines": [],
-      "employers": [],
+      "employers": [
+        {
+          "id": "employer-greasy-spoon-diner",
+          "sector": "food-service",
+          "reputation": 40,
+          "jobIds": [
+            "job-dishwasher",
+            "job-line-cook",
+            "job-shift-supervisor"
+          ],
+          "npcIds": [],
+          "nameKey": "stable-life.employer.greasy-spoon-diner.name"
+        },
+        {
+          "id": "employer-civic-data-office",
+          "sector": "clerical",
+          "reputation": 55,
+          "jobIds": [
+            "job-data-entry-clerk",
+            "job-systems-administrator",
+            "job-infrastructure-engineer",
+            "job-wifi-scapegoat"
+          ],
+          "npcIds": [],
+          "nameKey": "stable-life.employer.civic-data-office.name"
+        },
+        {
+          "id": "employer-bright-mart-retail",
+          "sector": "retail",
+          "reputation": 50,
+          "jobIds": [
+            "job-retail-associate"
+          ],
+          "npcIds": [],
+          "nameKey": "stable-life.employer.bright-mart-retail.name"
+        }
+      ],
       "locations": [
         {
           "id": "home",
@@ -256,7 +623,26 @@
       ],
       "backgrounds": [],
       "traits": [],
-      "skills": [],
+      "skills": [
+        {
+          "id": "cooking",
+          "category": "trade",
+          "decayPerWeek": 0,
+          "nameKey": "stable-life.skill.cooking.name"
+        },
+        {
+          "id": "management",
+          "category": "administrative",
+          "decayPerWeek": 0,
+          "nameKey": "stable-life.skill.management.name"
+        },
+        {
+          "id": "programming",
+          "category": "technical",
+          "decayPerWeek": 0,
+          "nameKey": "stable-life.skill.programming.name"
+        }
+      ],
       "scenarioId": "scenario-stable-life",
       "goalFailurePrecedence": "goals_win",
       "sceneTemplateKey": "stable-life.scene",
@@ -276,10 +662,29 @@
     "stable-life.campaign.description": "Life in the Fast Lane — the Stable Life scenario. Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "stable-life.campaign.title": "Life in the Fast Lane — Stable Life",
     "stable-life.difficulty.standard.label": "Standard",
+    "stable-life.employer.bright-mart-retail.name": "BrightMart Retail",
+    "stable-life.employer.civic-data-office.name": "Civic Data Office",
+    "stable-life.employer.greasy-spoon-diner.name": "The Greasy Spoon Diner",
     "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     "stable-life.goal.stable-life.label": "A Stable Life",
     "stable-life.housing.rented-room.description": "The cheapest housing tier. It is a room, and it is rented, and the description has now told you everything it has.",
     "stable-life.housing.rented-room.name": "Rented Room",
+    "stable-life.job.data-entry-clerk.description": "Entry tier. No credential required, per §6.1.",
+    "stable-life.job.data-entry-clerk.title": "Data Entry Clerk",
+    "stable-life.job.dishwasher.description": "Entry tier. No credential required, per §6.1 — just a sink and a willingness.",
+    "stable-life.job.dishwasher.title": "Dishwasher",
+    "stable-life.job.infrastructure-engineer.description": "Professional tier. §6.4: open positions here are finite and competed for.",
+    "stable-life.job.infrastructure-engineer.title": "Infrastructure Engineer",
+    "stable-life.job.line-cook.description": "Skilled tier — §6.1's \"demonstrated skill\" is the Cooking skill, per §6.2's requirements list.",
+    "stable-life.job.line-cook.title": "Line Cook",
+    "stable-life.job.retail-associate.description": "Entry tier. No credential required, per §6.1.",
+    "stable-life.job.retail-associate.title": "Retail Associate",
+    "stable-life.job.shift-supervisor.description": "Professional tier. §6.4: open positions here are finite and competed for.",
+    "stable-life.job.shift-supervisor.title": "Shift Supervisor",
+    "stable-life.job.systems-administrator.description": "Skilled tier — §6.1's \"demonstrated skill\" is the Programming skill, per §6.2.",
+    "stable-life.job.systems-administrator.title": "Systems Administrator",
+    "stable-life.job.wifi-scapegoat.description": "Senior tier — §6.1: scarce, track record plus reputation. §6.6's own joke ending for this chain.",
+    "stable-life.job.wifi-scapegoat.title": "Person Blamed When Wi-Fi Stops",
     "stable-life.location.bank.description": "Two hops from Home, which is exactly as far as money should be.",
     "stable-life.location.bank.name": "Bank",
     "stable-life.location.community-college.description": "Two hops from Home. §16.2.1 notes its travel cost is the first lever to move if the certificate path proves impossible rather than merely hard.",
@@ -298,6 +703,9 @@
     "stable-life.location.workplace.name": "Workplace",
     "stable-life.scenario.description": "Two hundred dollars, no job, basic education, a rented room, one week of food, and fifty-two weeks.",
     "stable-life.scenario.name": "Stable Life",
-    "stable-life.scene": "Week {week}. {location}."
+    "stable-life.scene": "Week {week}. {location}.",
+    "stable-life.skill.cooking.name": "Cooking",
+    "stable-life.skill.management.name": "Management",
+    "stable-life.skill.programming.name": "Programming"
   }
 }
