@@ -1,6 +1,6 @@
 {
-  "manifestHash": "837dfb78e5457ebb6b232f7ccf1d6f4a67cd4687fb8d2e1bd11a5e2594a3928e",
-  "generated": "2026-08-25",
+  "manifestHash": "6578e09c2a7be8fb00bee3371bf4ef5a2b3d02a67ad9a9ed1cf78bb9aa25498d",
+  "generated": "2026-08-30",
   "gates": [
     {
       "name": "Parse-check PowerShell scripts",
@@ -21,6 +21,22 @@
     {
       "name": "Check the spec set",
       "command": "./tools/Test-SpecSet.ps1"
+    },
+    {
+      "name": "Build the pinned engine",
+      "command": "npm run setup"
+    },
+    {
+      "name": "Typecheck the campaign sources",
+      "command": "npm run typecheck"
+    },
+    {
+      "name": "Test the campaign sources",
+      "command": "npm test"
+    },
+    {
+      "name": "Re-export content and fail if the committed JSON is stale",
+      "command": "npm run export:content && npm run check:clean"
     }
   ]
 }
