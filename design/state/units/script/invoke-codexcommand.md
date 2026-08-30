@@ -9,7 +9,7 @@ Live:
 Archival:
 Questions:
 Work:
-Evidence:
+Evidence: tools/Invoke-CodexCommand.Tests.ps1
 
 ## Owns
 Maps a command name to the Codex profile (`architect`/`builder`/`quick`) required by

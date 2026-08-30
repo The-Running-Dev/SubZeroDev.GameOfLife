@@ -47,6 +47,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | `unit/script/invoke-donehousekeeping` | script | `tools/Invoke-DoneHousekeeping.ps1` |
 | `unit/script/measure-session` | script | `tools/Measure-Session.ps1` |
 | `unit/script/new-designdocs` | script | `tools/New-DesignDocs.ps1` |
+| `unit/script/new-reducedprompt` | script | `tools/New-ReducedPrompt.ps1` |
 | `unit/script/read-designstate` | script | `tools/Read-DesignState.ps1` |
 | `unit/script/read-specset` | script | `tools/Read-SpecSet.ps1` |
 | `unit/script/sync-kit` | script | `tools/Sync-Kit.ps1` |
