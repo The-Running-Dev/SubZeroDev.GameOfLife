@@ -172,8 +172,6 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 8 | #80 | S12 — Nothing reaches past the engine's published surface, and nothing reads the published output | S12.1, S12.2, S12.3, S12.4, S12.5, S12.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
-| 9 | #81 | S13 — A failed export cannot leave half a catalog published, and a retired campaign disappears | S13.1, S13.2, S13.3, S13.4, S13.5 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 10 | #82 | S14 — The content gate cannot be relaxed, reordered, or made to pass without running | S14.1, S14.2, S14.3, S14.4, S14.5, S14.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 11 | #83 | S15 — There is work to take, and a way up from it | S15.1, S15.2, S15.3, S15.4, S15.5, S15.6, S15.7 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 12 | #84 | S16 — Weeks stop being identical: work, money and paperwork go wrong on their own | S16.1, S16.2, S16.3, S16.4, S16.5, S16.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
