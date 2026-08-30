@@ -948,9 +948,9 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 
 | Id | Invariant | Owner | Enforcement | Evidence |
 |---|---|---|---|---|
-| **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | — |
-| **CP2** | `content/` has exactly one writer, and it writes nowhere else | Exporter | Code | — |
-| **CP3** | Nothing in this repository reads a file under `content/` | All | Code | — |
+| **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | `src/published-surface.test.ts` |
+| **CP2** | `content/` has exactly one writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
+| **CP3** | Nothing in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
 | **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | — |
 | **CP5** | Two exports from the same sources and the same pin produce byte-identical files | Exporter | Code | `.github/workflows/verify.yml`, step *Re-export content and fail if the committed JSON is stale* |
 | **CP6** | Every `.json` under `content/` the publication catalog does not name is removed by the export | Exporter | Code | — |
