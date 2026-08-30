@@ -5,7 +5,7 @@ Anchor: design/10-design.md
 Consumes:
 Exposes:
 Binds: I27
-Live: decision/2026-08-20-reduce-the-mirrored-surface-rather-than-mirror-everything
+Live: decision/2026-08-30-the-game-content-path-enters-design-through-a-design-pass-before-it-is-contracted-or-sliced, decision/2026-08-20-reduce-the-mirrored-surface-rather-than-mirror-everything
 Archival:
 Questions:
 Work:
