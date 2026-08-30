@@ -1,0 +1,27 @@
+{
+  "name": "subzerodev-gameoflife-content",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Life in the Fast Lane — the campaign sources for the simulation kind, and the portable JSON published from them. Authored against the spec set in docs/docs/games/.",
+  "scripts": {
+    "setup": "npm --prefix engine/src/engine ci && npm --prefix engine/src/engine run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "export:content": "tsx scripts/export-content.ts",
+    "check:clean": "node scripts/check-clean.mjs",
+    "check": "npm run typecheck && npm run test && npm run export:content && npm run check:clean"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "@the-running-dev/game-engine": "file:engine/src/engine"
+  }
+}

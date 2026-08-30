@@ -1,0 +1,303 @@
+{
+  "formatVersion": 2,
+  "catalog": {
+    "title": "Life in the Fast Lane — Stable Life",
+    "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
+    "duration": "52 weeks",
+    "contentNotice": "Seed content. The map and the scenario are authored; jobs, courses, events and possessions are not yet written.",
+    "featured": false,
+    "hidden": true
+  },
+  "campaign": {
+    "id": "life-in-the-fast-lane-stable-life",
+    "version": "0.1.0",
+    "titleKey": "stable-life.campaign.title",
+    "kindId": "simulation",
+    "content": {
+      "descriptionKey": "stable-life.campaign.description",
+      "jobs": [],
+      "courses": [],
+      "housing": [
+        {
+          "id": "housing-rented-room",
+          "upfrontCostCents": 0,
+          "weeklyCostCents": 9500,
+          "capacity": 1,
+          "comfort": 30,
+          "safety": 45,
+          "prestige": 5,
+          "storage": 10,
+          "commuteModifier": 0,
+          "energyRecoveryModifier": 0,
+          "happinessModifier": 0,
+          "healthModifier": 0,
+          "maintenanceRisk": 20,
+          "requirements": [],
+          "tags": [
+            "starting",
+            "cheapest"
+          ],
+          "nameKey": "stable-life.housing.rented-room.name",
+          "descriptionKey": "stable-life.housing.rented-room.description"
+        }
+      ],
+      "items": [],
+      "events": [],
+      "npcs": [],
+      "goals": [
+        {
+          "id": "goal-stable-life",
+          "category": "scenario",
+          "conditions": {
+            "all": [
+              {
+                "field": "player.finances.cashCents",
+                "operator": "greater_or_equal",
+                "value": 200000
+              },
+              {
+                "any": [
+                  {
+                    "field": "player.career.highestTierAchieved",
+                    "operator": "equals",
+                    "value": "skilled"
+                  },
+                  {
+                    "field": "player.career.highestTierAchieved",
+                    "operator": "equals",
+                    "value": "professional"
+                  },
+                  {
+                    "field": "player.career.highestTierAchieved",
+                    "operator": "equals",
+                    "value": "senior"
+                  }
+                ]
+              },
+              {
+                "field": "player.needs.happiness",
+                "operator": "greater_or_equal",
+                "value": 60
+              },
+              {
+                "field": "player.needs.health",
+                "operator": "greater_or_equal",
+                "value": 60
+              },
+              {
+                "field": "player.finances.overdueBalanceCents",
+                "operator": "equals",
+                "value": 0
+              }
+            ]
+          },
+          "labelKey": "stable-life.goal.stable-life.label",
+          "descriptionKey": "stable-life.goal.stable-life.description"
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "scenario-stable-life",
+          "startingBackgroundIds": [],
+          "startingCashCents": 20000,
+          "startingHousingId": "housing-rented-room",
+          "startingLocationId": "home",
+          "startingInventory": [],
+          "goalIds": [
+            "goal-stable-life"
+          ],
+          "weekLimit": 52,
+          "mode": "classic",
+          "goalFailurePrecedence": "goals_win",
+          "nameKey": "stable-life.scenario.name",
+          "descriptionKey": "stable-life.scenario.description"
+        }
+      ],
+      "difficulties": [
+        {
+          "id": "difficulty-standard",
+          "economyModifiers": [],
+          "needDriftModifiers": [],
+          "checkDifficultyOffset": 0,
+          "rivalInformationAccess": "standard",
+          "rivalStartingAdvantages": [],
+          "labelKey": "stable-life.difficulty.standard.label"
+        }
+      ],
+      "opportunities": [],
+      "achievements": [],
+      "headlines": [],
+      "employers": [],
+      "locations": [
+        {
+          "id": "home",
+          "connections": [
+            "market",
+            "employment-office",
+            "recreation-area",
+            "workplace"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "rest",
+            "eat",
+            "study",
+            "socialize"
+          ],
+          "nameKey": "stable-life.location.home.name",
+          "descriptionKey": "stable-life.location.home.description"
+        },
+        {
+          "id": "workplace",
+          "connections": [
+            "home",
+            "market",
+            "recreation-area"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "work",
+            "work_overtime",
+            "negotiate_job_terms"
+          ],
+          "nameKey": "stable-life.location.workplace.name",
+          "descriptionKey": "stable-life.location.workplace.description"
+        },
+        {
+          "id": "market",
+          "connections": [
+            "home",
+            "workplace",
+            "bank"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "shop",
+            "sell_item"
+          ],
+          "nameKey": "stable-life.location.market.name",
+          "descriptionKey": "stable-life.location.market.description"
+        },
+        {
+          "id": "bank",
+          "connections": [
+            "market",
+            "employment-office"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "deposit_savings",
+            "borrow_money",
+            "repay_debt",
+            "pay_bills"
+          ],
+          "nameKey": "stable-life.location.bank.name",
+          "descriptionKey": "stable-life.location.bank.description"
+        },
+        {
+          "id": "employment-office",
+          "connections": [
+            "home",
+            "bank",
+            "department-of-forms"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "search_for_work",
+            "apply_for_job"
+          ],
+          "nameKey": "stable-life.location.employment-office.name",
+          "descriptionKey": "stable-life.location.employment-office.description"
+        },
+        {
+          "id": "recreation-area",
+          "connections": [
+            "home",
+            "workplace",
+            "community-college"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "exercise",
+            "socialize"
+          ],
+          "nameKey": "stable-life.location.recreation-area.name",
+          "descriptionKey": "stable-life.location.recreation-area.description"
+        },
+        {
+          "id": "community-college",
+          "connections": [
+            "recreation-area",
+            "department-of-forms"
+          ],
+          "travelTimeUnits": 1,
+          "actionTypes": [
+            "attend_class",
+            "enroll_course",
+            "withdraw_course",
+            "study"
+          ],
+          "nameKey": "stable-life.location.community-college.name",
+          "descriptionKey": "stable-life.location.community-college.description"
+        },
+        {
+          "id": "department-of-forms",
+          "connections": [
+            "employment-office",
+            "community-college"
+          ],
+          "travelTimeUnits": 2,
+          "actionTypes": [
+            "respond_to_event"
+          ],
+          "nameKey": "stable-life.location.department-of-forms.name",
+          "descriptionKey": "stable-life.location.department-of-forms.description"
+        }
+      ],
+      "backgrounds": [],
+      "traits": [],
+      "skills": [],
+      "scenarioId": "scenario-stable-life",
+      "goalFailurePrecedence": "goals_win",
+      "sceneTemplateKey": "stable-life.scene",
+      "actionLabelKeys": {
+        "planAdd": "stable-life.action.plan-add",
+        "planRemove": "stable-life.action.plan-remove",
+        "planClear": "stable-life.action.plan-clear",
+        "endWeek": "stable-life.action.end-week"
+      }
+    }
+  },
+  "strings": {
+    "stable-life.action.end-week": "End the week",
+    "stable-life.action.plan-add": "Plan",
+    "stable-life.action.plan-clear": "Clear the week",
+    "stable-life.action.plan-remove": "Unplan",
+    "stable-life.campaign.description": "Life in the Fast Lane — the Stable Life scenario. Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
+    "stable-life.campaign.title": "Life in the Fast Lane — Stable Life",
+    "stable-life.difficulty.standard.label": "Standard",
+    "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
+    "stable-life.goal.stable-life.label": "A Stable Life",
+    "stable-life.housing.rented-room.description": "The cheapest housing tier. It is a room, and it is rented, and the description has now told you everything it has.",
+    "stable-life.housing.rented-room.name": "Rented Room",
+    "stable-life.location.bank.description": "Two hops from Home, which is exactly as far as money should be.",
+    "stable-life.location.bank.name": "Bank",
+    "stable-life.location.community-college.description": "Two hops from Home. §16.2.1 notes its travel cost is the first lever to move if the certificate path proves impossible rather than merely hard.",
+    "stable-life.location.community-college.name": "Community College",
+    "stable-life.location.department-of-forms.description": "Enter cost 2, three hops from Home. You have to genuinely want that form.",
+    "stable-life.location.department-of-forms.name": "Department of Forms",
+    "stable-life.location.employment-office.description": "Where work is looked for, which is not the same as where work is found.",
+    "stable-life.location.employment-office.name": "Employment Office",
+    "stable-life.location.home.description": "A cheap rented room. The hub of the map, and the only place four other places are one hop away from.",
+    "stable-life.location.home.name": "Home",
+    "stable-life.location.market.description": "Groceries, and the difference between the basic shop and the poor-quality one.",
+    "stable-life.location.market.name": "Market",
+    "stable-life.location.recreation-area.description": "The only place that improves two needs at once, and the first thing a full week deletes.",
+    "stable-life.location.recreation-area.name": "Recreation Area",
+    "stable-life.location.workplace.description": "Wherever the current job happens. Indistinguishable from the last one.",
+    "stable-life.location.workplace.name": "Workplace",
+    "stable-life.scenario.description": "Two hundred dollars, no job, basic education, a rented room, one week of food, and fifty-two weeks.",
+    "stable-life.scenario.name": "Stable Life",
+    "stable-life.scene": "Week {week}. {location}."
+  }
+}

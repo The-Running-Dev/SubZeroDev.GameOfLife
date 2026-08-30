@@ -6,12 +6,21 @@ This file is binding for every agent session in this repo, regardless of tool or
 
 ### What this project is
 
-This repo holds **Life in the Fast Lane** — the flagship game — and nothing else: **game
-specs only**. The engine and the hosting layer are separate companion repos.
+This repo holds **Life in the Fast Lane** — the flagship game — and nothing else: **its specs
+and its content**. The engine and the hosting layer are separate companion repos.
 
-1. **Life in the Fast Lane** (`docs/docs/games/`) — a satirical life-simulation game in the
-   lineage of *Jones in the Fast Lane* (Sierra, 1990). The detailed spec set (~105 KB
-   engine doc); it is the flagship `simulation`-kind game of the Narrative Engine.
+**Life in the Fast Lane** — a satirical life-simulation game in the lineage of *Jones in the
+Fast Lane* (Sierra, 1990), the flagship `simulation`-kind game of the Narrative Engine. Two
+halves, both owned here:
+
+1. **The specs** (`docs/docs/games/`) — the detailed spec set, ~105 KB of engine document.
+2. **The content** (`src/campaigns/` → `content/`) — the campaign sources themselves, authored
+   against the engine's published authoring surface and exported as portable JSON.
+
+Engine source code stays in the companion repo and is consumed here as the pinned `engine/`
+submodule — see *Tooling → Game content* below, and the decision of 2026-08-30 in
+`design/90-decisions.md` for why content is owned here rather than in a separate content
+repository the way `SubZeroDev.Adventures.Content` is.
 
 **Companions:**
 - **Engine** (source + specs): [SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine)
@@ -105,7 +114,41 @@ Run it with **`docs.ps1`** (repo root; needs Docker Desktop running):
 `-Port`, `-Tag`, `-BaseImage` override the defaults.
 
 **Root `design/` (installed by this kit) is outside `docs/`**, so it is never swept into
-the Docusaurus build context or the Docker image — no relocation needed.
+the Docusaurus build context or the Docker image — no relocation needed. The same is true of
+`src/`, `scripts/`, `content/` and `engine/`: the Docker build context is `docs/`, so nothing
+the game-content toolchain adds at the root can reach the image.
+
+#### Game content — `src/campaigns/`, `content/`, `engine/`
+
+The campaign sources are TypeScript, authored against the engine's **published** surfaces and
+nothing else: `@the-running-dev/game-engine/authoring` for the builders and source types,
+`@the-running-dev/game-engine` for the runtime types a host compiles against. Reaching past
+those into engine internals is how a consumer stops being a consumer, and the packed-tarball
+boundary in the engine repo exists to make that visible.
+
+`engine/` is a **git submodule** pinned to a commit, and `package.json` resolves the dependency
+to `file:engine/src/engine`. It is built from source rather than installed from a registry
+because the engine's published version and its `main` diverge — 0.10.0 is in its `package.json`
+and the newest tag is `v0.8.0`. Pinning a commit is the only way to say exactly what this
+content was authored against.
+
+| Command | Does |
+|---|---|
+| `npm run setup` | Install and build the engine submodule. Run once after cloning, and after moving the pin |
+| `npm run typecheck` | `tsc --noEmit` over `src/` and `scripts/` |
+| `npm test` | Vitest over `src/**/*.test.ts` |
+| `npm run export:content` | Rebuild the portable JSON in `content/` from `src/campaigns/` |
+| `npm run check` | All of the above, then `check:clean` |
+
+After cloning: `git submodule update --init --recursive`, then `npm run setup && npm install`.
+
+**`content/` is generated and committed.** `scripts/check-clean.mjs` fails the build when it
+does not match what the sources produce, so a campaign edit and its export land in the same
+commit. Never hand-edit a file under `content/`.
+
+**The engine pin moves deliberately, never incidentally.** Bumping it is its own change with
+its own reason — a fix or a surface this game needs — and the export is regenerated in the same
+commit so any behavioural difference shows up as a JSON diff rather than as a surprise later.
 
 #### graphify — `/graphify`
 
@@ -114,10 +157,11 @@ graph with community detection.
 
 **It is expensive.** A full rebuild on this corpus is ~200K input tokens. Four
 runs in one session consumed 880K and contributed to hitting a session limit.
-Do not run it casually. There is **no current graph** — run `/graphify` to build one. This
-repo is **docs-only** (the engine code lives in the companion GameEngine repo), so graphify
-here is always the expensive prose path — no free AST extraction. Prefer `--cluster-only`
-or `query` over full rebuilds.
+Do not run it casually. There is **no current graph** — run `/graphify` to build one. The
+corpus here is overwhelmingly **prose** — the spec set — so graphify is almost always on its
+expensive path. `src/campaigns/` is TypeScript and takes the free AST route, but it is a few
+hundred lines against ~105 KB of specification, so it does not move the cost. Prefer
+`--cluster-only` or `query` over full rebuilds.
 
 | Command | Cost | Use when |
 |---|---|---|
