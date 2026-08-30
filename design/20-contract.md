@@ -1,15 +1,19 @@
 # Contract — Life in the Fast Lane repository
 
-The spec-set path is derived from [`10-design.md`](10-design.md). The installed design-state path
-is restored from the AgentKit commit pinned in [`.claude/kit.json`](../.claude/kit.json). Binding
-on every slice.
+The spec-set path and the content path are both derived from [`10-design.md`](10-design.md), which
+designs them as its two systems. The installed design-state path is restored from the AgentKit
+commit pinned in [`.claude/kit.json`](../.claude/kit.json). Binding on every slice.
 
 The systems contracted here are the **spec-set checker**, the **marker vocabulary** the corpus
-carries for it, and the installed **design-state mechanism**. The corpus's own meaning — the game,
-the engine, the numbers — is not this document's subject and is never constrained by it.
+carries for it, the **content path** — the campaign sources, the exporter, the clean check, and
+the pinned engine they are authored against — and the installed **design-state mechanism**. The
+corpus's own meaning — the game, the engine, the numbers — is not this document's subject and is
+never constrained by it, and neither is a campaign's content. **What the content path contracts is
+how content is built, published and checked, never what it says.**
 
-Spec-set invariant ids are prefixed `SS`. They are a separate namespace from the `I<n>` ids that
-`AGENTS.md` and `.claude/commands/*.md` cite, which belong to the agent kit contract restored here.
+Spec-set invariant ids are prefixed `SS` and content-path ids `CP`. Both are separate namespaces
+from the `I<n>` ids that `AGENTS.md` and `.claude/commands/*.md` cite, which belong to the agent
+kit contract restored here.
 
 **Scaffold notice.** Declarations below marked *scaffold* exist here only until the slice that
 materialises them lands. That slice replaces the block with a pointer to the declaring file in the
@@ -18,16 +22,26 @@ as authorising a second copy of a declaration the tree carries.
 
 ## Contract scopes
 
-This repository has two standing contract paths:
+This repository has three standing contract paths:
 
 - The spec-set checker derived from design/10-design.md in this repository.
+- The content path — the campaign sources, the exporter, the clean check, and the pinned
+  engine — derived from design/10-design.md, system 2, in this repository.
 - The installed AgentKit design-state mechanism shipped by the commit pinned in
   .claude/kit.json. The pin is provenance only: all installed checks remain offline and
   resolve their contract from this file and the local tree.
 
-A later contract run for either path preserves the other. Neither path may rewrite the file
-from a blank document. Names prefixed SS belong to the spec-set path; names prefixed I and
-the divergence classes belong to the installed design-state path.
+A later contract run for any one path preserves the other two. No path may rewrite the file
+from a blank document. Names prefixed SS belong to the spec-set path; names prefixed CP belong
+to the content path; names prefixed I and the divergence classes belong to the installed
+design-state path.
+
+**The three namespaces never merge, and an id is never reused across them.** SS and CP are
+hand-authored here and carry no design/state/ records; the I rows are the installed mechanism's
+invariant unit set and are projected from those records. A content-path invariant is
+deliberately not a design-state invariant record: giving it one would require src/campaigns/ and
+scripts/ to become a unit kind, which § *Artifacts of a unit kind* does not name and which is
+the installed path's policy rather than this one's.
 
 ## Types
 
@@ -143,6 +157,79 @@ judged on the full-audit path. This bounds the fourth brief condition to somethi
 the index; the broad reading is not enumerable mechanically at all, and a check that cannot know
 what is missing does not check completeness.
 
+### Content path records
+
+Nine record classes, five authored and four derived, and the authored/derived split answers the
+same question system 1's does with the opposite result: **every derived record here is
+committed.** That is not a relaxation of the rule against second copies, it is the rule paid
+for. A copy regenerated in full from its source by a deterministic program, and compared against
+the source on every run, is a cache; a cache with a gate cannot be stale for longer than one
+commit. Remove the gate and the justification goes with it, which is why CP5 and CP6 are not
+optimisations available to a later slice.
+
+#### Authored
+
+| Record | Identity | Declared in |
+|---|---|---|
+| Campaign source | Campaign id | [`src/campaigns/stable-life.ts`](../src/campaigns/stable-life.ts), as the engine's `SimulationCampaignSource` |
+| Build function | Its campaign | The same file, returning the engine's `CommandResult<BuiltCampaign>` |
+| Catalog card | Its campaign | The same file, as the engine's `PortableCatalog` |
+| Publication catalog | The exporter's ordered entry list | [`scripts/export-content.ts`](../scripts/export-content.ts) |
+| Engine pin | The submodule commit | `.gitmodules`, and the gitlink each commit records |
+
+**Every collection `SimulationCampaignSource` requires is present, and an unwritten one is empty
+rather than absent** (CP7). The two are not interchangeable: empty is an honest statement that
+the content has not been written, and absent is indistinguishable from a source that got the
+shape wrong. A consumer may rely on the collection existing and may not read its emptiness as a
+defect.
+
+**The catalog card is authored beside its campaign and is never assembled by the exporter.** Its
+fields are what a host shows a player *before* loading, and two of them are content-fitness
+statements rather than presentation flags: a campaign whose collections are mostly empty is
+hidden and says so in as many words. What lifts a campaign out of that state is *Unresolved* 2 —
+no code here decides it, and none may acquire the power to.
+
+**The publication catalog is the boundary between existing in the tree and being published.** A
+source absent from it is unpublished however finished it looks, and there is no second route in:
+no directory scan, no naming convention, no flag on the source itself. This is the one record
+whose *ordering* is meaningful — it is the order a host presents, and the order the manifest is
+written in.
+
+**The engine pin is a commit, never a range**, and it is what determines the surface every
+campaign source compiles against. `package.json` resolves the dependency to a path inside the
+submodule rather than to a registry, so there is no version negotiation and no resolution step
+that could pick something else.
+
+**No local variant of an engine-owned type exists.** The portable form, the manifest, and the
+catalog card are the engine's published types, consumed as declared. Extending one here is the
+consumer-stops-being-a-consumer failure CP1 exists to prevent, and it is the reason provenance
+is not recorded in the manifest — `90-decisions.md` (2026-08-30, provenance) rejected that by
+name, and the correct route for a host that needs it is the engine repository.
+
+#### Derived
+
+| Record | Derived from | Persisted |
+|---|---|---|
+| Built campaign | A campaign source, through the engine's builder | No — in memory for one export or one test |
+| String table | The LocKeys the source authors, lifted by the builder | Only as part of the portable form |
+| Portable campaign | A built campaign plus its catalog card | `content/<file>.json`, committed |
+| Manifest | The exported set | `content/manifest.json`, committed |
+
+**A campaign has three names and they answer different questions.** The file name is what a host
+can construct without reading anything; `(id, version)` is what it addresses and caches by; the
+digest is what the content actually is. They can disagree, and the disagreement is silent:
+editing a source without changing its version moves that campaign's digest, moves neither the
+address nor the manifest's resolution digest — which is computed over the `(id, version)` pairs —
+and a host caching on the address serves the old campaign with no way to learn otherwise.
+
+**Nothing here prevents that, and this document may not settle it.** Whether a content change
+requires a version bump is a compatibility promise to an external consumer, so it is *Unresolved*
+1 rather than a rule invented at contract time.
+
+**Nothing in this repository reads a file under `content/`** (CP3). The clean check reads git's
+report about the directory, never its contents, and that distinction is what keeps the content
+path from closing a loop through its own output.
+
 ## Persisted schemas
 
 ### Installed design-state schema
@@ -207,6 +294,54 @@ record, never migrated by inventing one.**
 `.claude/gates.json` and `.claude/verify-report.json` are written by `/verify` and
 `tools/Test-GatesCache.ps1`, not by anything in this contract. The checker returns a result object
 and an exit code; what consumes them is not its concern.
+
+### The published content directory
+
+`content/` is the content path's only persisted artifact and every byte of it is derived. One
+file per published campaign, named by its catalog entry, plus the manifest. The manifest's
+`formatVersion` is the engine's field and the engine's to move; this repository does not own a
+format version of its own and may not introduce one.
+
+**Keys and indexes: none, and that is the schema.** The manifest is a regenerated projection of
+the publication catalog, not a registry maintained beside it, so there is nothing to keep in
+sync and no index that can disagree with the directory it describes. The three names a campaign
+has are set out under *Content path records* above.
+
+**Migration story: none, and it is a constraint rather than an absence.** There is no data at
+rest to migrate, because the directory is a pure function of the campaign sources and the pinned
+engine and is recomputed in full on every export. A change to the portable form's shape is an
+engine change: it arrives with a pin move and lands as a JSON diff in the same commit (CP14),
+which is the only place a behavioural change in the engine becomes visible to a person.
+
+**A slice that introduces a hand-maintained file under `content/` is amending this contract**,
+not optimising within it — an expected-digest list, a provenance sidecar, or an index. Two of
+those three are already rejected by name: the digest list by `90-decisions.md` (2026-08-30,
+committed export checked by regeneration, restated in `10-design.md` § *Alternatives considered*
+6), because a hand-maintained expected hash is a second copy of the output's identity; and the
+provenance sidecar by `90-decisions.md` (2026-08-30, provenance).
+
+**Recovery depends on the export being tracked.** A crash part-way through writing is the only
+partial-failure window in either system; builds and validation are complete by then, so what is
+left is a directory where some files are new and some are old. The recovery is to discard the
+working tree's changes under `content/`, which restores the last committed export exactly. That
+property is the second reason the output is committed, after the host, and it does not survive a
+decision to build on demand.
+
+**Nothing under `content/` is hand-edited** (CP8). An edit survives until the next export and is
+then overwritten; a new file placed there is deleted by it. Neither is reported as an error and
+neither should be — the catalog owning which files exist is what makes a retired campaign
+actually disappear rather than linger as a document a host still fetches.
+
+### The engine pin
+
+Recorded twice, in two forms: `.gitmodules` names the repository, and the gitlink in each commit
+names the exact tree the content was authored against. Together they are the whole provenance
+record, and the artifact adds nothing to them.
+
+**The pin locks one direction only.** It says which engine this content was authored against. It
+says nothing about which engine a host will run it on, and no mechanism here could — the
+published artifact's compatibility with a future engine version is the engine's contract to
+keep. A field here implying otherwise would be a claim this repository cannot honour.
 
 ## Public surface
 
@@ -356,6 +491,104 @@ answer.
 
 The step names are the surface: `/verify` names discovered gates by the step's own `name:`, so
 renaming one renames a gate in every report that mentions it.
+
+### Content path surfaces
+
+#### A campaign source — `src/campaigns/<slug>.ts`
+
+Declared in [`src/campaigns/stable-life.ts`](../src/campaigns/stable-life.ts), today's only
+campaign. It exposes the source object, the catalog card, the campaign's id and version, and a
+build function; every other consumer of a campaign reaches it through those.
+
+**The build function is pure and total.** No I/O, no clock, no randomness, no environment read.
+The determinism of everything published rests entirely here, and nothing downstream would
+diagnose a violation — the export would simply produce different bytes on each run, and the
+clean check would go red on a commit that changed nothing, which is the one failure mode that
+trains an author to re-run a gate rather than read it.
+
+**A failure is data, not a throw.** The build function returns the engine's `CommandResult`, and
+`ok` does not narrow `value` — every caller checks both. A source that threw instead would move
+its failure out of the exporter's build-everything-first phase and into the middle of it, which
+is what CP4 forbids.
+
+**A campaign source may import nothing but the two published engine specifiers and this
+repository's own sources** (CP1). The submodule places the engine's entire source tree a
+relative path away, so the compliant form and the violating form both typecheck and both run;
+the difference appears only when the pin moves, or when someone tries to run this campaign on a
+published engine version.
+
+**Section citations are for a reader and are resolved by no program** (CP9). The `§` references
+into `docs/docs/games/` are the only link in either direction between a campaign and the
+specification it was transcribed from, and their rot after a renumbering is the full-audit
+path's to catch.
+
+**Where the pinned engine cannot express a requirement the corpus states, the source omits it
+visibly and names the omission** (CP10). Never approximate: an approximation is a silent
+divergence between the campaign and the spec it was authored from, in the one artifact whose
+entire purpose is to be evidence that the two agree.
+
+#### `scripts/export-content.ts`
+
+Declared in [`scripts/export-content.ts`](../scripts/export-content.ts). The `entries` list is
+the publication catalog and is this file's most important surface.
+
+**It is the only writer in either system, and `content/` is its only write target** (CP2).
+
+**It builds every campaign and validates the whole set before writing any file** (CP4), so an
+authoring or validation failure leaves the directory byte-identical. That ordering is the
+difference between a failed export and a half-published catalog the next consumer fetches.
+
+**The serialization form is contracted, not a formatting preference.** Two-space indentation,
+exactly one trailing newline, and the manifest written in catalog order. The clean check
+compares bytes, and the diff is the only place a behavioural change in the engine becomes
+visible to a person; minifying the output would remove the second of those and break the first.
+
+**It removes every `.json` under `content/` the catalog does not name** (CP6). That is what
+makes a retired or renamed campaign disappear rather than linger.
+
+**No parameter may make it write elsewhere or write a subset.** There is no `--out-dir` and no
+`--only`, and adding either defeats CP4 and CP6 at once: a partial export is indistinguishable
+from a stale one to the clean check, which is the only thing standing between a source edit and
+a silently unpublished change.
+
+#### `scripts/check-clean.mjs`
+
+Declared in [`scripts/check-clean.mjs`](../scripts/check-clean.mjs). Reads git's report on
+`content/` and nothing else; writes nothing, anywhere.
+
+**The comparison is scoped to `content/` deliberately** (CP11). An unrelated dirty working tree
+is the author's own business and is not this gate's to fail on.
+
+**No parameter may relax it.** There is no `--allow-dirty`, no ignore list, and no whitespace
+tolerance. A gate that is sometimes wrong is worse than no gate, because the habit it trains is
+re-running it.
+
+**It never exits 0 for a comparison it could not make** (CP13). A missing git, or a directory
+that is not a checkout, is a gate that did not run, and reporting that as a pass is the
+fabricated-gate-result failure `AGENTS.md` § *Verification* exists to prevent.
+
+#### `package.json` — the composed gate
+
+The script names are the surface an author and CI both invoke: `setup`, `typecheck`, `test`,
+`export:content`, `check:clean`, and `check` composing the last four.
+
+**The order is load-bearing and the steps are not a set** (CP12). The export transpiles rather
+than typechecks, so an export invoked first can publish from sources that do not compile; and
+the clean check has nothing to compare until the export has run. Renaming a script renames a
+step in every gate report that mentions it.
+
+#### `.github/workflows/verify.yml` — the `content` job
+
+Carries the content path's steps, each flagged `# verification: true` on the line immediately
+above its `- name:`, per `/verify`'s discovery rule. The step names are the surface: `/verify`
+names discovered gates by the step's own `name:`.
+
+**The checkout must be recursive.** The engine is a pinned submodule and the campaign sources
+compile against it; without it the job resolves nothing and every step fails for a reason
+unrelated to the change under test.
+
+**No step may swallow its exit code**, by `continue-on-error` or otherwise. Each failure names
+itself, which is why CI runs the steps individually rather than invoking the composed `check`.
 
 ## Error semantics
 
@@ -571,6 +804,55 @@ unresolvable entry asserts nothing about the reference except that this reposito
 
 **Status 2 takes precedence over 1** (SS5), matching `Test-Companion.ps1` and `Test-DesignState.ps1`.
 
+### Content path errors
+
+**Non-retryable, every one of them.** Each path is a local, deterministic pass over files on
+disk; the single writer writes one tracked directory that is regenerable in full and
+discardable with a git restore. There is nothing to retry, no partial write that cannot be
+thrown away, and no run that leaves state a later run must reconcile. A retry parameter anywhere
+on this path is a contract amendment.
+
+**A failure is reported as the engine's own structured errors, reproduced rather than
+summarised.** The engine is the only thing that knows why a campaign did not build or why
+validation rejected the set, and a reduction of that to a sentence is the loss the author then
+has to reconstruct.
+
+#### Exporter — `scripts/export-content.ts`
+
+Every variant leaves `content/` byte-identical unless it is `WriteFailed`, because building and
+validation both complete before the first write (CP4).
+
+| Reason | Raised when | Retryable | Caller does |
+|---|---|---|---|
+| `CampaignDidNotBuild` | A build function returns a result that is not `ok`, or is `ok` with no value | No | Read the engine's errors; fix the campaign source |
+| `ValidationRejected` | The engine's content-registry validation rejects the built set | No | Read the engine's errors; fix the source, or raise an engine gap per CP10 |
+| `WriteFailed` | The filesystem rejects a write or a delete under `content/` | No | Discard the working tree's changes under `content/`, then re-export |
+| `SurfaceChanged` | The pinned engine's types no longer satisfy a source — raised by the typecheck, before the exporter runs | No | Fix the source, or move the pin back. **Never widen an import to reach past the published surface** (CP1) |
+| `SubmoduleAbsent` | `engine/` is uninitialised, or its pinned commit is unreachable | No | Initialise the submodule recursively and rebuild it before anything else on this path |
+
+`SubmoduleAbsent` fails at the first command and cannot be mistaken for success, because no step
+of the content path can run at all. That is the intended behaviour of a filesystem dependency on
+a submodule path, and it is why the CI job checks out recursively.
+
+#### Clean check — `scripts/check-clean.mjs`
+
+| Reason | Raised when | Retryable | Caller does |
+|---|---|---|---|
+| `ExportStale` | The fresh export differs from what is committed under `content/` | No | Commit the re-export. **Nothing is auto-committed** — the fix is the author's |
+| `GitUnavailable` | git is absent, or the working directory is not a checkout | No | Report a gate that did not run; never a pass (CP13) |
+
+**`ExportStale` is the one failure a published-content repository cannot detect by reading
+itself**, because the source and the output are each internally consistent and only their
+relationship is wrong. It is the brief's own drift class reappearing in the half of the
+repository that is code.
+
+**Nondeterminism presents as `ExportStale` on a commit that changed nothing**, and the response
+is fixed: it is a defect in the exporter or in the engine, and never a reason to relax the
+comparison (CP5). A gate that is sometimes wrong is worse than no gate.
+
+**A hand-edit under `content/` raises nothing** (CP8). It is overwritten, or the file is deleted,
+on the next export. That is the catalog owning the directory, not a hole in the error taxonomy.
+
 ## Invariants
 
 The I-prefixed rows are the installed design-state invariant unit set. This is a **projected**
@@ -657,3 +939,89 @@ The exit code stops carrying that fact, so the report must.
 can tell whether a `Detail` string editorialises. Removing the field would make findings useless.
 The structural mitigation is that `SpecFinding` carries no `Culprit`, `Stale`, or `Correct` field
 for anyone to populate.
+
+### Content path invariants
+
+Hand-authored, like the SS rows above and for the same reason — the content path has no
+`design/state/` records, per *Contract scopes*. **`Evidence` names the test or the gate that
+fails when the row is broken**, and an em dash means nothing enforces it yet.
+
+| Id | Invariant | Owner | Enforcement | Evidence |
+|---|---|---|---|---|
+| **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | — |
+| **CP2** | `content/` has exactly one writer, and it writes nowhere else | Exporter | Code | — |
+| **CP3** | Nothing in this repository reads a file under `content/` | All | Code | — |
+| **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | — |
+| **CP5** | Two exports from the same sources and the same pin produce byte-identical files | Exporter | Code | `.github/workflows/verify.yml`, step *Re-export content and fail if the committed JSON is stale* |
+| **CP6** | Every `.json` under `content/` the publication catalog does not name is removed by the export | Exporter | Code | — |
+| **CP7** | Every collection `SimulationCampaignSource` requires is present on every campaign source; an unwritten one is empty, never absent | Campaign sources | Code | `src/campaigns/stable-life.test.ts` |
+| **CP8** | No file under `content/` is hand-edited | The author | Instruction — the next export overwriting it is the only consequence, and making it an error would forbid the catalog-owns-the-directory behaviour CP6 requires | — |
+| **CP9** | No program in this repository resolves a `§` citation outside the corpus, and the spec-set checker keeps exactly one corpus root | Index, Campaign sources | Instruction — widening the root is a contract amendment, not a slice's call | — |
+| **CP10** | Where the pinned engine cannot express a requirement the corpus states, the campaign omits it visibly and names the omission, and the gap is raised in the engine repository rather than worked around here | Campaign sources | Instruction — the brief's non-goal is the enforcement available | — |
+| **CP11** | The clean check compares only `content/`, and no parameter widens or relaxes the comparison | Clean check | Code | — |
+| **CP12** | The typecheck runs before the export in every composed invocation and in CI | `package.json`, workflow | Code | — |
+| **CP13** | No content-path step exits 0 for a comparison or a build it could not make | All | Code | — |
+| **CP14** | The engine pin moves only in a commit that also regenerates the export | The author | Instruction | — |
+| **CP15** | No artifact under `content/` records provenance; the publishing commit and the gitlink it carries are the answer | Exporter | Code — the only files are campaigns and the manifest | — |
+
+**A `Code` row whose `Evidence` cell is an em dash is a requirement this contract asserts and no
+test yet enforces, and it may not be trusted without checking.** That is what the SS table's
+header sentence has always meant, made visible per row rather than stated once — and the reason
+it is made visible is `90-decisions.md` (2026-08-29, six SS invariants gain the tests their
+Enforcement column already claimed), where six rows claimed `Code` while nothing enforced them.
+**The precedent binds in the same direction it did there: the tests get written, and the claim
+is not downgraded to match the tree.** The slices that land them own these cells, and a slice
+that fills one fills it with a path, never with a description of a check it did not write.
+
+**CP5 is the payment for committing derived output, and everything under `content/` rests on
+it.** The rule that two copies of a fact will diverge is not suspended by this path; it is
+bought off, and CP5 is the price. If the export ever becomes nondeterministic the committed JSON
+stops being a cache and becomes a second source of truth checked by a coin flip — at which point
+`90-decisions.md` (2026-08-30, ownership) has been reversed by accident rather than by decision.
+
+**CP1 is the row the submodule makes easy to break, and it is the only one whose violation looks
+like success.** A relative import into the engine's source tree typechecks, runs, and passes
+every gate; it fails when the pin moves, or when someone tries to run this campaign on a
+published engine version — which is to say, at the moment the content is supposed to be
+portable. The packed-tarball boundary that enforces this in the engine repository does not exist
+here, and `90-decisions.md` (2026-08-30, published surface) chose a test rather than prose or a
+lint toolchain precisely because prose is what is already in place and is not working.
+
+**CP10 has no mechanical enforcement and cannot acquire one here, and the same bound covers a
+larger class.** No program in this repository compares a literal in `src/` to a number in
+`docs/docs/games/`. The tests beside a campaign restate the same numbers, so they check the
+transcription against itself — they are regression tests against a later edit, which is worth
+having, and they are not fidelity checks against the corpus. **The content path makes the
+corpus's type claims fail a build and leaves its numeric claims exactly where they were: on the
+full-audit path.** That is the honest bound on the brief's claim that authoring makes the spec
+set checkable, and it sits beside SS16's bound rather than under it.
+
+**The value of this path as evidence is proportional to the content authored.** Fourteen of the
+seed campaign's seventeen collections are empty, and every empty one is a region of the corpus
+no compiler has yet been asked about. Nothing in this table changes as they fill; what changes
+is how much the table is worth.
+
+## Unresolved
+
+Signatures and rules the design document does not determine. Each is a fork `10-design.md` §
+*Open questions* states this document may not settle, and each is left open rather than
+invented. **This section only ever shrinks.**
+
+**1. Whether a change to a published campaign requires its version to change** — and therefore
+whether a check exists at all, what it compares, and what its surface is. The candidate is a
+comparison against the previous commit's manifest, which is cheap while there is one campaign
+and no host fetching. This is a compatibility promise to an external consumer, so neither
+`10-design.md` nor this document may make it; § *Open questions* 1 carries the recommendation.
+Until it is answered, the three names a campaign has stand unreconciled and a host is told
+nothing about which of them to trust.
+
+**2. What condition lifts a campaign out of the hidden state its catalog card declares.** The
+card's fitness fields have no contracted transition: nothing here says what makes a seed not a
+seed, and no code may decide it while that is true. § *Open questions* 2 carries the
+recommendation.
+
+**3. Whether the second game's content is in scope for this repository.** The answer determines
+whether the exporter's kind handling stays single-kind — today the kind registry is assembled by
+a cast at both call sites, a shape this contract deliberately does not bless — and whether the
+shared Bulgarian source scenes have a home in this tree. § *Open questions* 3 carries the
+recommendation.
