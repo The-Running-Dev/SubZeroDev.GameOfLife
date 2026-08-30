@@ -164,5 +164,4 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
 | 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `c97bb3bf808924068e35788b32a352f0e7cb3d64` |
-| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `c97bb3bf808924068e35788b32a352f0e7cb3d64` |
 <!-- outstanding:end -->
