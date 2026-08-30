@@ -12,6 +12,7 @@ import {
   buildValidatedContentRegistry,
   simulationKind,
   type BuiltCampaign,
+  type Condition,
   type KindRegistry,
 } from "@the-running-dev/game-engine";
 import { toPortable } from "@the-running-dev/game-engine/authoring";
@@ -93,10 +94,10 @@ describe("Stable Life — the authoring path", () => {
   });
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
-    // §16.1's jobs/employers/skills targets are now authored (S15); the rest are still an
-    // honest statement that the content is unwritten.
+    // §16.1's jobs/employers/skills targets are now authored (S15), and 15 of 30 events
+    // (S16); the rest are still an honest statement that the content is unwritten.
     const empty = [
-      "courses", "items", "events", "npcs", "opportunities", "achievements",
+      "courses", "items", "npcs", "opportunities", "achievements",
       "headlines", "backgrounds", "traits",
     ] as const;
     for (const key of empty) {
@@ -180,6 +181,162 @@ describe("Stable Life — jobs, employers and skills (S15)", () => {
   });
 
   it("builds and validates with jobs, employers and skills wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — random events (S16)", () => {
+  const events = stableLifeSource.events;
+
+  // `03` §11.1's fourteen event categories, kebab-cased; S16 draws only from the seven this
+  // slice scopes (S16.1's "Out of scope" line names Housing/Health/etc. for later slices).
+  const REQUIRED_CATEGORIES = [
+    "employment", "economy", "purchases", "crime", "bureaucracy", "transportation", "business",
+  ] as const;
+
+  // `03` §11.2's ten event types, kebab-cased.
+  const VALID_TYPES = new Set([
+    "immediate", "delayed", "recurring", "conditional", "chained",
+    "player-triggered", "npc-triggered", "world-triggered", "unique", "repeatable",
+  ]);
+
+  it("has 15 entries, drawn only from the seven scoped categories, each represented at least once (S16.1)", () => {
+    expect(events).toHaveLength(15);
+    const categories = new Set(events.map((e) => e.category));
+    for (const event of events) {
+      expect(REQUIRED_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
+    }
+    for (const category of REQUIRED_CATEGORIES) {
+      expect(categories.has(category), `no event names category "${category}"`).toBe(true);
+    }
+  });
+
+  it("names its category and its type, both drawn from the corpus's closed lists (S16.2)", () => {
+    for (const event of events) {
+      expect(REQUIRED_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
+      const typeTags = event.tags.filter((t) => VALID_TYPES.has(t));
+      expect(typeTags, `${event.id} should carry exactly one §11.2 type tag`).toHaveLength(1);
+    }
+  });
+
+  /** A minimal mirror of the engine's own `evaluateCondition`/`compare` (`core/condition/
+   *  evaluate.ts`) — reimplemented here, not imported, because CP1 forbids reaching past the
+   *  published surface even from a test. Scoped to exactly the operators this campaign's own
+   *  conditions use; `exists`/`count` are unreachable by construction (S16.5) and throw if
+   *  ever authored, so a future quantifier is caught here rather than silently mishandled. */
+  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
+    if ("exists" in condition || "count" in condition) {
+      throw new Error("this campaign's conditions never use a collection quantifier (S16.5)");
+    }
+    const actual = resolveField(condition.field);
+    switch (condition.operator) {
+      case "equals": return actual === condition.value;
+      case "not_equals": return actual !== condition.value;
+      case "less_than": return (actual as number) < (condition.value as number);
+      case "greater_than": return (actual as number) > (condition.value as number);
+      default:
+        throw new Error(`test evaluator: extend for operator "${condition.operator}"`);
+    }
+  }
+
+  function fieldOf(state: Record<string, unknown>, path: string): unknown {
+    return path.split(".").reduce<unknown>((current, segment) => {
+      if (current === null || typeof current !== "object") return undefined;
+      return (current as Record<string, unknown>)[segment];
+    }, state);
+  }
+
+  /**
+   * A minimal player-state fixture, seeded from the built campaign's own authored values
+   * (the scenario's real starting cash; a real job/employer id pair from `stableLifeSource
+   * .jobs`), not invented numbers.
+   *
+   * This is not a full `createGame()` session. `createGame` currently throws for this
+   * campaign — `initial.ts`'s `buildPlayer` indexes `backgrounds[0]!.id` unconditionally,
+   * and `stableLifeSource.backgrounds` is still empty (S22, "a player does not start from
+   * nowhere," is what authors it; that is outside this slice's `Touches`). Discovered while
+   * implementing S16.3, not fixed here per `AGENTS.md`'s "note a defect outside this slice,
+   * don't fix it."
+   */
+  function fixturePlayerState(overrides: { cashCents?: number; employed?: boolean }): Record<string, unknown> {
+    const scenario = stableLifeSource.scenarios.find((s) => s.id === STABLE_LIFE_SCENARIO_ID)!;
+    const job = stableLifeSource.jobs.find((j) => j.id === "job-dishwasher")!;
+    return {
+      player: {
+        career: {
+          currentEmployment: overrides.employed
+            ? {
+                jobId: job.id,
+                employerId: job.employerId,
+                startedWeek: 1,
+                performance: 50,
+                attendanceRatio: 100,
+                warnings: 0,
+                weeklyPayCents: job.compensation.baseWeeklyPayCents,
+                weeksAtCurrentPay: 0,
+              }
+            : undefined,
+        },
+        finances: {
+          cashCents: overrides.cashCents ?? scenario.startingCashCents,
+        },
+      },
+    };
+  }
+
+  it("evaluates a job-held condition and a cash condition against a built campaign's real state (S16.3)", () => {
+    // The scenario starts unemployed (§16.3) — the job condition is false at the real
+    // starting state, and true once the player holds a job.
+    const jobHeld = stableLifeSource.events.find((e) => e.id === "event-shift-schedule-cut")!;
+    const unemployed = fixturePlayerState({});
+    expect(fieldOf(unemployed, "player.career.currentEmployment")).toBeUndefined();
+    expect(evaluateTestCondition(jobHeld.conditions, (p) => fieldOf(unemployed, p))).toBe(false);
+
+    const employed = fixturePlayerState({ employed: true });
+    expect(evaluateTestCondition(jobHeld.conditions, (p) => fieldOf(employed, p))).toBe(true);
+
+    // The scenario starts at $200 (§16.3) — above the hardship-relief threshold of $50, so
+    // false at the real starting state, and true once cash is mutated below it.
+    const cashConditional = stableLifeSource.events.find((e) => e.id === "event-hardship-relief-payment")!;
+    const atStartingCash = fixturePlayerState({});
+    expect(fieldOf(atStartingCash, "player.finances.cashCents")).toBe(20_000);
+    expect(evaluateTestCondition(cashConditional.conditions, (p) => fieldOf(atStartingCash, p))).toBe(false);
+
+    const poor = fixturePlayerState({ cashCents: 1_000 });
+    expect(evaluateTestCondition(cashConditional.conditions, (p) => fieldOf(poor, p))).toBe(true);
+  });
+
+  it("names only event ids that exist, in every generatedEvents/scheduledEvents reference (S16.4)", () => {
+    const ids = new Set(events.map((e) => e.id));
+    for (const event of events) {
+      const outcomes = [
+        ...(event.automaticOutcome ? [event.automaticOutcome] : []),
+        ...(event.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.outcome)),
+      ];
+      for (const outcome of outcomes) {
+        for (const generatedId of outcome.generatedEvents ?? []) {
+          expect(ids.has(generatedId), `${event.id} generates unknown event "${generatedId}"`).toBe(true);
+        }
+        for (const scheduled of outcome.scheduledEvents ?? []) {
+          expect(ids.has(scheduled.eventId), `${event.id} schedules unknown event "${scheduled.eventId}"`).toBe(
+            true,
+          );
+        }
+      }
+    }
+    // The one chain this slice authors actually exercises the check above.
+    expect(events.some((e) => e.id === "event-tax-penalty-assessment")).toBe(true);
+  });
+
+  it("builds and validates with events wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
