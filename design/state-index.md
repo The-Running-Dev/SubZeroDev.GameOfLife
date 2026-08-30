@@ -162,7 +162,8 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 19 | #19 | Restore missing design-state closure records | — | `8b54b10972ce339873606557f7ca2e1ffdb9c673` |
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `8b54b10972ce339873606557f7ca2e1ffdb9c673` |
-| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `8b54b10972ce339873606557f7ca2e1ffdb9c673` |
+| 19 | #19 | Restore missing design-state closure records | — | `c43037e08d30f2765943b115dd7e0051978aafdc` |
+| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `c43037e08d30f2765943b115dd7e0051978aafdc` |
+| 62 | #62 | Every /track work-mirror refresh leaves the build red | — | `c43037e08d30f2765943b115dd7e0051978aafdc` |
+| 65 | #65 | WorkStateDivergence false-positives on non-ASCII issue titles via the gh call operator | — | `c43037e08d30f2765943b115dd7e0051978aafdc` |
 <!-- outstanding:end -->
