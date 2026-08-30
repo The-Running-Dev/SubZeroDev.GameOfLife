@@ -147,8 +147,12 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-26-kit-sync-reconciliation-agents-md-tier-routing-merge-house-conventions-correction-codex-profiles-md-install-done-clean-rename | `unit/document/agents-md` |
 | decision/2026-08-29-six-ss-invariants-gain-the-tests-their-enforcement-column-already-claimed | `unit/script/test-specset` |
 | decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream | `unit/command/track` |
+| decision/2026-08-30-a-published-campaign-s-provenance-stays-in-git-not-in-the-artifact | `unit/document/design-10-design` |
 | decision/2026-08-30-kit-sync-adopts-the-upstream-62-fix-the-local-encoding-fork-is-retired | — |
 | decision/2026-08-30-life-in-the-fast-lane-s-campaign-content-is-owned-in-this-repository-not-in-a-separate-content-repository | `unit/document/agents-md`, `unit/document/design-00-brief` |
+| decision/2026-08-30-section-citations-from-campaign-sources-into-the-corpus-stay-unchecked | `unit/document/design-10-design` |
+| decision/2026-08-30-the-engine-s-published-surface-is-enforced-by-a-check-not-only-by-prose | `unit/document/design-10-design` |
+| decision/2026-08-30-the-game-content-path-enters-design-through-a-design-pass-before-it-is-contracted-or-sliced | `unit/document/design-10-design`, `unit/document/design-20-contract`, `unit/document/design-30-slices` |
 <!-- decision-affects:end -->
 
 ## Question affects

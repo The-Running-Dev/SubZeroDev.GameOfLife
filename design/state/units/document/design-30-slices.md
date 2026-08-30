@@ -5,7 +5,7 @@ Anchor: design/30-slices.md
 Consumes:
 Exposes:
 Binds:
-Live:
+Live: decision/2026-08-30-the-game-content-path-enters-design-through-a-design-pass-before-it-is-contracted-or-sliced
 Archival:
 Questions:
 Work:
