@@ -17,8 +17,9 @@ only when it would have changed a decision.
 
 1. **graphify is ~80% of discretionary spend.** Four runs in one session ≈ 880K tokens,
    plus its ~15K-token skill prompt on every invocation. On this **prose** corpus its value
-   is marginal — reading the docs directly found 12 inconsistencies; graphify found ~2. This
-   repo is docs-only, so there's **no free AST path** either. Use `--cluster-only` / `query`;
+   is marginal — reading the docs directly found 12 inconsistencies; graphify found ~2. The
+   TypeScript in `src/campaigns/` takes the free AST path, but it is dwarfed by the specs, so
+   the cost profile is unchanged. Use `--cluster-only` / `query`;
    avoid full rebuilds. (The `--update` edge-loss trap: `CLAUDE.md`.)
 2. **Skill prompts inject their whole instruction file** on invocation. Only invoke a skill
    you will actually use.

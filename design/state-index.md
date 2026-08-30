@@ -148,6 +148,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-29-six-ss-invariants-gain-the-tests-their-enforcement-column-already-claimed | `unit/script/test-specset` |
 | decision/2026-08-29-the-work-mirror-projection-is-regenerated-by-hand-the-coupling-that-breaks-it-is-filed-upstream | `unit/command/track` |
 | decision/2026-08-30-kit-sync-adopts-the-upstream-62-fix-the-local-encoding-fork-is-retired | — |
+| decision/2026-08-30-life-in-the-fast-lane-s-campaign-content-is-owned-in-this-repository-not-in-a-separate-content-repository | `unit/document/agents-md`, `unit/document/design-00-brief` |
 <!-- decision-affects:end -->
 
 ## Question affects

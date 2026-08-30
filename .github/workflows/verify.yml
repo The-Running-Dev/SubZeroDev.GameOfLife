@@ -54,3 +54,36 @@ jobs:
       - name: Check the spec set
         shell: pwsh
         run: ./tools/Test-SpecSet.ps1
+
+  content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # The engine is a pinned submodule and the campaign sources compile against it;
+          # without this the whole job resolves nothing.
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # verification: true
+      - name: Build the pinned engine
+        run: npm run setup
+
+      - name: Install content dependencies
+        run: npm install
+
+      # verification: true
+      - name: Typecheck the campaign sources
+        run: npm run typecheck
+
+      # verification: true
+      - name: Test the campaign sources
+        run: npm test
+
+      # verification: true
+      - name: Re-export content and fail if the committed JSON is stale
+        run: npm run export:content && npm run check:clean
