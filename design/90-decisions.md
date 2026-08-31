@@ -9,6 +9,41 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-31 — CP2 and CP3 are scoped to production sources, and the CP3 check is tightened to match
+Context: `/reconcile` found CP3 ("Nothing in this repository reads a file under `content/`",
+Enforcement `Code`, Evidence `src/published-surface.test.ts`) broken in the tree:
+`src/check-clean.test.ts` reads `content/manifest.json` in order to perturb and restore it, which
+is how the CP11 test proves `ExportStale` fires against the directory the gate actually guards.
+Its own check missed it — the CP3 predicate resolved string-literal targets and otherwise flagged
+only a target naming `contentDir` or `outputDir`, and the read went through `manifestPath`, one
+hop from the path that was not innocuous. The same question had already been answered the other
+way for CP2, whose check excludes `*.test.ts` with the reasoning in a code comment and nowhere
+else, so the contract and its evidence asserted different rules and only one of the two rows knew
+it. Two test files write under `content/` on the same footing.
+Chosen: CP2 and CP3 both read "production source", and the carve-out is written into
+`20-contract.md` § *Content path invariants* with the obligation it carries — a test that leaves
+`content/` differing from the committed export has failed, whatever else it asserted, which is
+why every such test ends on a `git status` assertion. `10-design.md` § *Module boundaries* and
+§ *The combined graph* are scoped to match. The CP3 check is rewritten to resolve a file's local
+bindings to a fixed point, so a read through any identifier built from a `"content"` segment or
+from `contentDir`/`outputDir` is caught however many hops away the literal sits, and it is scoped
+to production files as CP2's already was. It ships with a negative case asserting it rejects the
+exact one-hop form that slipped through and accepts an equivalent read of `package.json`.
+Rejected: Changing the tests to match the contract as written — run the clean check against a
+scratch checkout with its own `content/` rather than the real one, and drop the `orphan.json`
+fixture. Rejected because it removes the property `check-clean.test.ts`'s own header claims and
+that makes the gate worth trusting: "a black-box test proves what a reviewer trusting the gate
+actually gets, not what an internal function happens to return." A gate proven only against a
+scratch directory is not proven against the directory a host fetches. Also rejected: scoping the
+contract and leaving the check alone — one prose edit, no code, and rejected because it leaves a
+`Code` row whose check would miss the next violation written the same way, which is the shape the
+2026-08-29 entry below took six `SS` rows to task for; a scope written down and still unenforced
+is the same defect one layer up.
+Reversibility: cheap — two invariant statements, one paragraph, and one predicate. The rejected
+scratch-checkout form stays available and is not foreclosed by either edit.
+
+---
+
 ### 2026-08-31 — A `.length` narrowing on a collection field is CP10-compliant; S21.3 is fully met
 Context: #103 landed S21 with S21.3 only partially met — of the three required conditions
 (housing, an NPC relationship, a course in progress), only the housing one

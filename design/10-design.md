@@ -244,8 +244,8 @@ corpus for meaning. Expose a source object and a build function per campaign.
 
 **Exporter** — owns the publication catalog, the serialization form, the determinism obligations,
 and the retirement of files the catalog no longer names. Depends on the campaign sources and on
-both published engine surfaces. Exposes the files under `content/`. It is the only writer in either
-system, and its only write target is `content/`.
+both published engine surfaces. Exposes the files under `content/`. It is the only production
+writer in either system, and its only write target is `content/`.
 
 **Clean check** — owns the staleness comparison and nothing else. Depends on git and on `content/`.
 Exposes an exit status. Deliberately scoped to `content/`, because an unrelated dirty tree is the
@@ -273,8 +273,8 @@ therefore the one edge that can rot in silence. *Alternatives considered* §9.
 
 Acyclic, and the property worth checking is that the two systems do not close a loop through the
 corpus. System 1 reads the corpus and writes nothing. System 2 reads the engine and writes only
-`content/`. Neither reads the other's output, and nothing inside this repository reads `content/`
-at all. The one edge that would create a cycle — the checker reading `src/` to validate its
+`content/`. Neither reads the other's output, and no production source inside this repository reads
+`content/` at all. The one edge that would create a cycle — the checker reading `src/` to validate its
 citations, making the corpus's checker depend on the corpus's consumer — is rejected in
 *Alternatives considered* §9, for that reason among others.
 

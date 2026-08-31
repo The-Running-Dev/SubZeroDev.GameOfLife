@@ -226,7 +226,7 @@ and a host caching on the address serves the old campaign with no way to learn o
 requires a version bump is a compatibility promise to an external consumer, so it is *Unresolved*
 1 rather than a rule invented at contract time.
 
-**Nothing in this repository reads a file under `content/`** (CP3). The clean check reads git's
+**No production source in this repository reads a file under `content/`** (CP3). The clean check reads git's
 report about the directory, never its contents, and that distinction is what keeps the content
 path from closing a loop through its own output.
 
@@ -532,7 +532,8 @@ entire purpose is to be evidence that the two agree.
 Declared in [`scripts/export-content.ts`](../scripts/export-content.ts). The `entries` list is
 the publication catalog and is this file's most important surface.
 
-**It is the only writer in either system, and `content/` is its only write target** (CP2).
+**It is the only production writer in either system, and `content/` is its only write target**
+(CP2).
 
 **It builds every campaign and validates the whole set before writing any file** (CP4), so an
 authoring or validation failure leaves the directory byte-identical. That ordering is the
@@ -949,8 +950,8 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | Id | Invariant | Owner | Enforcement | Evidence |
 |---|---|---|---|---|
 | **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | `src/published-surface.test.ts` |
-| **CP2** | `content/` has exactly one writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
-| **CP3** | Nothing in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
+| **CP2** | `content/` has exactly one production writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
+| **CP3** | No production source in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
 | **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | `src/export-content.test.ts` |
 | **CP5** | Two exports from the same sources and the same pin produce byte-identical files | Exporter | Code | `.github/workflows/verify.yml`, step *Re-export content and fail if the committed JSON is stale* |
 | **CP6** | Every `.json` under `content/` the publication catalog does not name is removed by the export | Exporter | Code | `src/export-content.test.ts` |
@@ -986,6 +987,19 @@ published engine version — which is to say, at the moment the content is suppo
 portable. The packed-tarball boundary that enforces this in the engine repository does not exist
 here, and `90-decisions.md` (2026-08-30, published surface) chose a test rather than prose or a
 lint toolchain precisely because prose is what is already in place and is not working.
+
+**CP2 and CP3 are scoped to production sources, and the carve-out is the tests' own
+fixture.** A test may write under `content/` to prove the exporter reclaims what the catalog
+does not name, and may read a published file to perturb and restore it so `ExportStale` can
+be shown firing against the directory the gate actually guards. Neither is a second
+publisher: what CP2 and CP3 protect is the relationship between the sources and what a host
+fetches, and a fixture that is restored before the suite ends has not changed it. The scope
+was live in the tree before it was written here — `src/published-surface.test.ts` excluded
+test files from CP2 with the reasoning in a comment, CP3 was left unscoped and was being
+broken by `src/check-clean.test.ts`, and the CP3 check resolved targets too narrowly to
+notice. **The obligation the scope carries in exchange: a test that leaves `content/`
+differing from the committed export has failed, whatever else it asserted**, which is why
+every such test ends on a `git status` assertion rather than on a cleanup it hopes ran.
 
 **CP10 has no mechanical enforcement and cannot acquire one here, and the same bound covers a
 larger class.** No program in this repository compares a literal in `src/` to a number in
