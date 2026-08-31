@@ -1667,6 +1667,722 @@
           ],
           "titleKey": "stable-life.event.employee-of-the-month.title",
           "descriptionKey": "stable-life.event.employee-of-the-month.description"
+        },
+        {
+          "id": "event-boiler-gives-up",
+          "category": "housing",
+          "weight": 8,
+          "conditions": {
+            "field": "player.housing.damage",
+            "operator": "greater_than",
+            "value": 30
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 8,
+                "sourceId": "event-boiler-gives-up"
+              },
+              {
+                "target": "player.needs.health",
+                "operation": "subtract",
+                "value": 4,
+                "sourceId": "event-boiler-gives-up"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -12000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.boiler-gives-up.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.boiler-gives-up.title",
+          "descriptionKey": "stable-life.event.boiler-gives-up.description"
+        },
+        {
+          "id": "event-landlord-inspection",
+          "category": "housing",
+          "weight": 7,
+          "cooldownWeeks": 6,
+          "conditions": {
+            "field": "player.housing.landlordNpcId",
+            "operator": "equals",
+            "value": "npc-landlord-rented-room"
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 5,
+                "sourceId": "event-landlord-inspection"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "relationship",
+                "target": "npc-landlord-rented-room",
+                "value": 2
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.landlord-inspection.outcome.message",
+                "visible": true,
+                "tone": "neutral"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.landlord-inspection.title",
+          "descriptionKey": "stable-life.event.landlord-inspection.description"
+        },
+        {
+          "id": "event-storm-repair-bill",
+          "category": "housing",
+          "weight": 5,
+          "conditions": {
+            "all": []
+          },
+          "chainId": "storm-damage-chain",
+          "chainStep": 2,
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 4,
+                "sourceId": "event-storm-repair-bill"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -18000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.storm-repair-bill.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ],
+            "endsChain": true
+          },
+          "tags": [
+            "chained"
+          ],
+          "titleKey": "stable-life.event.storm-repair-bill.title",
+          "descriptionKey": "stable-life.event.storm-repair-bill.description"
+        },
+        {
+          "id": "event-winter-flu",
+          "category": "health",
+          "weight": 11,
+          "conditions": {
+            "field": "player.needs.health",
+            "operator": "less_than",
+            "value": 70
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.health",
+                "operation": "subtract",
+                "value": 10,
+                "sourceId": "event-winter-flu"
+              },
+              {
+                "target": "player.needs.energy",
+                "operation": "subtract",
+                "value": 12,
+                "sourceId": "event-winter-flu"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "item",
+                "target": "item-otc-medicine",
+                "value": 1
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.winter-flu.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.winter-flu.title",
+          "descriptionKey": "stable-life.event.winter-flu.description"
+        },
+        {
+          "id": "event-dental-emergency",
+          "category": "health",
+          "weight": 4,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "pay-for-treatment",
+              "labelKey": "stable-life.event.dental-emergency.choice.pay-for-treatment",
+              "timeCost": 2,
+              "moneyCostCents": 15000,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.health",
+                        "operation": "add",
+                        "value": 8,
+                        "sourceId": "event-dental-emergency"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.dental-emergency.outcome.treated",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "endure-it",
+              "labelKey": "stable-life.event.dental-emergency.choice.endure-it",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.health",
+                        "operation": "subtract",
+                        "value": 6,
+                        "sourceId": "event-dental-emergency"
+                      },
+                      {
+                        "target": "player.needs.stress",
+                        "operation": "add",
+                        "value": 9,
+                        "sourceId": "event-dental-emergency"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.dental-emergency.outcome.endured",
+                        "visible": true,
+                        "tone": "negative"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "player-triggered"
+          ],
+          "titleKey": "stable-life.event.dental-emergency.title",
+          "descriptionKey": "stable-life.event.dental-emergency.description"
+        },
+        {
+          "id": "event-friend-needs-a-favor",
+          "category": "relationships",
+          "weight": 9,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "help-out",
+              "labelKey": "stable-life.event.friend-needs-a-favor.choice.help-out",
+              "timeCost": 4,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.happiness",
+                        "operation": "add",
+                        "value": 7,
+                        "sourceId": "event-friend-needs-a-favor"
+                      },
+                      {
+                        "target": "player.needs.energy",
+                        "operation": "subtract",
+                        "value": 8,
+                        "sourceId": "event-friend-needs-a-favor"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "relationship",
+                        "target": "npc-old-friend",
+                        "value": 6
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.friend-needs-a-favor.outcome.helped",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "beg-off",
+              "labelKey": "stable-life.event.friend-needs-a-favor.choice.beg-off",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.happiness",
+                        "operation": "subtract",
+                        "value": 4,
+                        "sourceId": "event-friend-needs-a-favor"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "relationship",
+                        "target": "npc-old-friend",
+                        "value": -4
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.friend-needs-a-favor.outcome.declined",
+                        "visible": true,
+                        "tone": "negative"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "npc-triggered"
+          ],
+          "titleKey": "stable-life.event.friend-needs-a-favor.title",
+          "descriptionKey": "stable-life.event.friend-needs-a-favor.description"
+        },
+        {
+          "id": "event-neighbor-borrows-again",
+          "category": "relationships",
+          "weight": 8,
+          "cooldownWeeks": 4,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "subtract",
+                "value": 3,
+                "sourceId": "event-neighbor-borrows-again"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "relationship",
+                "target": "npc-next-door-neighbor",
+                "value": 3
+              },
+              {
+                "type": "item",
+                "target": "item-basic-toolkit",
+                "value": -1
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.neighbor-borrows-again.outcome.message",
+                "visible": true,
+                "tone": "neutral"
+              }
+            ]
+          },
+          "tags": [
+            "repeatable"
+          ],
+          "titleKey": "stable-life.event.neighbor-borrows-again.title",
+          "descriptionKey": "stable-life.event.neighbor-borrows-again.description"
+        },
+        {
+          "id": "event-tutor-offers-extra-session",
+          "category": "education",
+          "weight": 7,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.energy",
+                "operation": "subtract",
+                "value": 5,
+                "sourceId": "event-tutor-offers-extra-session"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "relationship",
+                "target": "npc-community-college-teacher",
+                "value": 4
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.tutor-offers-extra-session.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "npc-triggered"
+          ],
+          "titleKey": "stable-life.event.tutor-offers-extra-session.title",
+          "descriptionKey": "stable-life.event.tutor-offers-extra-session.description"
+        },
+        {
+          "id": "event-credential-recognized",
+          "category": "education",
+          "weight": 6,
+          "unique": true,
+          "conditions": {
+            "field": "player.education.completedCourseIds",
+            "operator": "contains",
+            "value": "course-high-school-equivalency"
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 9,
+                "sourceId": "event-credential-recognized"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.credential-recognized.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "unique"
+          ],
+          "titleKey": "stable-life.event.credential-recognized.title",
+          "descriptionKey": "stable-life.event.credential-recognized.description"
+        },
+        {
+          "id": "event-heatwave",
+          "category": "weather",
+          "weight": 10,
+          "cooldownWeeks": 10,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.energy",
+                "operation": "subtract",
+                "value": 7,
+                "sourceId": "event-heatwave"
+              },
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 3,
+                "sourceId": "event-heatwave"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.heatwave.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "recurring"
+          ],
+          "titleKey": "stable-life.event.heatwave.title",
+          "descriptionKey": "stable-life.event.heatwave.description"
+        },
+        {
+          "id": "event-storm-damages-roof",
+          "category": "weather",
+          "weight": 5,
+          "conditions": {
+            "all": []
+          },
+          "chainId": "storm-damage-chain",
+          "chainStep": 1,
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 6,
+                "sourceId": "event-storm-damages-roof"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.storm-damages-roof.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ],
+            "scheduledEvents": [
+              {
+                "eventId": "event-storm-repair-bill",
+                "inWeeks": 3
+              }
+            ],
+            "advancesChain": true
+          },
+          "tags": [
+            "chained"
+          ],
+          "titleKey": "stable-life.event.storm-damages-roof.title",
+          "descriptionKey": "stable-life.event.storm-damages-roof.description"
+        },
+        {
+          "id": "event-overtime-offered",
+          "category": "opportunity",
+          "weight": 12,
+          "conditions": {
+            "field": "player.career.currentEmployment",
+            "operator": "not_equals"
+          },
+          "choices": [
+            {
+              "id": "take-the-shift",
+              "labelKey": "stable-life.event.overtime-offered.choice.take-the-shift",
+              "timeCost": 6,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.energy",
+                        "operation": "subtract",
+                        "value": 10,
+                        "sourceId": "event-overtime-offered"
+                      },
+                      {
+                        "target": "player.needs.stress",
+                        "operation": "add",
+                        "value": 6,
+                        "sourceId": "event-overtime-offered"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "money",
+                        "target": "player.finances.cashCents",
+                        "value": 8500
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.overtime-offered.outcome.took-it",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "decline-the-shift",
+              "labelKey": "stable-life.event.overtime-offered.choice.decline-the-shift",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.overtime-offered.outcome.declined",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "player-triggered"
+          ],
+          "titleKey": "stable-life.event.overtime-offered.title",
+          "descriptionKey": "stable-life.event.overtime-offered.description"
+        },
+        {
+          "id": "event-apartment-viewing-offered",
+          "category": "opportunity",
+          "weight": 6,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 3,
+                "sourceId": "event-apartment-viewing-offered"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.apartment-viewing-offered.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "world-triggered",
+            "housing-cheap-studio"
+          ],
+          "titleKey": "stable-life.event.apartment-viewing-offered.title",
+          "descriptionKey": "stable-life.event.apartment-viewing-offered.description"
+        },
+        {
+          "id": "event-pigeon-territorial-dispute",
+          "category": "pure-absurdity",
+          "weight": 3,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 4,
+                "sourceId": "event-pigeon-territorial-dispute"
+              },
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 2,
+                "sourceId": "event-pigeon-territorial-dispute"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "item",
+                "target": "item-used-bicycle",
+                "value": 0
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.pigeon-territorial-dispute.outcome.message",
+                "visible": true,
+                "tone": "absurd"
+              }
+            ]
+          },
+          "tags": [
+            "repeatable"
+          ],
+          "titleKey": "stable-life.event.pigeon-territorial-dispute.title",
+          "descriptionKey": "stable-life.event.pigeon-territorial-dispute.description"
+        },
+        {
+          "id": "event-neon-sign-misunderstanding",
+          "category": "pure-absurdity",
+          "weight": 2,
+          "unique": true,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 4,
+                "sourceId": "event-neon-sign-misunderstanding"
+              },
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 6,
+                "sourceId": "event-neon-sign-misunderstanding"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "item",
+                "target": "item-novelty-neon-sign",
+                "value": 0
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.neon-sign-misunderstanding.outcome.message",
+                "visible": true,
+                "tone": "absurd"
+              }
+            ]
+          },
+          "tags": [
+            "unique"
+          ],
+          "titleKey": "stable-life.event.neon-sign-misunderstanding.title",
+          "descriptionKey": "stable-life.event.neon-sign-misunderstanding.description"
         }
       ],
       "npcs": [
@@ -2255,36 +2971,66 @@
     "stable-life.employer.bright-mart-retail.name": "BrightMart Retail",
     "stable-life.employer.civic-data-office.name": "Civic Data Office",
     "stable-life.employer.greasy-spoon-diner.name": "The Greasy Spoon Diner",
+    "stable-life.event.apartment-viewing-offered.description": "A studio on the next street is between tenants. It will not be for long.",
+    "stable-life.event.apartment-viewing-offered.title": "A Studio Comes Free",
     "stable-life.event.appliance-breaks.description": "It gives one last hum and stops. Everything in it has opinions about that now.",
     "stable-life.event.appliance-breaks.title": "The Fridge Dies",
+    "stable-life.event.boiler-gives-up.description": "It had been making the noise for weeks. The noise has stopped, which is worse.",
+    "stable-life.event.boiler-gives-up.title": "The Boiler Gives Up",
     "stable-life.event.bus-fare-increase.description": "The board votes on a Tuesday no one attends. The fare box votes every day after.",
     "stable-life.event.bus-fare-increase.title": "Fare Goes Up Again",
     "stable-life.event.car-breakdown.description": "Something under the hood decides today is the day.",
     "stable-life.event.car-breakdown.title": "Car Breakdown",
+    "stable-life.event.credential-recognized.description": "The equivalency certificate comes up in conversation and, for once, lands well.",
+    "stable-life.event.credential-recognized.title": "Someone Noticed",
+    "stable-life.event.dental-emergency.description": "A tooth that had been managing quietly for years decides to stop managing.",
+    "stable-life.event.dental-emergency.title": "Dental Emergency",
     "stable-life.event.employee-of-the-month.description": "A laminated certificate and a small cash bonus, in that order of perceived value.",
     "stable-life.event.employee-of-the-month.title": "Employee of the Month",
+    "stable-life.event.friend-needs-a-favor.description": "Priya asks for a Saturday. She has never asked for a Saturday before.",
+    "stable-life.event.friend-needs-a-favor.title": "A Friend Needs a Favor",
     "stable-life.event.hardship-relief-payment.description": "A form filed months ago is finally worth something.",
     "stable-life.event.hardship-relief-payment.title": "Hardship Relief Payment",
+    "stable-life.event.heatwave.description": "The city holds the heat overnight and gives it back at eight in the morning.",
+    "stable-life.event.heatwave.title": "Heatwave",
     "stable-life.event.inflation-adjustment.description": "Nothing on the shelf changed except the number under it.",
     "stable-life.event.inflation-adjustment.title": "Prices Creep Up",
     "stable-life.event.job-interview-invitation.description": "Someone read the application after all, and wants to meet the person who wrote it.",
     "stable-life.event.job-interview-invitation.title": "Interview Invitation",
+    "stable-life.event.landlord-inspection.description": "Two days' notice, delivered one day ago. Everything you own is now visible.",
+    "stable-life.event.landlord-inspection.title": "Routine Inspection",
     "stable-life.event.late-tax-filing-notice.description": "A form due last season is due again, this time with a tone.",
     "stable-life.event.late-tax-filing-notice.title": "Late Filing Notice",
     "stable-life.event.limited-time-sale.description": "A sign in the window insists this will never happen again. It happened last month too.",
     "stable-life.event.limited-time-sale.title": "Limited-Time Sale",
     "stable-life.event.mugging-attempt.description": "Someone blocks the alley shortcut and asks, not very politely, for your wallet.",
     "stable-life.event.mugging-attempt.title": "Mugging Attempt",
+    "stable-life.event.neighbor-borrows-again.description": "Tomasz needs the toolkit. Tomasz has needed the toolkit since March.",
+    "stable-life.event.neighbor-borrows-again.title": "Borrowed, Again",
+    "stable-life.event.neon-sign-misunderstanding.description": "The neon sign in the window has been mistaken for a business. A form has been sent.",
+    "stable-life.event.neon-sign-misunderstanding.title": "A Municipal Misunderstanding",
+    "stable-life.event.overtime-offered.description": "Someone called in sick. The hours are yours if you want them, and they are not good hours.",
+    "stable-life.event.overtime-offered.title": "Overtime Offered",
     "stable-life.event.pickpocketed.description": "A crowd, a jostle, and a lighter pocket than you started the day with.",
     "stable-life.event.pickpocketed.title": "Pickpocketed",
+    "stable-life.event.pigeon-territorial-dispute.description": "A pigeon has decided the bicycle is its bicycle. It has brought documentation.",
+    "stable-life.event.pigeon-territorial-dispute.title": "Territorial Dispute",
     "stable-life.event.shift-schedule-cut.description": "The schedule changes and a shift disappears from under you. The rent does not follow suit.",
     "stable-life.event.shift-schedule-cut.title": "Shift Cut Short",
+    "stable-life.event.storm-damages-roof.description": "Wind overnight, and a stain on the ceiling by morning that was not there before.",
+    "stable-life.event.storm-damages-roof.title": "The Storm Finds the Roof",
+    "stable-life.event.storm-repair-bill.description": "The roof is fixed. The invoice explains, at length, why it took three weeks.",
+    "stable-life.event.storm-repair-bill.title": "The Repair Bill",
     "stable-life.event.surprise-bonus.description": "The till balanced for once, and some of the difference lands in your pay.",
     "stable-life.event.surprise-bonus.title": "Surprise Bonus",
     "stable-life.event.tax-penalty-assessment.description": "The tone from two weeks ago becomes a number.",
     "stable-life.event.tax-penalty-assessment.title": "Penalty Assessment",
     "stable-life.event.team-morale-day.description": "Someone brought a cake. It is being treated as a major event.",
     "stable-life.event.team-morale-day.title": "Team Morale Day",
+    "stable-life.event.tutor-offers-extra-session.description": "Mr. Alavi has a free hour and a strong opinion about how you should spend it.",
+    "stable-life.event.tutor-offers-extra-session.title": "An Extra Session",
+    "stable-life.event.winter-flu.description": "Everyone at work had it. Now it is your turn, and the week has other plans.",
+    "stable-life.event.winter-flu.title": "Winter Flu",
     "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     "stable-life.goal.stable-life.label": "A Stable Life",
     "stable-life.housing.cheap-studio.description": "One room, but it is the whole apartment, and nobody else's name is on the lease.",
