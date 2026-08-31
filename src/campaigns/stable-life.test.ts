@@ -96,14 +96,34 @@ describe("Stable Life — the authoring path", () => {
   });
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
-    // §16.1's jobs/employers/skills targets are now authored (S15), 15 of 30 events (S16),
-    // courses (S17), 20 items (S19), 8 NPCs (S20), and backgrounds/traits (S22); the rest
-    // are still an honest statement that the content is unwritten.
+    // §16.1's jobs/employers/skills targets are authored (S15), all 30 events (S16, S21),
+    // courses (S17), 20 items (S19), 8 NPCs (S20), and backgrounds/traits (S22); the three
+    // below are still an honest statement that the content is unwritten.
     const empty = [
       "opportunities", "achievements", "headlines",
     ] as const;
     for (const key of empty) {
       expect(stableLifeSource[key], `${key} should still be unwritten`).toEqual([]);
+    }
+  });
+
+  it("says in its catalog card exactly which collections are unwritten, and no others", () => {
+    // The card is the one sentence a host shows a player before loading, and it enumerated
+    // what was authored until it read "15 of 30 random events" four slices after all 30
+    // were written. Naming what is missing instead ties it to a set that only shrinks, and
+    // to the assertion directly above rather than to a count a slice has to remember.
+    const COLLECTIONS = [
+      "jobs", "courses", "housing", "items", "events", "npcs", "goals", "scenarios",
+      "difficulties", "opportunities", "achievements", "headlines", "employers",
+      "locations", "backgrounds", "traits", "skills",
+    ] as const;
+    expect(COLLECTIONS).toHaveLength(17);
+
+    const notice = stableLifeCatalog.contentNotice.toLowerCase();
+    for (const key of COLLECTIONS) {
+      const unwritten = stableLifeSource[key].length === 0;
+      expect(notice.includes(key), `contentNotice ${unwritten ? "must" : "must not"} name ${key}`)
+        .toBe(unwritten);
     }
   });
 });

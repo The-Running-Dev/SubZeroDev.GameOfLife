@@ -1,7 +1,7 @@
 /**
  * Enforces CP1, CP2 and CP3 (`design/20-contract.md`): nothing under `src/` or `scripts/`
- * imports past the engine's published surface, nothing but the exporter writes or deletes
- * under `content/`, and nothing reads a file under `content/`.
+ * imports past the engine's published surface, no production source but the exporter writes
+ * or deletes under `content/`, and no production source reads a file under `content/`.
  *
  * CP1 is the row the submodule makes easy to break by accident — a relative import into
  * `engine/`'s own source tree typechecks, runs, and passes every other gate, and only fails
@@ -196,8 +196,10 @@ describe("the single writer (CP2)", () => {
   it("is the only production file under src/ or scripts/ that writes or deletes a file", () => {
     // A test fixture writing into content/ to prove the exporter cleans it up (S13.1) is
     // not a second writer in the sense CP2 protects against — CP2 governs what is
-    // published, not what a test does to its own fixture — so test files are excluded
-    // here and only here; CP1 and CP3 below still check them like any other source.
+    // published, not what a test does to its own fixture. That scope is contracted, not a
+    // local convention: CP2 and CP3 both read "production source", and the obligation the
+    // scope carries is that such a test restores the directory before it ends. CP1 still
+    // checks test files like any other source.
     const writers: string[] = [];
     for (const file of files.filter((f) => !f.endsWith(".test.ts"))) {
       const text = readFileSync(file, "utf8");
@@ -232,26 +234,87 @@ describe("the single writer (CP2)", () => {
   });
 });
 
-describe("nothing reads content/ (CP3)", () => {
-  it("has no file under src/ or scripts/ that reads a file under content/", () => {
+/** Identifiers in one file bound to a path that names the content directory — `outputDir`
+ *  and `contentDir` themselves, and anything built from them or from a literal `"content"`
+ *  segment, such as `const manifestPath = path.join(projectRoot, "content", "x.json")`.
+ *
+ *  Resolving only literal arguments is what let a real CP3 violation sit unnoticed: the read
+ *  was `readFile(manifestPath, ...)`, whose argument names neither directory binding and is
+ *  not a literal, so the target looked innocuous one hop from the path that was not. */
+const BINDING_PATTERN = /\b(?:const|let|var)\s+(\w+)\s*=\s*([^;\n]*)/g;
+
+function mentions(text: string, name: string): boolean {
+  return new RegExp(`\\b${name}\\b`).test(text);
+}
+
+function contentBindingsOf(text: string): Set<string> {
+  const bound = new Set(["contentDir", "outputDir"]);
+  // To a fixed point, so a binding built from another binding is caught as well.
+  for (;;) {
+    let grew = false;
+    for (const [, name, initializer] of text.matchAll(BINDING_PATTERN)) {
+      if (name === undefined || initializer === undefined || bound.has(name)) continue;
+      const namesContent =
+        /["']content["']/.test(initializer) || [...bound].some((b) => mentions(initializer, b));
+      if (namesContent) {
+        bound.add(name);
+        grew = true;
+      }
+    }
+    if (!grew) return bound;
+  }
+}
+
+/** Every read in `text` whose target resolves under content/ — as a literal path, through a
+ *  content binding, or through an inline `"content"` segment. Returns the raw targets. */
+export function contentReadsIn(text: string, fileDir: string): string[] {
+  const { named, aliases } = fsBindingsOf(text);
+  const readNames = READ_FILE_FNS.filter((n) => named.has(n));
+  const bindings = contentBindingsOf(text);
+  const found: string[] = [];
+  for (const rawArgs of callsOf(text, readNames, [...aliases])) {
+    const target = firstArgument(rawArgs);
+    const literal = target.match(/^["'](.+)["']$/);
+    const resolved = literal ? path.resolve(fileDir, literal[1]!) : null;
+    const suspect =
+      (resolved !== null && isInside(resolved, contentDir)) ||
+      [...bindings].some((b) => mentions(target, b)) ||
+      /["']content["']/.test(target);
+    if (suspect) found.push(target);
+  }
+  return found;
+}
+
+describe("no production source reads content/ (CP3)", () => {
+  it("has no production file under src/ or scripts/ that reads a file under content/", () => {
+    // Scoped to production sources, as CP2 above is: a test may read a published file to
+    // perturb and restore it, which is how the clean check is proven to fire against the
+    // directory it actually guards. What is forbidden is a source that ships.
     const violations: string[] = [];
-    for (const file of files) {
+    for (const file of files.filter((f) => !f.endsWith(".test.ts"))) {
       const text = readFileSync(file, "utf8");
-      const fileDir = path.dirname(file);
-      const { named, aliases } = fsBindingsOf(text);
-      const readNames = READ_FILE_FNS.filter((n) => named.has(n));
-      const calls = callsOf(text, readNames, [...aliases]);
-      for (const rawArgs of calls) {
-        const target = firstArgument(rawArgs);
-        // A string literal argument is resolved directly; anything dynamic that even
-        // mentions the content directory's name is flagged rather than silently passed.
-        const literal = target.match(/^["'](.+)["']$/);
-        const resolved = literal ? path.resolve(fileDir, literal[1]!) : null;
-        if ((resolved && isInside(resolved, contentDir)) || /\bcontentDir\b|\boutputDir\b/.test(target)) {
-          violations.push(`${relativePosix(file)} reads "${target}"`);
-        }
+      for (const target of contentReadsIn(text, path.dirname(file))) {
+        violations.push(`${relativePosix(file)} reads "${target}"`);
       }
     }
     expect(violations).toEqual([]);
+  });
+
+  it("catches a read one hop from the path, which is the form that slipped through before", () => {
+    // A validator that has never rejected anything is not known to constrain anything. This
+    // is the exact shape src/check-clean.test.ts used while CP3 was unscoped and unenforced.
+    const offender = [
+      'import { readFile } from "node:fs/promises";',
+      'const manifestPath = path.join(projectRoot, "content", "manifest.json");',
+      'const original = await readFile(manifestPath, "utf8");',
+    ].join("\n");
+    expect(contentReadsIn(offender, scriptsDir)).toEqual(["manifestPath"]);
+
+    const innocent = [
+      'import { readFile } from "node:fs/promises";',
+      'const pkgPath = path.join(projectRoot, "package.json");',
+      'const original = await readFile(pkgPath, "utf8");',
+    ].join("\n");
+    expect(contentReadsIn(innocent, scriptsDir)).toEqual([]);
   });
 });

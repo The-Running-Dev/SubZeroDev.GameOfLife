@@ -7,6 +7,128 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 - **S16.5** — `03` §11.3's collection quantifiers (`exists`/`count`) are not expressible by the pinned engine: `kinds/simulation/conditions.ts` implements `field` and throws on `collection`. 2 of the 15 S16 events would have used one and omit it instead, named at the authoring site per CP10: `event-job-interview-invitation` (would gate on a `count` over `player.career.pendingApplications`) and `event-car-breakdown` (would gate on an `exists` over `player.inventory` for an owned vehicle). Same underlying gap as the credential completion requirement `stable-life.ts`'s file header already notes for S15's goal. Tracked as issue #107, which also covers S21.5's two further instances of this gap; kept here as well because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
 
+- **A decision record cannot carry `StatedIn`** — `AGENTS.md` § *Writing a design-state record* step 4 says to name an absorption site in the decision's `StatedIn` field, and the pinned kit's own `tools/Read-DesignState.ps1` has no such field: the Decision kind's closed scalar vocabulary is `Date`, `Anchor`, `Status`, `SupersededBy`, so the line is `RecordUnparseable` and fails the build. Verified by running `Read-DesignStateGraph` over a copy of this repository's state set with the line added — one failure, at that line. Found while absorbing the 2026-08-31 `.length` decision into CP10, which therefore records the absorption in the site alone. Both files are kit-owned (`.claude/kit.json` pins `aedb94c`, synced `5095a55`), so the fix belongs upstream in SubZeroDev.AgentKit and arrives through `/kit-sync`, never by forking either file here.
+
+---
+
+### 2026-08-31 — The catalog card names the unwritten collections rather than the authored ones
+Context: `stableLifeCatalog.contentNotice` enumerated what was authored — "6 courses, 15 of 30
+random events, 20 purchasable items, 8 NPCs and 3 starting backgrounds" — so every slice that
+filled a collection had to revise a file it was not otherwise touching, and none did. It still
+read "15 of 30 random events" after S21 wrote the other 15, and that sentence is published in
+`content/stable-life.json`: the one thing a host shows a player before loading had been wrong
+through four merged slices. `20-contract.md` § *Content path records* calls the card's fitness
+fields "content-fitness statements rather than presentation flags", so a false one is the card
+failing the job the contract gives it, not a cosmetic lapse.
+Chosen: The notice names the collections that are *unwritten* and nothing else, and
+`stable-life.test.ts` asserts it names exactly those and none of the authored ones. The empty set
+only ever shrinks, the suite already asserts precisely what is in it, and the notice is now
+checked against that same set rather than against a count a slice has to remember. Verified by
+reverting: the old sentence fails the new case on `courses` and passes once restored.
+Rejected: Correcting the counts and adding a test that matches each number in the notice against
+its collection's length — it keeps the richer sentence a player reads, and is rejected because
+the assertion then has to find numbers inside an English sentence, so it couples to the phrasing
+and breaks on a harmless rewording. That is the prose-comparison brittleness this repository
+avoids elsewhere by comparing ids. Also rejected: correcting the counts and adding nothing, which
+would be the fourth slice-sized fix to this string with nothing to stop the fifth.
+Reversibility: cheap — one authored string, one test case, and a re-export.
+
+---
+
+### 2026-08-31 — A projected marker in the corpus is a finding; form consistency is checked per root
+Context: `20-contract.md` claimed in two places — § *The marker vocabulary* and the
+`DuplicateRegionId` row — that an id appearing in both marker forms "anywhere in the repository"
+is raised by the spec-set index. Nothing enforced it for the corpus: `Get-DeclaredRegions` matched
+only the declared form, and `IdCollision`, which does enforce the policy, runs over the
+design-state document set that § *Artifacts of a unit kind* never resolves into
+`docs/docs/games/`. The gap was not theoretical. Dropping `:declared:` from both markers of
+`mirror-AttributeState` made the region invisible, took the obligation guarding the `wisdom`
+defect the brief is named for with it, and the run still reported `Valid`, exit 0, with the
+obligation count quietly down from two to one.
+Chosen: A projected-form marker anywhere in the corpus is `MalformedRegion`, not a both-forms
+collision. A both-forms rule would not have caught this at all — the typo drops `:declared:` from
+the start and the end together, so the id never appears in declared form and there is nothing to
+collide with. The corpus has no projector (SS1 makes every module read-only), so a rendered region
+there is always wrong and can be rejected on its own. `MalformedRegion` absorbs it rather than a
+new reason being minted, on the reasoning that widened `AnchorMissing` and `EnforcementUnevidenced`
+rather than splitting them. The two contract sites are narrowed to what is actually checked —
+`(document, id)` uniqueness within the corpus — and the half that stays open is named: an id
+declared in the corpus and projected outside it is checked by neither root, because CP9 keeps the
+spec-set checker to one corpus root. The 2026-08-21 policy is untouched; only who enforces it
+where is now written down truthfully.
+Rejected: Correcting the contract and leaving the index alone — prose only, no code, and rejected
+because it writes the silent retirement of an obligation down as accepted when the fix is one
+alternative in the pattern the file already owns (SS2) plus a test. Also rejected: adding
+`docs/docs/games/*.md` to § *Artifacts of a unit kind*'s document row so `IdCollision` covers the
+corpus, which would make the repository-wide claim literally true — rejected because it raises
+`UnrecordedArtifact` on all eight corpus files at once, and changes the installed design-state
+path's policy for another path's benefit, the shape `90-decisions.md` (2026-08-30, the content
+path is contracted as a third scope) already rejected by name when it declined to make
+`src/campaigns/` a unit kind.
+Reversibility: cheap — one regex alternative, one guard, one test, and three prose edits.
+
+---
+
+### 2026-08-31 — The `lifecycle-` marker vocabulary is reserved to the derived concept set
+Context: `Test-SpecSet.ps1`'s concept check raises a third finding the contract's § *Checks* table
+does not list — a `lifecycle-` region whose name is outside the derived concept set — and S6.5
+tests it. § *Authored records* meanwhile says stateless mechanisms "are outside the derived
+concept set and are judged on the full-audit path", which reads as the checker staying out of the
+way for them, while the check next door fails the build on one. Two readings of one rule, with the
+code and the prose each holding a different half.
+Chosen: The contract gains the finding row and the rule behind it — the `lifecycle-` vocabulary
+is reserved to the derived set, a stateless mechanism's lifecycle is documented in ordinary prose
+where the full-audit path reads it, and a region naming anything else is a finding. This is SS15's
+rule one check over ("only a closed declaration may carry a mirror obligation") and is kept for
+the same reason: what the reservation actually buys is the misspelling. `lifecycle-PlayerStat` is
+otherwise an orphaned region every check silently skips, on a document the report then calls
+clean. No new `SS` id is minted for it — an id is assigned once and never renumbered, and the
+finding row plus the sentence already bind.
+Rejected: Deleting the third variant and its S6.5 test, which makes the contract true as written
+and lets an author put a stateless mechanism's lifecycle in a marked region. Rejected because it
+removes tested behaviour to match prose rather than the other way round, and because it buys that
+freedom by making the typo case silent — the mirror check flags "names a declaration that does not
+exist" for exactly this reason, and the two checks would then disagree about the same mistake.
+Also rejected: adding the row and leaving § *Authored records* alone — cheapest, and it leaves the
+sentence still reading as though the checker stays out of the way, which is the two-readings state
+this entry exists to end.
+Reversibility: cheap — one table row and one paragraph, and the deletion stays available.
+
+---
+
+### 2026-08-31 — CP2 and CP3 are scoped to production sources, and the CP3 check is tightened to match
+Context: `/reconcile` found CP3 ("Nothing in this repository reads a file under `content/`",
+Enforcement `Code`, Evidence `src/published-surface.test.ts`) broken in the tree:
+`src/check-clean.test.ts` reads `content/manifest.json` in order to perturb and restore it, which
+is how the CP11 test proves `ExportStale` fires against the directory the gate actually guards.
+Its own check missed it — the CP3 predicate resolved string-literal targets and otherwise flagged
+only a target naming `contentDir` or `outputDir`, and the read went through `manifestPath`, one
+hop from the path that was not innocuous. The same question had already been answered the other
+way for CP2, whose check excludes `*.test.ts` with the reasoning in a code comment and nowhere
+else, so the contract and its evidence asserted different rules and only one of the two rows knew
+it. Two test files write under `content/` on the same footing.
+Chosen: CP2 and CP3 both read "production source", and the carve-out is written into
+`20-contract.md` § *Content path invariants* with the obligation it carries — a test that leaves
+`content/` differing from the committed export has failed, whatever else it asserted, which is
+why every such test ends on a `git status` assertion. `10-design.md` § *Module boundaries* and
+§ *The combined graph* are scoped to match. The CP3 check is rewritten to resolve a file's local
+bindings to a fixed point, so a read through any identifier built from a `"content"` segment or
+from `contentDir`/`outputDir` is caught however many hops away the literal sits, and it is scoped
+to production files as CP2's already was. It ships with a negative case asserting it rejects the
+exact one-hop form that slipped through and accepts an equivalent read of `package.json`.
+Rejected: Changing the tests to match the contract as written — run the clean check against a
+scratch checkout with its own `content/` rather than the real one, and drop the `orphan.json`
+fixture. Rejected because it removes the property `check-clean.test.ts`'s own header claims and
+that makes the gate worth trusting: "a black-box test proves what a reviewer trusting the gate
+actually gets, not what an internal function happens to return." A gate proven only against a
+scratch directory is not proven against the directory a host fetches. Also rejected: scoping the
+contract and leaving the check alone — one prose edit, no code, and rejected because it leaves a
+`Code` row whose check would miss the next violation written the same way, which is the shape the
+2026-08-29 entry below took six `SS` rows to task for; a scope written down and still unenforced
+is the same defect one layer up.
+Reversibility: cheap — two invariant statements, one paragraph, and one predicate. The rejected
+scratch-checkout form stays available and is not foreclosed by either edit.
+
 ---
 
 ### 2026-08-31 — A `.length` narrowing on a collection field is CP10-compliant; S21.3 is fully met

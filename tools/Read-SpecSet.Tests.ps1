@@ -65,6 +65,22 @@ Describe 'Read-SpecSetIndex' {
         $index = Read-SpecSetIndex -CorpusPath $corpus
         $index.State | Should -Be 'NotEvaluated'; $index.Reason | Should -Be 'DuplicateRegionId'
     }
+    It 'a projected-form marker anywhere in the corpus yields MalformedRegion' {
+        # The corpus has no projector - every module is read-only (SS1) - so a rendered region
+        # cannot legitimately appear here. Left unlooked-for, dropping ':declared:' from both
+        # of a region's markers retires that obligation with no trace: before this was
+        # rejected, the fixture below indexed zero obligations and the run reported Valid.
+        $corpus = Join-Path $TestDrive 'projected-form'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n`nList: <!-- mirror-Foo:start -->a, b<!-- mirror-Foo:end -->" -NoNewline
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'NotEvaluated'; $index.Reason | Should -Be 'MalformedRegion'; $index.Line | Should -BeGreaterThan 0
+    }
+    It 'still accepts the declared form of the same region, so the rejection is the form and not the id' {
+        $corpus = Join-Path $TestDrive 'declared-form'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value "# Fixture`n`nList: <!-- mirror-Foo:declared:start -->a, b<!-- mirror-Foo:declared:end -->" -NoNewline
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $index.State | Should -Be 'Indexed'; $index.MirrorObligations.Count | Should -Be 1
+    }
     It 'S3.4: a mirror region naming an open declaration is still indexed as an obligation' {
         $corpus = Join-Path $TestDrive 'open-decl'; New-Item -ItemType Directory -Path $corpus | Out-Null
         $content = @'

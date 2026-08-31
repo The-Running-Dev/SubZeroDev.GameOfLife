@@ -138,7 +138,7 @@ subsets would have passed the one case this machinery exists to catch.
 
 **What that costs, stated rather than left to be discovered: the obligation set is small and does
 not grow on its own.** A site that describes part of a declaration is not a weak obligation, it is
-not an obligation — `03` §12.1 names four of `RelationshipState`'s ten members, and §13.3's
+not an obligation — `03` §12.1 names four of `RelationshipState`'s nine members, and §13.3's
 "Classic Mode / Open Life Mode / Challenge Mode" does not contain `classic`, `open_life` or
 `challenge` as identifiers, so neither can be obligated as written. Such a site is reduced per
 `90-decisions.md` (2026-08-20, reduce the mirrored surface) or left to the full-audit path; making
@@ -156,6 +156,14 @@ limits are why the full-audit path is not retired by any of this.
 judged on the full-audit path. This bounds the fourth brief condition to something enumerable from
 the index; the broad reading is not enumerable mechanically at all, and a check that cannot know
 what is missing does not check completeness.
+
+**The `lifecycle-` vocabulary is reserved to the derived set, and a region naming anything else
+is a finding** — SS15's rule one check over, and for the same reason. A stateless mechanism's
+lifecycle is documented in ordinary prose, which is where the full-audit path reads it; a marked
+region is how a *checked* obligation is declared, and one naming a subject no check can enumerate
+declares nothing. What the reservation actually buys is the misspelling: `lifecycle-PlayerStat`
+is otherwise an orphaned region that every check silently skips, on a document the report then
+calls clean.
 
 ### Content path records
 
@@ -226,7 +234,7 @@ and a host caching on the address serves the old campaign with no way to learn o
 requires a version bump is a compatibility promise to an external consumer, so it is *Unresolved*
 1 rather than a rule invented at contract time.
 
-**Nothing in this repository reads a file under `content/`** (CP3). The clean check reads git's
+**No production source in this repository reads a file under `content/`** (CP3). The clean check reads git's
 report about the directory, never its contents, and that distinction is what keeps the content
 path from closing a loop through its own output.
 
@@ -472,8 +480,12 @@ Authors write these; no code declares them, so this is their only home. The four
 *Authored records* above. Binding on the corpus:
 
 - A region's opening and closing markers must match and must not nest.
-- A `(document, id)` pair must be unique, and one id must not appear in both marker forms anywhere
-  in the repository.
+- A `(document, id)` pair must be unique within the corpus.
+- **Every region in the corpus is declared, and a projected marker anywhere in it is a finding.**
+  The corpus has no projector — SS1 makes every module read-only — so a rendered region cannot
+  legitimately appear here, and treating one as merely unrecognised is how an obligation
+  disappears without trace: drop `:declared:` from both of a region's markers and the region
+  ceases to exist, the obligation with it, on a run that still reports `Valid`.
 - A region must have a non-empty body.
 - `provisional-register` occurs exactly once across the whole corpus.
 
@@ -522,17 +534,30 @@ into `docs/docs/games/` are the only link in either direction between a campaign
 specification it was transcribed from, and their rot after a renumbering is the full-audit
 path's to catch.
 
-**Where the pinned engine cannot express a requirement the corpus states, the source omits it
-visibly and names the omission** (CP10). Never approximate: an approximation is a silent
-divergence between the campaign and the spec it was authored from, in the one artifact whose
-entire purpose is to be evidence that the two agree.
+**Where the pinned engine cannot express a requirement the corpus states, the source omits or
+narrows it visibly and names what was left out** (CP10). Never approximate: an approximation is
+a **silent** divergence between the campaign and the spec it was authored from, in the one
+artifact whose entire purpose is to be evidence that the two agree.
+
+**Silence is what the rule turns on, and a narrower condition is not silent when it says so.**
+A condition over a real field the pinned engine resolves, named at its site as weaker than what
+the corpus asks, is compliant; `90-decisions.md` (2026-08-31, a `.length` narrowing) settled that
+and two events rest on it. The line falls where a form can become wrong without anyone editing
+it: `player.relationships.0.affinity` addresses one NPC by position and stops meaning what it
+meant the moment the array reorders, which is a divergence nothing announces, so it is forbidden
+even though it resolves. `player.relationships.length` names no item, so reordering cannot make
+it wrong — it can only ever be weaker than the corpus's own per-item gate, which is the thing the
+site must say out loud. **Omission remains the default and the narrowing is the exception**: it
+is available only where the narrower condition is a real property of the same subject, never
+where it is a different question standing in for the one the corpus asked.
 
 #### `scripts/export-content.ts`
 
 Declared in [`scripts/export-content.ts`](../scripts/export-content.ts). The `entries` list is
 the publication catalog and is this file's most important surface.
 
-**It is the only writer in either system, and `content/` is its only write target** (CP2).
+**It is the only production writer in either system, and `content/` is its only write target**
+(CP2).
 
 **It builds every campaign and validates the whole set before writing any file** (CP4), so an
 authoring or validation failure leaves the directory byte-identical. That ordering is the
@@ -733,9 +758,25 @@ clean. A declaration the index skipped is a declaration no check examined.
 |---|---|---|
 | `UnreadableDocument` | A corpus file cannot be opened or decoded as UTF-8 | Fix the file; check encoding, per `agent.md` on CP1252 imports |
 | `UnknownDeclarationForm` | A fence contains a construct the restricted grammar does not accept | Extend the grammar, or rewrite the declaration into a known form |
-| `MalformedRegion` | A marker is unclosed, mismatched, or nested | Fix the markers |
-| `DuplicateRegionId` | A `(document, id)` repeats, or one id appears in both marker forms anywhere in the repository | Rename one region or make the form consistent |
+| `MalformedRegion` | A marker is unclosed, mismatched, nested, or written in the projected form, which the corpus has no writer for | Fix the markers |
+| `DuplicateRegionId` | A `(document, id)` repeats within the corpus | Rename one region |
 | `CorpusNotFound` | `-CorpusPath` does not resolve to a directory | Fix the invocation |
+
+**`MalformedRegion` covers the projected form as well as the unbalanced ones, and the name
+reading narrower than what it checks is the price** — paid deliberately, for the third time in
+this document, on the reasoning that widened `AnchorMissing` and `EnforcementUnevidenced` rather
+than splitting them: the check, the remedy, and the reason are the same in every case, and a
+second reason would have split one rule across two names for nothing.
+
+**What this does not reach, stated rather than left to be found: an id declared in the corpus and
+projected outside it.** `AGENTS.md` § *Marked regions* makes form consistency repository-wide and
+`90-decisions.md` (2026-08-21, marked-region identity) settled it, but no checker applies it
+across both roots. `IdCollision` enforces it over the design-state document set, which
+§ *Artifacts of a unit kind* never resolves into `docs/docs/games/`; the spec-set checker cannot
+reach the other direction either, because CP9 keeps it to exactly one corpus root and widening
+that is a contract amendment rather than a slice's call. The exposure is small and worth naming:
+the corpus's ids are `mirror-`, `provisional-`, `lifecycle-` prefixed and nothing outside it
+projects under those names. The rule stands; what is checked is each root against itself.
 
 `UnknownDeclarationForm` becoming frequent is the countable condition that reverses
 `90-decisions.md` (2026-08-20, restricted grammar). When status 2 stops meaning "look at this" and
@@ -753,6 +794,7 @@ A check produces findings, not errors. Findings yield `State = 'Invalid'`, exit 
 | `provisional` | A provisional site has no register row, or a register row has no site |
 | `concept` | A state-bearing concept has no `lifecycle-` region |
 | `concept` | A lifecycle region states creation but not retirement, or retirement but not creation |
+| `concept` | A `lifecycle-` region names something outside the derived concept set |
 | `reference` | A section or document reference resolves to nothing |
 | `reference` | A cross-repository reference carries no pinned sha |
 
@@ -949,15 +991,15 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | Id | Invariant | Owner | Enforcement | Evidence |
 |---|---|---|---|---|
 | **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | `src/published-surface.test.ts` |
-| **CP2** | `content/` has exactly one writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
-| **CP3** | Nothing in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
+| **CP2** | `content/` has exactly one production writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
+| **CP3** | No production source in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
 | **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | `src/export-content.test.ts` |
 | **CP5** | Two exports from the same sources and the same pin produce byte-identical files | Exporter | Code | `.github/workflows/verify.yml`, step *Re-export content and fail if the committed JSON is stale* |
 | **CP6** | Every `.json` under `content/` the publication catalog does not name is removed by the export | Exporter | Code | `src/export-content.test.ts` |
 | **CP7** | Every collection `SimulationCampaignSource` requires is present on every campaign source; an unwritten one is empty, never absent | Campaign sources | Code | `src/campaigns/stable-life.test.ts` |
 | **CP8** | No file under `content/` is hand-edited | The author | Instruction — the next export overwriting it is the only consequence, and making it an error would forbid the catalog-owns-the-directory behaviour CP6 requires | — |
 | **CP9** | No program in this repository resolves a `§` citation outside the corpus, and the spec-set checker keeps exactly one corpus root | Index, Campaign sources | Instruction — widening the root is a contract amendment, not a slice's call | — |
-| **CP10** | Where the pinned engine cannot express a requirement the corpus states, the campaign omits it visibly and names the omission, and the gap is raised in the engine repository rather than worked around here | Campaign sources | Instruction — the brief's non-goal is the enforcement available | — |
+| **CP10** | Where the pinned engine cannot express a requirement the corpus states, the campaign omits or narrows it visibly and names what was left out, and the gap is raised in the engine repository rather than worked around here | Campaign sources | Instruction — the brief's non-goal is the enforcement available | — |
 | **CP11** | The clean check compares only `content/`, and no parameter widens or relaxes the comparison | Clean check | Code | `src/check-clean.test.ts` |
 | **CP12** | The typecheck runs before the export in every composed invocation and in CI | `package.json`, workflow | Code | `src/check-clean.test.ts` |
 | **CP13** | No content-path step exits 0 for a comparison or a build it could not make | All | Code | `src/check-clean.test.ts` |
@@ -987,6 +1029,19 @@ portable. The packed-tarball boundary that enforces this in the engine repositor
 here, and `90-decisions.md` (2026-08-30, published surface) chose a test rather than prose or a
 lint toolchain precisely because prose is what is already in place and is not working.
 
+**CP2 and CP3 are scoped to production sources, and the carve-out is the tests' own
+fixture.** A test may write under `content/` to prove the exporter reclaims what the catalog
+does not name, and may read a published file to perturb and restore it so `ExportStale` can
+be shown firing against the directory the gate actually guards. Neither is a second
+publisher: what CP2 and CP3 protect is the relationship between the sources and what a host
+fetches, and a fixture that is restored before the suite ends has not changed it. The scope
+was live in the tree before it was written here — `src/published-surface.test.ts` excluded
+test files from CP2 with the reasoning in a comment, CP3 was left unscoped and was being
+broken by `src/check-clean.test.ts`, and the CP3 check resolved targets too narrowly to
+notice. **The obligation the scope carries in exchange: a test that leaves `content/`
+differing from the committed export has failed, whatever else it asserted**, which is why
+every such test ends on a `git status` assertion rather than on a cleanup it hopes ran.
+
 **CP10 has no mechanical enforcement and cannot acquire one here, and the same bound covers a
 larger class.** No program in this repository compares a literal in `src/` to a number in
 `docs/docs/games/`. The tests beside a campaign restate the same numbers, so they check the
@@ -996,7 +1051,7 @@ corpus's type claims fail a build and leaves its numeric claims exactly where th
 full-audit path.** That is the honest bound on the brief's claim that authoring makes the spec
 set checkable, and it sits beside SS16's bound rather than under it.
 
-**The value of this path as evidence is proportional to the content authored.** Fourteen of the
+**The value of this path as evidence is proportional to the content authored.** Three of the
 seed campaign's seventeen collections are empty, and every empty one is a region of the corpus
 no compiler has yet been asked about. Nothing in this table changes as they fill; what changes
 is how much the table is worth.

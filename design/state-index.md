@@ -158,6 +158,10 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-30-the-engine-s-published-surface-is-enforced-by-a-check-not-only-by-prose | `unit/document/design-10-design`, `unit/document/design-20-contract` |
 | decision/2026-08-30-the-game-content-path-enters-design-through-a-design-pass-before-it-is-contracted-or-sliced | `unit/document/design-10-design`, `unit/document/design-20-contract`, `unit/document/design-30-slices` |
 | decision/2026-08-31-a-length-narrowing-on-a-collection-field-is-cp10-compliant-s21-3-is-fully-met | — |
+| decision/2026-08-31-a-projected-marker-in-the-corpus-is-a-finding-form-consistency-is-checked-per-root | — |
+| decision/2026-08-31-cp2-and-cp3-are-scoped-to-production-sources-and-the-cp3-check-is-tightened-to-match | — |
+| decision/2026-08-31-the-catalog-card-names-the-unwritten-collections-rather-than-the-authored-ones | — |
+| decision/2026-08-31-the-lifecycle-marker-vocabulary-is-reserved-to-the-derived-concept-set | — |
 <!-- decision-affects:end -->
 
 ## Question affects

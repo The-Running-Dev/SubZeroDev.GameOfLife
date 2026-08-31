@@ -2659,7 +2659,14 @@ const CAMPAIGN_TITLE = {
 /**
  * The catalog card that travels with the published campaign. `contentNotice` says plainly
  * that this is a seed — a player reaching it from a catalog should not be told it is the
- * game when three of its seventeen content collections are empty.
+ * game while any of its seventeen content collections is empty.
+ *
+ * It names what is *missing* rather than enumerating what is authored, and that is a
+ * staleness decision rather than a style one. An enumeration has to be revised by every
+ * slice that fills a collection, and was not: it read "15 of 30 random events" through four
+ * merged slices after all 30 were written, in the one sentence a host shows a player before
+ * loading. The set of empty collections only ever shrinks, `stable-life.test.ts` already
+ * asserts exactly what is in it, and this sentence is checked against that same set.
  */
 export const stableLifeCatalog = {
   title: "Life in the Fast Lane — Stable Life",
@@ -2667,7 +2674,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items, 8 NPCs and 3 starting backgrounds are authored; the rest is not yet written.",
+    "Seed content. Opportunities, achievements and headlines are not yet written; the rest of the scenario is authored.",
   featured: false,
   hidden: true,
 } as const;
