@@ -9,6 +9,30 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-31 — The catalog card names the unwritten collections rather than the authored ones
+Context: `stableLifeCatalog.contentNotice` enumerated what was authored — "6 courses, 15 of 30
+random events, 20 purchasable items, 8 NPCs and 3 starting backgrounds" — so every slice that
+filled a collection had to revise a file it was not otherwise touching, and none did. It still
+read "15 of 30 random events" after S21 wrote the other 15, and that sentence is published in
+`content/stable-life.json`: the one thing a host shows a player before loading had been wrong
+through four merged slices. `20-contract.md` § *Content path records* calls the card's fitness
+fields "content-fitness statements rather than presentation flags", so a false one is the card
+failing the job the contract gives it, not a cosmetic lapse.
+Chosen: The notice names the collections that are *unwritten* and nothing else, and
+`stable-life.test.ts` asserts it names exactly those and none of the authored ones. The empty set
+only ever shrinks, the suite already asserts precisely what is in it, and the notice is now
+checked against that same set rather than against a count a slice has to remember. Verified by
+reverting: the old sentence fails the new case on `courses` and passes once restored.
+Rejected: Correcting the counts and adding a test that matches each number in the notice against
+its collection's length — it keeps the richer sentence a player reads, and is rejected because
+the assertion then has to find numbers inside an English sentence, so it couples to the phrasing
+and breaks on a harmless rewording. That is the prose-comparison brittleness this repository
+avoids elsewhere by comparing ids. Also rejected: correcting the counts and adding nothing, which
+would be the fourth slice-sized fix to this string with nothing to stop the fifth.
+Reversibility: cheap — one authored string, one test case, and a re-export.
+
+---
+
 ### 2026-08-31 — A projected marker in the corpus is a finding; form consistency is checked per root
 Context: `20-contract.md` claimed in two places — § *The marker vocabulary* and the
 `DuplicateRegionId` row — that an id appearing in both marker forms "anywhere in the repository"
