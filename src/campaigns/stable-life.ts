@@ -10,9 +10,9 @@
  * engine-owned and unpublished.
  *
  * What it deliberately does not yet carry: opportunities, achievements and headlines
- * (jobs, employers and skills were added by S15; 15 of §16.1's 30 events were added by S16,
- * the other 15 are S21; courses were added by S17; 20 purchasable items were added by S19;
- * 8 NPCs were added by S20; backgrounds and traits were added by S22). Each remaining
+ * (jobs, employers and skills were added by S15; all 30 of §16.1's events are now present —
+ * 15 by S16, the other 15 by S21; courses were added by S17; 20 purchasable items were added
+ * by S19; 8 NPCs were added by S20; backgrounds and traits were added by S22). Each remaining
  * collection is its own authoring slice against §16.1's content targets. They are present
  * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
  * and an empty one is an honest statement that the content is unwritten.
@@ -71,12 +71,16 @@
  * yet" rather than "never". The goal below carries the five requirements that are scalar
  * comparisons and omits that one. §11.3 names the same quantifiers for events —
  * "owns any item tagged formal_clothing", "any NPC with resentment above 50" — and two of
- * the 15 events below would have used one (S16.5): `event-job-interview-invitation` would
+ * S16's 15 events would have used one (S16.5): `event-job-interview-invitation` would
  * gate on a `count` over `player.career.pendingApplications`, and `event-car-breakdown`
  * would gate on an `exists` over `player.inventory` for an owned vehicle. Both omit that
- * condition and name the omission at the site, per CP10. Recorded as an open item rather
- * than worked around — a condition that silently drops a stated requirement would be worse
- * than one that visibly does not carry it.
+ * condition and name the omission at the site, per CP10. S21 adds two more of the same
+ * class, narrowed to each collection's own `.length` rather than a per-item quantifier
+ * (S21.5): `event-old-friend-visits` (would gate on a specific NPC's relationship, off
+ * `player.relationships`) and `event-night-class-fatigue` (would gate on a specific course's
+ * enrollment status, off `player.education.enrollments`) — four omissions total across the
+ * 30 events. Recorded as an open item rather than worked around — a condition that silently
+ * drops a stated requirement would be worse than one that visibly does not carry it.
  */
 
 import {
@@ -1310,20 +1314,43 @@ const npcs: SimulationCampaignSource["npcs"] = [
 ];
 
 /**
- * §16.1's random events — 15 of the 30 targeted (the other 15 are S21), drawn only from the
- * seven `03` §11.1 categories S16 scopes: employment, economy, purchases, crime,
- * bureaucracy, transportation, business. Every category appears at least once (S16.1).
+ * §16.1's random events — all 30 targeted, now that S21 has added the second 15 to S16's
+ * first. S16 drew only from employment, economy, purchases, crime, bureaucracy,
+ * transportation and business; S21 draws only from the other seven `03` §11.1 categories —
+ * housing, health, relationships, education, weather, opportunity, pure absurdity — so every
+ * one of the corpus's fourteen categories is represented at least once across the 30
+ * (S16.1, S21.1, S21.2).
  *
  * §11.2 names ten event *types*, but `EventDefinition` (`content.ts`) has no dedicated type
  * field — the closest fit already in the schema is `tags`, the same mechanism S15 used to
  * carry a job's career path outside its own strict schema. Every event below carries exactly
- * one type tag, kebab-cased from §11.2 (S16.2).
+ * one type tag, kebab-cased from §11.2 (S16.2, S21).
  *
  * `Modifier.target` is restricted at validation time to `player.needs.*`,
  * `player.attributes.*`, `player.skills.*`, and `calendar.committedTimeUnits`
  * (`validate.ts`'s `WRITABLE_TARGET_PREFIXES`) — every cash effect below is therefore a
  * `Reward` of type `"money"`, never a `Modifier`, since `player.finances.cashCents` is not a
- * writable Modifier target.
+ * writable Modifier target. `Reward.target`/`value` are untyped and, per `endOfWeek.ts`'s own
+ * `applyEventOutcome` comment, deliberately unapplied at runtime pending a real dispatcher —
+ * every `"relationship"`/`"item"`/`"unlock_course"` reward below is declared content in the
+ * same already-accepted sense the `"money"` rewards above already are, not a new gap S21
+ * introduces.
+ *
+ * S21.3's three required conditions — housing, an NPC relationship, a course in progress —
+ * split two ways. `player.housing.damage` is a real, resolvable runtime field, so
+ * `event-plumbing-emergency` needs no approximation. The other two need one:
+ * `player.relationships` and `player.education.enrollments` are arrays
+ * (`RelationshipState[]`, `CourseEnrollment[]`, `actor.ts`) addressed by natural key only
+ * inside `resolvers.ts`'s own hand-written action logic, never through `conditions.ts`'s
+ * generic per-segment field walk, which has no collection support at all
+ * (`unresolvableCollection`) — the same gap S16.5 named for `exists`/`count`. A path naming
+ * one specific npc or course id off either array is not a single property-access step, so it
+ * throws exactly the way a bare quantifier would. `event-old-friend-visits` and
+ * `event-night-class-fatigue` are narrowed instead to each array's own `.length` — "has met
+ * any NPC at all," "has any enrollment record at all" — real properties that never throw, and
+ * strictly weaker gates than "this specific NPC" or "this specific course, currently active."
+ * Named at each site per CP10; running total across S16 and S21 in
+ * `design/90-decisions.md`.
  */
 const events: SimulationCampaignSource["events"] = [
   // --- Employment ---------------------------------------------------------------------
@@ -1787,6 +1814,650 @@ const events: SimulationCampaignSource["events"] = [
       ],
     },
     tags: ["unique"],
+  },
+
+  // --- Housing (S21) ---------------------------------------------------------------------
+  {
+    id: "event-plumbing-emergency",
+    category: "housing",
+    title: { key: "stable-life.event.plumbing-emergency.title", text: "Plumbing Emergency" },
+    description: {
+      key: "stable-life.event.plumbing-emergency.description",
+      text: "A pipe gives up. The corpus's own worked event example (`03` §11.4) was about exactly this.",
+    },
+    weight: 8,
+    // S21.3 — conditional on housing condition, the same field `03` §11.4's own example
+    // targets. `player.housing.damage` is a real runtime field (`HousingState.damage`,
+    // `actor.ts`), unlike `player.housing.quality`, which `derived.ts` declares as a
+    // formula-only path nothing in this pinned engine actually wires — a condition
+    // targeting `quality` would resolve `undefined` rather than throw, silently comparing
+    // false forever, so `damage` is used instead.
+    conditions: { field: "player.housing.damage", operator: "greater_than", value: 50 },
+    choices: [
+      {
+        id: "call-landlord",
+        labelKey: "stable-life.event.plumbing-emergency.choice.call-landlord",
+        // References `npc-landlord-rented-room` (S21.4).
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [
+                { type: "money", target: "player.finances.cashCents", value: -DOLLARS(30) },
+                {
+                  type: "relationship",
+                  target: "player.relationships.npc-landlord-rented-room.affinity",
+                  value: 2,
+                },
+              ],
+              messages: [
+                {
+                  key: "stable-life.event.plumbing-emergency.outcome.called-landlord",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "ignore-leak",
+        labelKey: "stable-life.event.plumbing-emergency.choice.ignore-leak",
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.stress",
+                  operation: "add",
+                  value: 6,
+                  sourceId: "event-plumbing-emergency",
+                },
+              ],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.plumbing-emergency.outcome.ignored",
+                  visible: true,
+                  tone: "negative",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["conditional"],
+  },
+  {
+    id: "event-lease-renewal-offer",
+    category: "housing",
+    title: { key: "stable-life.event.lease-renewal-offer.title", text: "Lease Renewal Offer" },
+    description: {
+      key: "stable-life.event.lease-renewal-offer.description",
+      text: "The rented room's lease is up. The landlord would like an answer, and a small increase.",
+    },
+    weight: 5,
+    // References the housing id `housing-rented-room` (S21.4) — this only fires for a
+    // player still in the tier it names.
+    conditions: { field: "player.housing.definitionId", operator: "equals", value: "housing-rented-room" },
+    automaticOutcome: {
+      effects: [],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(10) }],
+      messages: [
+        { key: "stable-life.event.lease-renewal-offer.outcome.message", visible: true, tone: "neutral" },
+      ],
+    },
+    tags: ["conditional"],
+  },
+
+  // --- Health (S21) ------------------------------------------------------------------------
+  {
+    id: "event-flu-season",
+    category: "health",
+    title: { key: "stable-life.event.flu-season.title", text: "Flu Season" },
+    description: {
+      key: "stable-life.event.flu-season.description",
+      text: "Everyone at the market is coughing. Now you are too.",
+    },
+    weight: 10,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.health", operation: "subtract", value: 8, sourceId: "event-flu-season" },
+        { target: "player.needs.energy", operation: "subtract", value: 5, sourceId: "event-flu-season" },
+      ],
+      rewards: [],
+      messages: [{ key: "stable-life.event.flu-season.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["world-triggered"],
+  },
+  {
+    id: "event-free-clinic-checkup",
+    category: "health",
+    title: { key: "stable-life.event.free-clinic-checkup.title", text: "Free Clinic Checkup" },
+    description: {
+      key: "stable-life.event.free-clinic-checkup.description",
+      text: "A community clinic is offering free checkups this week. No catch found yet.",
+    },
+    weight: 6,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "attend-checkup",
+        labelKey: "stable-life.event.free-clinic-checkup.choice.attend-checkup",
+        timeCost: 2,
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.health",
+                  operation: "add",
+                  value: 6,
+                  sourceId: "event-free-clinic-checkup",
+                },
+              ],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.free-clinic-checkup.outcome.attended",
+                  visible: true,
+                  tone: "positive",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "skip-checkup",
+        labelKey: "stable-life.event.free-clinic-checkup.choice.skip-checkup",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.free-clinic-checkup.outcome.skipped",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["repeatable"],
+  },
+
+  // --- Relationships (S21) -----------------------------------------------------------------
+  {
+    id: "event-old-friend-visits",
+    category: "relationships",
+    title: { key: "stable-life.event.old-friend-visits.title", text: "Old Friend Visits" },
+    description: {
+      key: "stable-life.event.old-friend-visits.description",
+      text: "A familiar face turns up at the door, unannounced and mildly offended about it.",
+    },
+    weight: 7,
+    // S21.3 — conditional on an NPC relationship. `03` §11.3's own example is "any NPC with
+    // resentment above 50" — a per-NPC quantifier over `player.relationships`, an array
+    // (`RelationshipState[]`, `actor.ts`), not a record keyed by npc id. `conditions.ts`
+    // resolves a field by a plain per-segment property walk and has no collection support
+    // (`unresolvableCollection`, same gap S16.5 named for `exists`/`count`): a path naming a
+    // specific npc id off `player.relationships` is not one property-access step, so it
+    // resolves `undefined` and throws on the next segment, same failure class as the
+    // quantifiers already named. Narrowed instead to "has met at least one NPC" —
+    // `player.relationships.length`, a real array property that never throws — a strictly
+    // weaker gate than "this specific NPC" that still exercises the has-a-relationship
+    // shape. Named here rather than worked around, per CP10.
+    conditions: { field: "player.relationships.length", operator: "greater_than", value: 0 },
+    choices: [
+      {
+        id: "catch-up",
+        labelKey: "stable-life.event.old-friend-visits.choice.catch-up",
+        timeCost: 2,
+        // References `npc-old-friend` (S21.4).
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.happiness",
+                  operation: "add",
+                  value: 6,
+                  sourceId: "event-old-friend-visits",
+                },
+              ],
+              rewards: [
+                { type: "relationship", target: "player.relationships.npc-old-friend.affinity", value: 4 },
+              ],
+              messages: [
+                {
+                  key: "stable-life.event.old-friend-visits.outcome.caught-up",
+                  visible: true,
+                  tone: "positive",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "too-busy",
+        labelKey: "stable-life.event.old-friend-visits.choice.too-busy",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [
+                { type: "relationship", target: "player.relationships.npc-old-friend.affinity", value: -2 },
+              ],
+              messages: [
+                {
+                  key: "stable-life.event.old-friend-visits.outcome.too-busy",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["conditional"],
+  },
+  {
+    id: "event-neighbor-favor-request",
+    category: "relationships",
+    title: { key: "stable-life.event.neighbor-favor-request.title", text: "Neighbor Asks a Favor" },
+    description: {
+      key: "stable-life.event.neighbor-favor-request.description",
+      text: "Tomasz needs something watched, carried, or signed for. It is never specified in advance.",
+    },
+    weight: 6,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "help-neighbor",
+        labelKey: "stable-life.event.neighbor-favor-request.choice.help-neighbor",
+        timeCost: 1,
+        // References `npc-next-door-neighbor` (S21.4).
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [
+                {
+                  type: "relationship",
+                  target: "player.relationships.npc-next-door-neighbor.affinity",
+                  value: 5,
+                },
+              ],
+              messages: [
+                {
+                  key: "stable-life.event.neighbor-favor-request.outcome.helped",
+                  visible: true,
+                  tone: "positive",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "decline-favor",
+        labelKey: "stable-life.event.neighbor-favor-request.choice.decline-favor",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [
+                {
+                  type: "relationship",
+                  target: "player.relationships.npc-next-door-neighbor.affinity",
+                  value: -3,
+                },
+              ],
+              messages: [
+                {
+                  key: "stable-life.event.neighbor-favor-request.outcome.declined",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["npc-triggered"],
+  },
+  {
+    id: "event-awkward-run-in",
+    category: "relationships",
+    title: { key: "stable-life.event.awkward-run-in.title", text: "Awkward Run-In" },
+    description: {
+      key: "stable-life.event.awkward-run-in.description",
+      text: "Someone from before recognizes you at the worst possible moment to be recognized.",
+    },
+    weight: 4,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 4, sourceId: "event-awkward-run-in" },
+      ],
+      rewards: [],
+      messages: [{ key: "stable-life.event.awkward-run-in.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["world-triggered"],
+  },
+
+  // --- Education (S21) ---------------------------------------------------------------------
+  {
+    id: "event-night-class-fatigue",
+    category: "education",
+    title: { key: "stable-life.event.night-class-fatigue.title", text: "Night Class Fatigue" },
+    description: {
+      key: "stable-life.event.night-class-fatigue.description",
+      text: "The course is worth it. The course is also at night, after everything else already happened.",
+    },
+    weight: 9,
+    // S21.3 — conditional on a course in progress. Same gap as the relationship condition
+    // above: `player.education.enrollments` is `CourseEnrollment[]` (`actor.ts`), addressed
+    // per-item only by `resolvers.ts`'s own hand-written `apply`/`calculate` logic for the
+    // enroll/attend/withdraw actions, never by `conditions.ts`'s generic field walk, which
+    // has no collection support. Narrowed to "has at least one enrollment record" —
+    // `player.education.enrollments.length`, greater than zero — rather than "this specific
+    // course, currently active", which cannot be expressed without a quantifier. Named here
+    // per CP10; running total across S16 and S21 in `design/90-decisions.md`.
+    conditions: { field: "player.education.enrollments.length", operator: "greater_than", value: 0 },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.energy", operation: "subtract", value: 6, sourceId: "event-night-class-fatigue" },
+        { target: "player.needs.stress", operation: "add", value: 3, sourceId: "event-night-class-fatigue" },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.night-class-fatigue.outcome.message", visible: true, tone: "negative" },
+      ],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-scholarship-opportunity",
+    category: "education",
+    title: { key: "stable-life.event.scholarship-opportunity.title", text: "Scholarship Opportunity" },
+    description: {
+      key: "stable-life.event.scholarship-opportunity.description",
+      text: "A flyer promises tuition help for the right course. The right course is, naturally, not cheap either.",
+    },
+    weight: 4,
+    unique: true,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "apply-for-scholarship",
+        labelKey: "stable-life.event.scholarship-opportunity.choice.apply-for-scholarship",
+        timeCost: 2,
+        // References the course id `course-professional-certification-it` (S21.4).
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [{ type: "unlock_course", target: "course-professional-certification-it" }],
+              messages: [
+                {
+                  key: "stable-life.event.scholarship-opportunity.outcome.applied",
+                  visible: true,
+                  tone: "positive",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "skip-scholarship",
+        labelKey: "stable-life.event.scholarship-opportunity.choice.skip-scholarship",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.scholarship-opportunity.outcome.skipped",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["unique"],
+  },
+
+  // --- Weather (S21) -----------------------------------------------------------------------
+  {
+    id: "event-cold-snap",
+    category: "weather",
+    title: { key: "stable-life.event.cold-snap.title", text: "Cold Snap" },
+    description: {
+      key: "stable-life.event.cold-snap.description",
+      text: "The temperature drops hard overnight. The heating bill notices before you do.",
+    },
+    weight: 8,
+    cooldownWeeks: 6,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.health", operation: "subtract", value: 3, sourceId: "event-cold-snap" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(10) }],
+      messages: [{ key: "stable-life.event.cold-snap.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["recurring"],
+  },
+  {
+    id: "event-heatwave-advisory",
+    category: "weather",
+    title: { key: "stable-life.event.heatwave-advisory.title", text: "Heatwave Advisory" },
+    description: {
+      key: "stable-life.event.heatwave-advisory.description",
+      text: "The advisory says stay indoors. The rent does not adjust for that.",
+    },
+    weight: 6,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.happiness", operation: "subtract", value: 4, sourceId: "event-heatwave-advisory" },
+        { target: "player.needs.energy", operation: "subtract", value: 4, sourceId: "event-heatwave-advisory" },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.heatwave-advisory.outcome.message", visible: true, tone: "negative" },
+      ],
+    },
+    tags: ["immediate"],
+  },
+
+  // --- Opportunity (S21) -------------------------------------------------------------------
+  {
+    id: "event-freelance-gig-offer",
+    category: "opportunity",
+    title: { key: "stable-life.event.freelance-gig-offer.title", text: "Freelance Gig Offer" },
+    description: {
+      key: "stable-life.event.freelance-gig-offer.description",
+      text: "A stranger needs one specific task done by Friday and is willing to pay for the specificity.",
+    },
+    weight: 7,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "take-gig",
+        labelKey: "stable-life.event.freelance-gig-offer.choice.take-gig",
+        timeCost: 3,
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.energy",
+                  operation: "subtract",
+                  value: 4,
+                  sourceId: "event-freelance-gig-offer",
+                },
+              ],
+              rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(40) }],
+              messages: [
+                {
+                  key: "stable-life.event.freelance-gig-offer.outcome.took-gig",
+                  visible: true,
+                  tone: "positive",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "pass-on-gig",
+        labelKey: "stable-life.event.freelance-gig-offer.choice.pass-on-gig",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.freelance-gig-offer.outcome.passed",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["repeatable"],
+  },
+  {
+    id: "event-lucky-find",
+    category: "opportunity",
+    title: { key: "stable-life.event.lucky-find.title", text: "Lucky Find" },
+    description: {
+      key: "stable-life.event.lucky-find.description",
+      text: "A wallet-shaped object on the sidewalk turns out to be exactly that, and nobody is nearby to claim it.",
+    },
+    weight: 3,
+    unique: true,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(25) }],
+      messages: [{ key: "stable-life.event.lucky-find.outcome.message", visible: true, tone: "positive" }],
+    },
+    tags: ["unique"],
+  },
+
+  // --- Pure absurdity (S21) ----------------------------------------------------------------
+  {
+    id: "event-local-legend-sighting",
+    category: "pure-absurdity",
+    title: { key: "stable-life.event.local-legend-sighting.title", text: "Local Legend Sighting" },
+    description: {
+      key: "stable-life.event.local-legend-sighting.description",
+      text: "Someone swears they saw the man who is definitely not still delivering the same newspaper route from 1987. He is.",
+    },
+    weight: 4,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 3,
+          sourceId: "event-local-legend-sighting",
+        },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.local-legend-sighting.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    tags: ["repeatable"],
+  },
+  {
+    id: "event-mysterious-vending-machine",
+    category: "pure-absurdity",
+    title: {
+      key: "stable-life.event.mysterious-vending-machine.title",
+      text: "Mysterious Vending Machine",
+    },
+    description: {
+      key: "stable-life.event.mysterious-vending-machine.description",
+      text: "It was not there yesterday. It only accepts exact change and only dispenses one thing.",
+    },
+    weight: 3,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "insert-coin",
+        labelKey: "stable-life.event.mysterious-vending-machine.choice.insert-coin",
+        moneyCostCents: DOLLARS(5),
+        // References the item id `item-novelty-neon-sign` (S21.4).
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.happiness",
+                  operation: "add",
+                  value: 5,
+                  sourceId: "event-mysterious-vending-machine",
+                },
+              ],
+              rewards: [{ type: "item", target: "item-novelty-neon-sign" }],
+              messages: [
+                {
+                  key: "stable-life.event.mysterious-vending-machine.outcome.bought",
+                  visible: true,
+                  tone: "positive",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "walk-away",
+        labelKey: "stable-life.event.mysterious-vending-machine.choice.walk-away",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.mysterious-vending-machine.outcome.walked-away",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["player-triggered"],
   },
 ];
 

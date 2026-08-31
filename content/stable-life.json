@@ -1667,6 +1667,750 @@
           ],
           "titleKey": "stable-life.event.employee-of-the-month.title",
           "descriptionKey": "stable-life.event.employee-of-the-month.description"
+        },
+        {
+          "id": "event-plumbing-emergency",
+          "category": "housing",
+          "weight": 8,
+          "conditions": {
+            "field": "player.housing.damage",
+            "operator": "greater_than",
+            "value": 50
+          },
+          "choices": [
+            {
+              "id": "call-landlord",
+              "labelKey": "stable-life.event.plumbing-emergency.choice.call-landlord",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [
+                      {
+                        "type": "money",
+                        "target": "player.finances.cashCents",
+                        "value": -3000
+                      },
+                      {
+                        "type": "relationship",
+                        "target": "player.relationships.npc-landlord-rented-room.affinity",
+                        "value": 2
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.plumbing-emergency.outcome.called-landlord",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "ignore-leak",
+              "labelKey": "stable-life.event.plumbing-emergency.choice.ignore-leak",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.stress",
+                        "operation": "add",
+                        "value": 6,
+                        "sourceId": "event-plumbing-emergency"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.plumbing-emergency.outcome.ignored",
+                        "visible": true,
+                        "tone": "negative"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.plumbing-emergency.title",
+          "descriptionKey": "stable-life.event.plumbing-emergency.description"
+        },
+        {
+          "id": "event-lease-renewal-offer",
+          "category": "housing",
+          "weight": 5,
+          "conditions": {
+            "field": "player.housing.definitionId",
+            "operator": "equals",
+            "value": "housing-rented-room"
+          },
+          "automaticOutcome": {
+            "effects": [],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -1000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.lease-renewal-offer.outcome.message",
+                "visible": true,
+                "tone": "neutral"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.lease-renewal-offer.title",
+          "descriptionKey": "stable-life.event.lease-renewal-offer.description"
+        },
+        {
+          "id": "event-flu-season",
+          "category": "health",
+          "weight": 10,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.health",
+                "operation": "subtract",
+                "value": 8,
+                "sourceId": "event-flu-season"
+              },
+              {
+                "target": "player.needs.energy",
+                "operation": "subtract",
+                "value": 5,
+                "sourceId": "event-flu-season"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.flu-season.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "world-triggered"
+          ],
+          "titleKey": "stable-life.event.flu-season.title",
+          "descriptionKey": "stable-life.event.flu-season.description"
+        },
+        {
+          "id": "event-free-clinic-checkup",
+          "category": "health",
+          "weight": 6,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "attend-checkup",
+              "labelKey": "stable-life.event.free-clinic-checkup.choice.attend-checkup",
+              "timeCost": 2,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.health",
+                        "operation": "add",
+                        "value": 6,
+                        "sourceId": "event-free-clinic-checkup"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.free-clinic-checkup.outcome.attended",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "skip-checkup",
+              "labelKey": "stable-life.event.free-clinic-checkup.choice.skip-checkup",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.free-clinic-checkup.outcome.skipped",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "repeatable"
+          ],
+          "titleKey": "stable-life.event.free-clinic-checkup.title",
+          "descriptionKey": "stable-life.event.free-clinic-checkup.description"
+        },
+        {
+          "id": "event-old-friend-visits",
+          "category": "relationships",
+          "weight": 7,
+          "conditions": {
+            "field": "player.relationships.length",
+            "operator": "greater_than",
+            "value": 0
+          },
+          "choices": [
+            {
+              "id": "catch-up",
+              "labelKey": "stable-life.event.old-friend-visits.choice.catch-up",
+              "timeCost": 2,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.happiness",
+                        "operation": "add",
+                        "value": 6,
+                        "sourceId": "event-old-friend-visits"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "relationship",
+                        "target": "player.relationships.npc-old-friend.affinity",
+                        "value": 4
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.old-friend-visits.outcome.caught-up",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "too-busy",
+              "labelKey": "stable-life.event.old-friend-visits.choice.too-busy",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [
+                      {
+                        "type": "relationship",
+                        "target": "player.relationships.npc-old-friend.affinity",
+                        "value": -2
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.old-friend-visits.outcome.too-busy",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.old-friend-visits.title",
+          "descriptionKey": "stable-life.event.old-friend-visits.description"
+        },
+        {
+          "id": "event-neighbor-favor-request",
+          "category": "relationships",
+          "weight": 6,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "help-neighbor",
+              "labelKey": "stable-life.event.neighbor-favor-request.choice.help-neighbor",
+              "timeCost": 1,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [
+                      {
+                        "type": "relationship",
+                        "target": "player.relationships.npc-next-door-neighbor.affinity",
+                        "value": 5
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.neighbor-favor-request.outcome.helped",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "decline-favor",
+              "labelKey": "stable-life.event.neighbor-favor-request.choice.decline-favor",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [
+                      {
+                        "type": "relationship",
+                        "target": "player.relationships.npc-next-door-neighbor.affinity",
+                        "value": -3
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.neighbor-favor-request.outcome.declined",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "npc-triggered"
+          ],
+          "titleKey": "stable-life.event.neighbor-favor-request.title",
+          "descriptionKey": "stable-life.event.neighbor-favor-request.description"
+        },
+        {
+          "id": "event-awkward-run-in",
+          "category": "relationships",
+          "weight": 4,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 4,
+                "sourceId": "event-awkward-run-in"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.awkward-run-in.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "world-triggered"
+          ],
+          "titleKey": "stable-life.event.awkward-run-in.title",
+          "descriptionKey": "stable-life.event.awkward-run-in.description"
+        },
+        {
+          "id": "event-night-class-fatigue",
+          "category": "education",
+          "weight": 9,
+          "conditions": {
+            "field": "player.education.enrollments.length",
+            "operator": "greater_than",
+            "value": 0
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.energy",
+                "operation": "subtract",
+                "value": 6,
+                "sourceId": "event-night-class-fatigue"
+              },
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 3,
+                "sourceId": "event-night-class-fatigue"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.night-class-fatigue.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.night-class-fatigue.title",
+          "descriptionKey": "stable-life.event.night-class-fatigue.description"
+        },
+        {
+          "id": "event-scholarship-opportunity",
+          "category": "education",
+          "weight": 4,
+          "unique": true,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "apply-for-scholarship",
+              "labelKey": "stable-life.event.scholarship-opportunity.choice.apply-for-scholarship",
+              "timeCost": 2,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [
+                      {
+                        "type": "unlock_course",
+                        "target": "course-professional-certification-it"
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.scholarship-opportunity.outcome.applied",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "skip-scholarship",
+              "labelKey": "stable-life.event.scholarship-opportunity.choice.skip-scholarship",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.scholarship-opportunity.outcome.skipped",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "unique"
+          ],
+          "titleKey": "stable-life.event.scholarship-opportunity.title",
+          "descriptionKey": "stable-life.event.scholarship-opportunity.description"
+        },
+        {
+          "id": "event-cold-snap",
+          "category": "weather",
+          "weight": 8,
+          "cooldownWeeks": 6,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.health",
+                "operation": "subtract",
+                "value": 3,
+                "sourceId": "event-cold-snap"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -1000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.cold-snap.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "recurring"
+          ],
+          "titleKey": "stable-life.event.cold-snap.title",
+          "descriptionKey": "stable-life.event.cold-snap.description"
+        },
+        {
+          "id": "event-heatwave-advisory",
+          "category": "weather",
+          "weight": 6,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "subtract",
+                "value": 4,
+                "sourceId": "event-heatwave-advisory"
+              },
+              {
+                "target": "player.needs.energy",
+                "operation": "subtract",
+                "value": 4,
+                "sourceId": "event-heatwave-advisory"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.heatwave-advisory.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "immediate"
+          ],
+          "titleKey": "stable-life.event.heatwave-advisory.title",
+          "descriptionKey": "stable-life.event.heatwave-advisory.description"
+        },
+        {
+          "id": "event-freelance-gig-offer",
+          "category": "opportunity",
+          "weight": 7,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "take-gig",
+              "labelKey": "stable-life.event.freelance-gig-offer.choice.take-gig",
+              "timeCost": 3,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.energy",
+                        "operation": "subtract",
+                        "value": 4,
+                        "sourceId": "event-freelance-gig-offer"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "money",
+                        "target": "player.finances.cashCents",
+                        "value": 4000
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.freelance-gig-offer.outcome.took-gig",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "pass-on-gig",
+              "labelKey": "stable-life.event.freelance-gig-offer.choice.pass-on-gig",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.freelance-gig-offer.outcome.passed",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "repeatable"
+          ],
+          "titleKey": "stable-life.event.freelance-gig-offer.title",
+          "descriptionKey": "stable-life.event.freelance-gig-offer.description"
+        },
+        {
+          "id": "event-lucky-find",
+          "category": "opportunity",
+          "weight": 3,
+          "unique": true,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": 2500
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.lucky-find.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "unique"
+          ],
+          "titleKey": "stable-life.event.lucky-find.title",
+          "descriptionKey": "stable-life.event.lucky-find.description"
+        },
+        {
+          "id": "event-local-legend-sighting",
+          "category": "pure-absurdity",
+          "weight": 4,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 3,
+                "sourceId": "event-local-legend-sighting"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.local-legend-sighting.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "repeatable"
+          ],
+          "titleKey": "stable-life.event.local-legend-sighting.title",
+          "descriptionKey": "stable-life.event.local-legend-sighting.description"
+        },
+        {
+          "id": "event-mysterious-vending-machine",
+          "category": "pure-absurdity",
+          "weight": 3,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "insert-coin",
+              "labelKey": "stable-life.event.mysterious-vending-machine.choice.insert-coin",
+              "moneyCostCents": 500,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.happiness",
+                        "operation": "add",
+                        "value": 5,
+                        "sourceId": "event-mysterious-vending-machine"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "item",
+                        "target": "item-novelty-neon-sign"
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.mysterious-vending-machine.outcome.bought",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "walk-away",
+              "labelKey": "stable-life.event.mysterious-vending-machine.choice.walk-away",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.mysterious-vending-machine.outcome.walked-away",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "player-triggered"
+          ],
+          "titleKey": "stable-life.event.mysterious-vending-machine.title",
+          "descriptionKey": "stable-life.event.mysterious-vending-machine.description"
         }
       ],
       "npcs": [
@@ -2257,26 +3001,56 @@
     "stable-life.employer.greasy-spoon-diner.name": "The Greasy Spoon Diner",
     "stable-life.event.appliance-breaks.description": "It gives one last hum and stops. Everything in it has opinions about that now.",
     "stable-life.event.appliance-breaks.title": "The Fridge Dies",
+    "stable-life.event.awkward-run-in.description": "Someone from before recognizes you at the worst possible moment to be recognized.",
+    "stable-life.event.awkward-run-in.title": "Awkward Run-In",
     "stable-life.event.bus-fare-increase.description": "The board votes on a Tuesday no one attends. The fare box votes every day after.",
     "stable-life.event.bus-fare-increase.title": "Fare Goes Up Again",
     "stable-life.event.car-breakdown.description": "Something under the hood decides today is the day.",
     "stable-life.event.car-breakdown.title": "Car Breakdown",
+    "stable-life.event.cold-snap.description": "The temperature drops hard overnight. The heating bill notices before you do.",
+    "stable-life.event.cold-snap.title": "Cold Snap",
     "stable-life.event.employee-of-the-month.description": "A laminated certificate and a small cash bonus, in that order of perceived value.",
     "stable-life.event.employee-of-the-month.title": "Employee of the Month",
+    "stable-life.event.flu-season.description": "Everyone at the market is coughing. Now you are too.",
+    "stable-life.event.flu-season.title": "Flu Season",
+    "stable-life.event.free-clinic-checkup.description": "A community clinic is offering free checkups this week. No catch found yet.",
+    "stable-life.event.free-clinic-checkup.title": "Free Clinic Checkup",
+    "stable-life.event.freelance-gig-offer.description": "A stranger needs one specific task done by Friday and is willing to pay for the specificity.",
+    "stable-life.event.freelance-gig-offer.title": "Freelance Gig Offer",
     "stable-life.event.hardship-relief-payment.description": "A form filed months ago is finally worth something.",
     "stable-life.event.hardship-relief-payment.title": "Hardship Relief Payment",
+    "stable-life.event.heatwave-advisory.description": "The advisory says stay indoors. The rent does not adjust for that.",
+    "stable-life.event.heatwave-advisory.title": "Heatwave Advisory",
     "stable-life.event.inflation-adjustment.description": "Nothing on the shelf changed except the number under it.",
     "stable-life.event.inflation-adjustment.title": "Prices Creep Up",
     "stable-life.event.job-interview-invitation.description": "Someone read the application after all, and wants to meet the person who wrote it.",
     "stable-life.event.job-interview-invitation.title": "Interview Invitation",
     "stable-life.event.late-tax-filing-notice.description": "A form due last season is due again, this time with a tone.",
     "stable-life.event.late-tax-filing-notice.title": "Late Filing Notice",
+    "stable-life.event.lease-renewal-offer.description": "The rented room's lease is up. The landlord would like an answer, and a small increase.",
+    "stable-life.event.lease-renewal-offer.title": "Lease Renewal Offer",
     "stable-life.event.limited-time-sale.description": "A sign in the window insists this will never happen again. It happened last month too.",
     "stable-life.event.limited-time-sale.title": "Limited-Time Sale",
+    "stable-life.event.local-legend-sighting.description": "Someone swears they saw the man who is definitely not still delivering the same newspaper route from 1987. He is.",
+    "stable-life.event.local-legend-sighting.title": "Local Legend Sighting",
+    "stable-life.event.lucky-find.description": "A wallet-shaped object on the sidewalk turns out to be exactly that, and nobody is nearby to claim it.",
+    "stable-life.event.lucky-find.title": "Lucky Find",
     "stable-life.event.mugging-attempt.description": "Someone blocks the alley shortcut and asks, not very politely, for your wallet.",
     "stable-life.event.mugging-attempt.title": "Mugging Attempt",
+    "stable-life.event.mysterious-vending-machine.description": "It was not there yesterday. It only accepts exact change and only dispenses one thing.",
+    "stable-life.event.mysterious-vending-machine.title": "Mysterious Vending Machine",
+    "stable-life.event.neighbor-favor-request.description": "Tomasz needs something watched, carried, or signed for. It is never specified in advance.",
+    "stable-life.event.neighbor-favor-request.title": "Neighbor Asks a Favor",
+    "stable-life.event.night-class-fatigue.description": "The course is worth it. The course is also at night, after everything else already happened.",
+    "stable-life.event.night-class-fatigue.title": "Night Class Fatigue",
+    "stable-life.event.old-friend-visits.description": "A familiar face turns up at the door, unannounced and mildly offended about it.",
+    "stable-life.event.old-friend-visits.title": "Old Friend Visits",
     "stable-life.event.pickpocketed.description": "A crowd, a jostle, and a lighter pocket than you started the day with.",
     "stable-life.event.pickpocketed.title": "Pickpocketed",
+    "stable-life.event.plumbing-emergency.description": "A pipe gives up. The corpus's own worked event example (`03` §11.4) was about exactly this.",
+    "stable-life.event.plumbing-emergency.title": "Plumbing Emergency",
+    "stable-life.event.scholarship-opportunity.description": "A flyer promises tuition help for the right course. The right course is, naturally, not cheap either.",
+    "stable-life.event.scholarship-opportunity.title": "Scholarship Opportunity",
     "stable-life.event.shift-schedule-cut.description": "The schedule changes and a shift disappears from under you. The rent does not follow suit.",
     "stable-life.event.shift-schedule-cut.title": "Shift Cut Short",
     "stable-life.event.surprise-bonus.description": "The till balanced for once, and some of the difference lands in your pay.",

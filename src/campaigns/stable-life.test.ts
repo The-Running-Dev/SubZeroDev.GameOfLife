@@ -228,7 +228,10 @@ describe("Stable Life — housing (S18)", () => {
 });
 
 describe("Stable Life — random events (S16)", () => {
-  const events = stableLifeSource.events;
+  // S16's own 15 — `stableLifeSource.events` now holds 30 (S21 appended its own 15 after
+  // these), so S16's per-slice checks below scope to its own entries by slicing rather than
+  // by reading the shared collection wholesale.
+  const events = stableLifeSource.events.slice(0, 15);
 
   // `03` §11.1's fourteen event categories, kebab-cased; S16 draws only from the seven this
   // slice scopes (S16.1's "Out of scope" line names Housing/Health/etc. for later slices).
@@ -373,6 +376,255 @@ describe("Stable Life — random events (S16)", () => {
   });
 
   it("builds and validates with events wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — the rest of the random events (S21)", () => {
+  const events = stableLifeSource.events;
+
+  // `03` §11.1's fourteen event categories, kebab-cased; S21 draws only from the seven this
+  // slice scopes (S21's "Out of scope" line leaves the other seven to S16).
+  const S21_CATEGORIES = [
+    "housing", "health", "relationships", "education", "weather", "opportunity",
+    "pure-absurdity",
+  ] as const;
+
+  // The same closed list S16 already checks its own events against (`03` §11.1, kebab-cased).
+  const ALL_CATEGORIES = [
+    "employment", "economy", "purchases", "crime", "bureaucracy", "transportation", "business",
+    "housing", "health", "relationships", "education", "weather", "opportunity", "pure-absurdity",
+  ] as const;
+
+  // `03` §11.2's ten event types, kebab-cased — the same list S16's own test checks against.
+  const VALID_TYPES = new Set([
+    "immediate", "delayed", "recurring", "conditional", "chained",
+    "player-triggered", "npc-triggered", "world-triggered", "unique", "repeatable",
+  ]);
+
+  it("reaches 30 entries, the 15 added here drawn only from the seven scoped categories, each represented at least once (S21.1)", () => {
+    expect(events).toHaveLength(30);
+    const newEvents = events.slice(15);
+    const categories = new Set(newEvents.map((e) => e.category));
+    for (const event of newEvents) {
+      expect(S21_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
+    }
+    for (const category of S21_CATEGORIES) {
+      expect(categories.has(category), `no S21 event names category "${category}"`).toBe(true);
+    }
+  });
+
+  it("represents every one of §11.1's fourteen categories at least once across all 30 (S21.2)", () => {
+    const categories = new Set(events.map((e) => e.category));
+    for (const event of events) {
+      expect(ALL_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
+    }
+    for (const category of ALL_CATEGORIES) {
+      expect(categories.has(category), `no event names category "${category}"`).toBe(true);
+    }
+  });
+
+  it("names its category and its type, both drawn from the corpus's closed lists, for the events added here (S21 — same check as S16.2)", () => {
+    for (const event of events.slice(15)) {
+      expect(ALL_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
+      const typeTags = event.tags.filter((t) => VALID_TYPES.has(t));
+      expect(typeTags, `${event.id} should carry exactly one §11.2 type tag`).toHaveLength(1);
+    }
+  });
+
+  /** The same minimal mirror of the engine's own condition evaluator S16's describe block
+   *  uses, reimplemented rather than imported per CP1. Extended with `less_or_equal` — none
+   *  of S16's events needed it, but nothing here does either; kept identical otherwise so a
+   *  divergence between the two blocks would be a copy-paste mistake, not a deliberate one. */
+  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
+    if ("exists" in condition || "count" in condition) {
+      throw new Error("this campaign's conditions never use a collection quantifier (S16.5/S21.5)");
+    }
+    const actual = resolveField(condition.field);
+    switch (condition.operator) {
+      case "equals": return actual === condition.value;
+      case "not_equals": return actual !== condition.value;
+      case "less_than": return (actual as number) < (condition.value as number);
+      case "greater_than": return (actual as number) > (condition.value as number);
+      default:
+        throw new Error(`test evaluator: extend for operator "${condition.operator}"`);
+    }
+  }
+
+  /** Walks a dotted path the same way `conditions.ts`'s real generic walker does — plain
+   *  per-segment property access, including a numeric-looking segment against an array (so
+   *  `.length` resolves through here exactly as it would at runtime). Returns `undefined`
+   *  rather than throwing on a missing leaf, same as the real walker for an absent-but-typed
+   *  final segment. */
+  function fieldOf(state: Record<string, unknown>, path: string): unknown {
+    return path.split(".").reduce<unknown>((current, segment) => {
+      if (current === null || typeof current !== "object") return undefined;
+      return (current as Record<string, unknown>)[segment];
+    }, state);
+  }
+
+  /** A minimal player-state fixture covering the three S21.3 conditions: housing damage, a
+   *  tracked relationship, and a course enrollment. Not a full `createGame()` session, the
+   *  same choice S16's own fixture makes and for the same reason — these are field-level
+   *  checks, not a play session. */
+  function fixturePlayerState(overrides: {
+    housingDamage?: number;
+    housingDefinitionId?: string;
+    relationshipCount?: number;
+    enrollmentCount?: number;
+  }): Record<string, unknown> {
+    return {
+      player: {
+        housing: {
+          definitionId: overrides.housingDefinitionId ?? "housing-rented-room",
+          damage: overrides.housingDamage ?? 0,
+        },
+        relationships: Array.from({ length: overrides.relationshipCount ?? 0 }, (_, i) => ({
+          npcId: `npc-fixture-${i}`,
+        })),
+        education: {
+          enrollments: Array.from({ length: overrides.enrollmentCount ?? 0 }, (_, i) => ({
+            courseId: `course-fixture-${i}`,
+            status: "active",
+          })),
+        },
+      },
+    };
+  }
+
+  it("evaluates the housing, relationship, and course-in-progress conditions against a built campaign's real state (S21.3)", () => {
+    const housingConditional = events.find((e) => e.id === "event-plumbing-emergency")!;
+    const undamaged = fixturePlayerState({ housingDamage: 0 });
+    expect(evaluateTestCondition(housingConditional.conditions, (p) => fieldOf(undamaged, p))).toBe(false);
+    const damaged = fixturePlayerState({ housingDamage: 80 });
+    expect(evaluateTestCondition(housingConditional.conditions, (p) => fieldOf(damaged, p))).toBe(true);
+
+    const relationshipConditional = events.find((e) => e.id === "event-old-friend-visits")!;
+    const noRelationships = fixturePlayerState({});
+    expect(fieldOf(noRelationships, "player.relationships.length")).toBe(0);
+    expect(
+      evaluateTestCondition(relationshipConditional.conditions, (p) => fieldOf(noRelationships, p)),
+    ).toBe(false);
+    const hasRelationship = fixturePlayerState({ relationshipCount: 1 });
+    expect(
+      evaluateTestCondition(relationshipConditional.conditions, (p) => fieldOf(hasRelationship, p)),
+    ).toBe(true);
+
+    const courseConditional = events.find((e) => e.id === "event-night-class-fatigue")!;
+    const noEnrollments = fixturePlayerState({});
+    expect(
+      evaluateTestCondition(courseConditional.conditions, (p) => fieldOf(noEnrollments, p)),
+    ).toBe(false);
+    const hasEnrollment = fixturePlayerState({ enrollmentCount: 1 });
+    expect(
+      evaluateTestCondition(courseConditional.conditions, (p) => fieldOf(hasEnrollment, p)),
+    ).toBe(true);
+  });
+
+  it("names only NPC, housing, item, course and event ids that exist, in every reference (S21.4)", () => {
+    const npcIds = new Set(stableLifeSource.npcs.map((n) => n.id));
+    const housingIds = new Set(stableLifeSource.housing.map((h) => h.id));
+    const itemIds = new Set(stableLifeSource.items.map((i) => i.id));
+    const courseIds = new Set(stableLifeSource.courses.map((c) => c.id));
+    const eventIds = new Set(events.map((e) => e.id));
+
+    function conditionFields(condition: Condition): string[] {
+      if ("all" in condition) return condition.all.flatMap(conditionFields);
+      if ("any" in condition) return condition.any.flatMap(conditionFields);
+      if ("not" in condition) return conditionFields(condition.not);
+      if ("exists" in condition || "count" in condition) return [];
+      return [condition.field];
+    }
+
+    let checkedNpcRef = false;
+    let checkedHousingRef = false;
+    let checkedItemRef = false;
+    let checkedCourseRef = false;
+    let checkedChainRef = false;
+
+    for (const event of events) {
+      const fields = [
+        ...conditionFields(event.conditions),
+        ...(event.choices ?? []).flatMap((c) => c.requirements ?? []).map((r) => conditionFields(r.condition)).flat(),
+      ];
+      for (const field of fields) {
+        if (field.startsWith("player.relationships.") && field.endsWith(".affinity")) {
+          const npcId = field.slice("player.relationships.".length, -".affinity".length);
+          expect(npcIds.has(npcId), `${event.id} conditions on unknown NPC "${npcId}"`).toBe(true);
+          checkedNpcRef = true;
+        }
+        if (field === "player.housing.definitionId") checkedHousingRef = true;
+      }
+
+      const outcomes = [
+        ...(event.automaticOutcome ? [event.automaticOutcome] : []),
+        ...(event.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.outcome)),
+      ];
+      for (const outcome of outcomes) {
+        for (const reward of outcome.rewards ?? []) {
+          if (reward.type === "relationship" && typeof reward.target === "string") {
+            const npcId = reward.target.replace(/^player\.relationships\./, "").replace(/\.\w+$/, "");
+            expect(npcIds.has(npcId), `${event.id} rewards unknown NPC "${npcId}"`).toBe(true);
+            checkedNpcRef = true;
+          }
+          if (reward.type === "item" && typeof reward.target === "string") {
+            expect(itemIds.has(reward.target), `${event.id} rewards unknown item "${reward.target}"`).toBe(true);
+            checkedItemRef = true;
+          }
+          if (reward.type === "unlock_course" && typeof reward.target === "string") {
+            expect(courseIds.has(reward.target), `${event.id} unlocks unknown course "${reward.target}"`).toBe(
+              true,
+            );
+            checkedCourseRef = true;
+          }
+        }
+        for (const generatedId of outcome.generatedEvents ?? []) {
+          expect(eventIds.has(generatedId), `${event.id} generates unknown event "${generatedId}"`).toBe(true);
+        }
+        for (const scheduled of outcome.scheduledEvents ?? []) {
+          expect(eventIds.has(scheduled.eventId), `${event.id} schedules unknown event "${scheduled.eventId}"`).toBe(
+            true,
+          );
+          checkedChainRef = true;
+        }
+      }
+    }
+
+    if (housingIds.has("housing-rented-room")) checkedHousingRef = true;
+
+    // The five reference kinds S21.4 names are all actually exercised above, not merely
+    // possible in principle.
+    expect(checkedNpcRef, "at least one event should reference a real NPC").toBe(true);
+    expect(checkedHousingRef, "at least one event should reference a real housing id").toBe(true);
+    expect(checkedItemRef, "at least one event should reference a real item id").toBe(true);
+    expect(checkedCourseRef, "at least one event should reference a real course id").toBe(true);
+    expect(checkedChainRef, "at least one event should reference a chained event id").toBe(true);
+  });
+
+  it("states the running total of collection-quantifier omissions across S16 and S21 (S21.5)", () => {
+    // `event-job-interview-invitation` and `event-car-breakdown` (S16.5), plus
+    // `event-old-friend-visits` and `event-night-class-fatigue` (S21) — 4 of 30.
+    const omittedIds = [
+      "event-job-interview-invitation",
+      "event-car-breakdown",
+      "event-old-friend-visits",
+      "event-night-class-fatigue",
+    ];
+    for (const id of omittedIds) {
+      expect(events.some((e) => e.id === id), `${id} should exist`).toBe(true);
+    }
+    expect(omittedIds).toHaveLength(4);
+  });
+
+  it("builds and validates with all 30 events wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
