@@ -370,6 +370,69 @@
           ],
           "nameKey": "stable-life.housing.rented-room.name",
           "descriptionKey": "stable-life.housing.rented-room.description"
+        },
+        {
+          "id": "housing-cheap-studio",
+          "upfrontCostCents": 10000,
+          "weeklyCostCents": 15000,
+          "capacity": 1,
+          "comfort": 45,
+          "safety": 55,
+          "prestige": 15,
+          "storage": 20,
+          "commuteModifier": 0,
+          "energyRecoveryModifier": 5,
+          "happinessModifier": 5,
+          "healthModifier": 0,
+          "maintenanceRisk": 15,
+          "requirements": [],
+          "tags": [
+            "studio"
+          ],
+          "nameKey": "stable-life.housing.cheap-studio.name",
+          "descriptionKey": "stable-life.housing.cheap-studio.description"
+        },
+        {
+          "id": "housing-decent-apartment",
+          "upfrontCostCents": 40000,
+          "weeklyCostCents": 26000,
+          "capacity": 2,
+          "comfort": 60,
+          "safety": 70,
+          "prestige": 30,
+          "storage": 35,
+          "commuteModifier": 0,
+          "energyRecoveryModifier": 10,
+          "happinessModifier": 10,
+          "healthModifier": 5,
+          "maintenanceRisk": 10,
+          "requirements": [],
+          "tags": [
+            "apartment"
+          ],
+          "nameKey": "stable-life.housing.decent-apartment.name",
+          "descriptionKey": "stable-life.housing.decent-apartment.description"
+        },
+        {
+          "id": "housing-house",
+          "upfrontCostCents": 80000,
+          "weeklyCostCents": 42000,
+          "capacity": 4,
+          "comfort": 75,
+          "safety": 80,
+          "prestige": 50,
+          "storage": 55,
+          "commuteModifier": 0,
+          "energyRecoveryModifier": 15,
+          "happinessModifier": 15,
+          "healthModifier": 10,
+          "maintenanceRisk": 8,
+          "requirements": [],
+          "tags": [
+            "house"
+          ],
+          "nameKey": "stable-life.housing.house.name",
+          "descriptionKey": "stable-life.housing.house.description"
         }
       ],
       "items": [],
@@ -1346,6 +1409,12 @@
     "stable-life.event.team-morale-day.title": "Team Morale Day",
     "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     "stable-life.goal.stable-life.label": "A Stable Life",
+    "stable-life.housing.cheap-studio.description": "One room, but it is the whole apartment, and nobody else's name is on the lease.",
+    "stable-life.housing.cheap-studio.name": "Cheap Studio",
+    "stable-life.housing.decent-apartment.description": "Enough rooms that guests no longer have to guess which pile is furniture.",
+    "stable-life.housing.decent-apartment.name": "Decent Apartment",
+    "stable-life.housing.house.description": "Four walls, times more than one, and a lawn nobody asked for.",
+    "stable-life.housing.house.name": "House",
     "stable-life.housing.rented-room.description": "The cheapest housing tier. It is a room, and it is rented, and the description has now told you everything it has.",
     "stable-life.housing.rented-room.name": "Rented Room",
     "stable-life.job.data-entry-clerk.description": "Entry tier. No credential required, per §6.1.",

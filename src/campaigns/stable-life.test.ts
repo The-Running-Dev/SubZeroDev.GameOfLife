@@ -190,6 +190,43 @@ describe("Stable Life — jobs, employers and skills (S15)", () => {
   });
 });
 
+describe("Stable Life — housing (S18)", () => {
+  const housing = stableLifeSource.housing;
+
+  it("has 4 entries, ascending along §9.2's progression with the rented room first (S18.1)", () => {
+    expect(housing).toHaveLength(4);
+    expect(housing[0]?.id).toBe("housing-rented-room");
+  });
+
+  it("keeps the rented room at §16.4's $95, and prices each higher tier strictly above the one below (S18.2)", () => {
+    expect(housing[0]?.weeklyCostCents).toBe(9_500);
+    for (let i = 0; i + 1 < housing.length; i++) {
+      const [current, next] = [housing[i]!, housing[i + 1]!];
+      expect(next.weeklyCostCents, `${current.id} -> ${next.id}`).toBeGreaterThan(current.weeklyCostCents);
+    }
+  });
+
+  it("carries comfort, safety and a damage-facing maintenanceRisk, and never writes quality (S18.3)", () => {
+    for (const entry of housing) {
+      expect(typeof entry.comfort, `${entry.id}.comfort`).toBe("number");
+      expect(typeof entry.safety, `${entry.id}.safety`).toBe("number");
+      expect(typeof entry.maintenanceRisk, `${entry.id}.maintenanceRisk`).toBe("number");
+      expect(Object.prototype.hasOwnProperty.call(entry, "quality"), `${entry.id} should not write quality`).toBe(
+        false,
+      );
+    }
+  });
+
+  it("builds and validates with the four housing tiers wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
 describe("Stable Life — random events (S16)", () => {
   const events = stableLifeSource.events;
 
