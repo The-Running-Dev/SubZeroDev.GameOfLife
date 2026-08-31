@@ -95,10 +95,10 @@ describe("Stable Life — the authoring path", () => {
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
     // §16.1's jobs/employers/skills targets are now authored (S15), 15 of 30 events (S16),
-    // courses (S17), and 20 items (S19); the rest are still an honest statement that the
-    // content is unwritten.
+    // courses (S17), 20 items (S19), and 8 NPCs (S20); the rest are still an honest statement
+    // that the content is unwritten.
     const empty = [
-      "npcs", "opportunities", "achievements",
+      "opportunities", "achievements",
       "headlines", "backgrounds", "traits",
     ] as const;
     for (const key of empty) {
@@ -563,6 +563,79 @@ describe("Stable Life — courses (S17)", () => {
   });
 
   it("builds and validates with courses wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — NPCs (S20)", () => {
+  const npcs = stableLifeSource.npcs;
+  const employers = stableLifeSource.employers;
+  const housing = stableLifeSource.housing;
+
+  // `03` §12.2's fourteen roles, kebab-cased — the same convention S16.2/S17.1 used for
+  // event types and education types.
+  const VALID_ROLES = new Set([
+    "employer", "manager", "coworker", "teacher", "friend", "partner", "landlord",
+    "lender", "customer", "competitor", "government-employee", "business-partner",
+    "neighbor", "medical-professional",
+  ]);
+
+  const RELATIONSHIP_DIMENSIONS = ["affinity", "trust", "respect", "resentment"] as const;
+
+  it("has 8 entries, covering at least 6 distinct §12.2 roles (S20.1)", () => {
+    expect(npcs).toHaveLength(8);
+    const roles = new Set(npcs.map((n) => n.defaultRole));
+    for (const role of roles) {
+      expect(VALID_ROLES.has(role), `"${role}" should be one of §12.2's roles`).toBe(true);
+    }
+    expect(roles.size, "should cover at least 6 distinct roles").toBeGreaterThanOrEqual(6);
+  });
+
+  it("carries §12.1's four relationship dimensions, each within 0-100 (S20.2)", () => {
+    for (const npc of npcs) {
+      for (const dimension of RELATIONSHIP_DIMENSIONS) {
+        const value = npc.initialRelationship[dimension];
+        expect(value, `${npc.id}.initialRelationship.${dimension}`).toBeGreaterThanOrEqual(0);
+        expect(value, `${npc.id}.initialRelationship.${dimension}`).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("names only employers that exist, and only housing tiers that exist for a landlord (S20.3)", () => {
+    const employerIds = new Set(employers.map((e) => e.id));
+    const housingIds = new Set(housing.map((h) => h.id));
+    const npcIds = new Set(npcs.map((n) => n.id));
+
+    // Every employer's npcIds round-trip back to an NPC that exists.
+    for (const employer of employers) {
+      for (const npcId of employer.npcIds) {
+        expect(npcIds.has(npcId), `${employer.id} names NPC ${npcId}`).toBe(true);
+      }
+    }
+    // Every NPC an employer names is itself attached to that employer, not merely present.
+    const attachedNpcIds = new Set(employers.flatMap((e) => e.npcIds));
+    for (const npcId of attachedNpcIds) {
+      const attachedTo = employers.filter((e) => e.npcIds.includes(npcId));
+      expect(attachedTo, `NPC ${npcId} should be attached to exactly one employer`).toHaveLength(1);
+      expect(employerIds.has(attachedTo[0]!.id)).toBe(true);
+    }
+
+    // A landlord names the housing tier it attaches to as a tag (the file header explains
+    // why — `HousingDefinitionSource` carries no landlord field).
+    const landlords = npcs.filter((n) => n.defaultRole === "landlord");
+    expect(landlords.length, "should author at least one landlord").toBeGreaterThan(0);
+    for (const landlord of landlords) {
+      const housingTags = landlord.tags.filter((t) => housingIds.has(t));
+      expect(housingTags, `${landlord.id} should tag exactly one housing tier`).toHaveLength(1);
+    }
+  });
+
+  it("builds and validates with NPCs wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);

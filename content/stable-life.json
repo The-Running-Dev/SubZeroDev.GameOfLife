@@ -4,7 +4,7 @@
     "title": "Life in the Fast Lane — Stable Life",
     "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "duration": "52 weeks",
-    "contentNotice": "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events and 20 purchasable items are authored; NPCs and the rest are not yet written.",
+    "contentNotice": "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items and 8 NPCs are authored; the rest is not yet written.",
     "featured": false,
     "hidden": true
   },
@@ -1669,7 +1669,154 @@
           "descriptionKey": "stable-life.event.employee-of-the-month.description"
         }
       ],
-      "npcs": [],
+      "npcs": [
+        {
+          "id": "npc-diner-manager",
+          "defaultRole": "manager",
+          "initialRelationship": {
+            "affinity": 40,
+            "trust": 35,
+            "respect": 30,
+            "resentment": 10
+          },
+          "availability": [
+            {
+              "locationId": "workplace"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.diner-manager.name",
+          "descriptionKey": "stable-life.npc.diner-manager.description"
+        },
+        {
+          "id": "npc-civic-office-coworker",
+          "defaultRole": "coworker",
+          "initialRelationship": {
+            "affinity": 55,
+            "trust": 50,
+            "respect": 45,
+            "resentment": 5
+          },
+          "availability": [
+            {
+              "locationId": "workplace"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.civic-office-coworker.name",
+          "descriptionKey": "stable-life.npc.civic-office-coworker.description"
+        },
+        {
+          "id": "npc-landlord-rented-room",
+          "defaultRole": "landlord",
+          "initialRelationship": {
+            "affinity": 25,
+            "trust": 30,
+            "respect": 20,
+            "resentment": 15
+          },
+          "availability": [
+            {
+              "locationId": "home"
+            }
+          ],
+          "tags": [
+            "housing-rented-room"
+          ],
+          "nameKey": "stable-life.npc.landlord-rented-room.name",
+          "descriptionKey": "stable-life.npc.landlord-rented-room.description"
+        },
+        {
+          "id": "npc-community-college-teacher",
+          "defaultRole": "teacher",
+          "initialRelationship": {
+            "affinity": 45,
+            "trust": 40,
+            "respect": 50,
+            "resentment": 0
+          },
+          "availability": [
+            {
+              "locationId": "community-college"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.community-college-teacher.name",
+          "descriptionKey": "stable-life.npc.community-college-teacher.description"
+        },
+        {
+          "id": "npc-old-friend",
+          "defaultRole": "friend",
+          "initialRelationship": {
+            "affinity": 70,
+            "trust": 65,
+            "respect": 55,
+            "resentment": 0
+          },
+          "availability": [
+            {
+              "locationId": "recreation-area"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.old-friend.name",
+          "descriptionKey": "stable-life.npc.old-friend.description"
+        },
+        {
+          "id": "npc-bank-loan-officer",
+          "defaultRole": "lender",
+          "initialRelationship": {
+            "affinity": 20,
+            "trust": 25,
+            "respect": 20,
+            "resentment": 5
+          },
+          "availability": [
+            {
+              "locationId": "bank"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.bank-loan-officer.name",
+          "descriptionKey": "stable-life.npc.bank-loan-officer.description"
+        },
+        {
+          "id": "npc-forms-clerk",
+          "defaultRole": "government-employee",
+          "initialRelationship": {
+            "affinity": 15,
+            "trust": 20,
+            "respect": 15,
+            "resentment": 10
+          },
+          "availability": [
+            {
+              "locationId": "department-of-forms"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.forms-clerk.name",
+          "descriptionKey": "stable-life.npc.forms-clerk.description"
+        },
+        {
+          "id": "npc-next-door-neighbor",
+          "defaultRole": "neighbor",
+          "initialRelationship": {
+            "affinity": 35,
+            "trust": 30,
+            "respect": 25,
+            "resentment": 5
+          },
+          "availability": [
+            {
+              "locationId": "home"
+            }
+          ],
+          "tags": [],
+          "nameKey": "stable-life.npc.next-door-neighbor.name",
+          "descriptionKey": "stable-life.npc.next-door-neighbor.description"
+        }
+      ],
       "goals": [
         {
           "id": "goal-stable-life",
@@ -1763,7 +1910,9 @@
             "job-line-cook",
             "job-shift-supervisor"
           ],
-          "npcIds": [],
+          "npcIds": [
+            "npc-diner-manager"
+          ],
           "nameKey": "stable-life.employer.greasy-spoon-diner.name"
         },
         {
@@ -1776,7 +1925,9 @@
             "job-infrastructure-engineer",
             "job-wifi-scapegoat"
           ],
-          "npcIds": [],
+          "npcIds": [
+            "npc-civic-office-coworker"
+          ],
           "nameKey": "stable-life.employer.civic-data-office.name"
         },
         {
@@ -2084,6 +2235,22 @@
     "stable-life.location.recreation-area.name": "Recreation Area",
     "stable-life.location.workplace.description": "Wherever the current job happens. Indistinguishable from the last one.",
     "stable-life.location.workplace.name": "Workplace",
+    "stable-life.npc.bank-loan-officer.description": "Approves the borrowing and reviews the repaying. Reads the fine print out loud, slowly.",
+    "stable-life.npc.bank-loan-officer.name": "Mr. Petrov",
+    "stable-life.npc.civic-office-coworker.description": "Two desks over at the Civic Data Office. Knows exactly how long lunch can stretch.",
+    "stable-life.npc.civic-office-coworker.name": "Marcus",
+    "stable-life.npc.community-college-teacher.description": "Teaches whichever course is short a room. Grades on attendance more than he admits.",
+    "stable-life.npc.community-college-teacher.name": "Mr. Alavi",
+    "stable-life.npc.diner-manager.description": "Runs the floor at the Greasy Spoon. Remembers who showed up for the double shift.",
+    "stable-life.npc.diner-manager.name": "Deb",
+    "stable-life.npc.forms-clerk.description": "Stamps the forms at the Department of Forms. Has seen every version of this form fail before.",
+    "stable-life.npc.forms-clerk.name": "Ms. Dinh",
+    "stable-life.npc.landlord-rented-room.description": "Owns the rented room and three others like it. Collects rent in person, on principle.",
+    "stable-life.npc.landlord-rented-room.name": "Mrs. Okafor",
+    "stable-life.npc.next-door-neighbor.description": "Lives one door down. Borrows things and, to be fair, returns most of them.",
+    "stable-life.npc.next-door-neighbor.name": "Tomasz",
+    "stable-life.npc.old-friend.description": "Known since before any of this started. Still shows up at the recreation area on a bad week.",
+    "stable-life.npc.old-friend.name": "Priya",
     "stable-life.scenario.description": "Two hundred dollars, no job, basic education, a rented room, one week of food, and fifty-two weeks.",
     "stable-life.scenario.name": "Stable Life",
     "stable-life.scene": "Week {week}. {location}.",
