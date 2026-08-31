@@ -2582,18 +2582,75 @@
           },
           "labelKey": "stable-life.goal.stable-life.label",
           "descriptionKey": "stable-life.goal.stable-life.description"
+        },
+        {
+          "id": "goal-financial-cushion",
+          "category": "wealth",
+          "conditions": {
+            "field": "player.finances.cashCents",
+            "operator": "greater_or_equal",
+            "value": 50000
+          },
+          "requiredDurationWeeks": 8,
+          "labelKey": "stable-life.goal.financial-cushion.label",
+          "descriptionKey": "stable-life.goal.financial-cushion.description"
+        },
+        {
+          "id": "goal-career-advancement",
+          "category": "career",
+          "conditions": {
+            "any": [
+              {
+                "field": "player.career.highestTierAchieved",
+                "operator": "equals",
+                "value": "professional"
+              },
+              {
+                "field": "player.career.highestTierAchieved",
+                "operator": "equals",
+                "value": "senior"
+              }
+            ]
+          },
+          "labelKey": "stable-life.goal.career-advancement.label",
+          "descriptionKey": "stable-life.goal.career-advancement.description"
+        },
+        {
+          "id": "goal-certified-professional",
+          "category": "education",
+          "conditions": {
+            "field": "player.education.completedCourseIds",
+            "operator": "contains",
+            "value": "course-professional-certification-it"
+          },
+          "labelKey": "stable-life.goal.certified-professional.label",
+          "descriptionKey": "stable-life.goal.certified-professional.description"
         }
       ],
       "scenarios": [
         {
           "id": "scenario-stable-life",
-          "startingBackgroundIds": [],
+          "startingBackgroundIds": [
+            "background-kitchen-hand"
+          ],
           "startingCashCents": 20000,
           "startingHousingId": "housing-rented-room",
           "startingLocationId": "home",
-          "startingInventory": [],
+          "startingInventory": [
+            {
+              "definitionId": "item-groceries-poor",
+              "quantity": 1
+            },
+            {
+              "definitionId": "item-secondhand-coat",
+              "quantity": 1
+            }
+          ],
           "goalIds": [
-            "goal-stable-life"
+            "goal-stable-life",
+            "goal-financial-cushion",
+            "goal-career-advancement",
+            "goal-certified-professional"
           ],
           "weekLimit": 52,
           "mode": "classic",
@@ -3031,6 +3088,12 @@
     "stable-life.event.tutor-offers-extra-session.title": "An Extra Session",
     "stable-life.event.winter-flu.description": "Everyone at work had it. Now it is your turn, and the week has other plans.",
     "stable-life.event.winter-flu.title": "Winter Flu",
+    "stable-life.goal.career-advancement.description": "Professional work, or better.",
+    "stable-life.goal.career-advancement.label": "Career Advancement",
+    "stable-life.goal.certified-professional.description": "Finish the entry IT certification.",
+    "stable-life.goal.certified-professional.label": "Certified Professional",
+    "stable-life.goal.financial-cushion.description": "Five hundred dollars in hand, and keep it there for eight straight weeks.",
+    "stable-life.goal.financial-cushion.label": "A Financial Cushion",
     "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     "stable-life.goal.stable-life.label": "A Stable Life",
     "stable-life.housing.cheap-studio.description": "One room, but it is the whole apartment, and nobody else's name is on the lease.",
