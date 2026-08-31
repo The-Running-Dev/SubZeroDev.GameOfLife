@@ -4,7 +4,7 @@
     "title": "Life in the Fast Lane — Stable Life",
     "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "duration": "52 weeks",
-    "contentNotice": "Seed content. The map, the scenario, the career ladder, 15 of 30 random events and 20 purchasable items are authored; courses are not yet written.",
+    "contentNotice": "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events and 20 purchasable items are authored; NPCs and the rest are not yet written.",
     "featured": false,
     "hidden": true
   },
@@ -347,7 +347,183 @@
           "descriptionKey": "stable-life.job.retail-associate.description"
         }
       ],
-      "courses": [],
+      "courses": [
+        {
+          "id": "course-high-school-equivalency",
+          "providerId": "provider-community-college",
+          "tuitionCents": 34000,
+          "durationWeeks": 8,
+          "weeklyTimeCost": 3,
+          "difficulty": 25,
+          "requirements": [],
+          "rewards": [
+            {
+              "type": "attribute",
+              "target": "player.attributes.intelligence",
+              "value": 5
+            }
+          ],
+          "awardsCredential": "school",
+          "failureRules": {
+            "minimumAttendanceRatio": 70,
+            "minimumStudyUnitsPerWeek": 1,
+            "maximumMissedSessions": 3,
+            "tuitionGraceWeeks": 1,
+            "progressRetainedOnFailure": 40
+          },
+          "tags": [
+            "high-school-equivalency"
+          ],
+          "nameKey": "stable-life.course.high-school-equivalency.name",
+          "descriptionKey": "stable-life.course.high-school-equivalency.description"
+        },
+        {
+          "id": "course-night-class-supervision",
+          "providerId": "provider-community-college",
+          "tuitionCents": 34000,
+          "durationWeeks": 8,
+          "weeklyTimeCost": 3,
+          "difficulty": 20,
+          "requirements": [],
+          "rewards": [
+            {
+              "type": "skill",
+              "target": "player.skills.management",
+              "value": 10
+            }
+          ],
+          "failureRules": {
+            "minimumAttendanceRatio": 70,
+            "minimumStudyUnitsPerWeek": 1,
+            "maximumMissedSessions": 3,
+            "tuitionGraceWeeks": 1,
+            "progressRetainedOnFailure": 40
+          },
+          "tags": [
+            "night-classes"
+          ],
+          "nameKey": "stable-life.course.night-class-supervision.name",
+          "descriptionKey": "stable-life.course.night-class-supervision.description"
+        },
+        {
+          "id": "course-vocational-certificate-culinary",
+          "providerId": "provider-community-college",
+          "tuitionCents": 90000,
+          "durationWeeks": 16,
+          "weeklyTimeCost": 4,
+          "difficulty": 45,
+          "requirements": [],
+          "rewards": [
+            {
+              "type": "skill",
+              "target": "player.skills.cooking",
+              "value": 20
+            }
+          ],
+          "awardsCredential": "certificate",
+          "failureRules": {
+            "minimumAttendanceRatio": 75,
+            "minimumStudyUnitsPerWeek": 2,
+            "maximumMissedSessions": 4,
+            "tuitionGraceWeeks": 2,
+            "maximumStress": 80,
+            "progressRetainedOnFailure": 50
+          },
+          "tags": [
+            "vocational-certificates"
+          ],
+          "nameKey": "stable-life.course.vocational-certificate-culinary.name",
+          "descriptionKey": "stable-life.course.vocational-certificate-culinary.description"
+        },
+        {
+          "id": "course-professional-certification-it",
+          "providerId": "provider-professional-institute",
+          "tuitionCents": 90000,
+          "durationWeeks": 16,
+          "weeklyTimeCost": 4,
+          "difficulty": 50,
+          "requirements": [],
+          "rewards": [
+            {
+              "type": "skill",
+              "target": "player.skills.programming",
+              "value": 20
+            }
+          ],
+          "awardsCredential": "certificate",
+          "failureRules": {
+            "minimumAttendanceRatio": 75,
+            "minimumStudyUnitsPerWeek": 2,
+            "maximumMissedSessions": 4,
+            "tuitionGraceWeeks": 2,
+            "maximumStress": 80,
+            "progressRetainedOnFailure": 50
+          },
+          "tags": [
+            "professional-certifications"
+          ],
+          "nameKey": "stable-life.course.professional-certification-it.name",
+          "descriptionKey": "stable-life.course.professional-certification-it.description"
+        },
+        {
+          "id": "course-university-degree-module-management",
+          "providerId": "provider-state-university",
+          "tuitionCents": 160000,
+          "durationWeeks": 24,
+          "weeklyTimeCost": 5,
+          "difficulty": 65,
+          "requirements": [],
+          "rewards": [
+            {
+              "type": "skill",
+              "target": "player.skills.management",
+              "value": 30
+            }
+          ],
+          "awardsCredential": "degree",
+          "failureRules": {
+            "minimumAttendanceRatio": 80,
+            "minimumStudyUnitsPerWeek": 3,
+            "maximumMissedSessions": 5,
+            "tuitionGraceWeeks": 3,
+            "maximumStress": 85,
+            "progressRetainedOnFailure": 55
+          },
+          "tags": [
+            "university-degrees"
+          ],
+          "nameKey": "stable-life.course.university-degree-module-management.name",
+          "descriptionKey": "stable-life.course.university-degree-module-management.description"
+        },
+        {
+          "id": "course-questionable-motivational-seminar",
+          "providerId": "provider-peak-potential-seminars",
+          "tuitionCents": 160000,
+          "durationWeeks": 24,
+          "weeklyTimeCost": 5,
+          "difficulty": 10,
+          "requirements": [],
+          "rewards": [
+            {
+              "type": "attribute",
+              "target": "player.attributes.charisma",
+              "value": 5
+            }
+          ],
+          "failureRules": {
+            "minimumAttendanceRatio": 50,
+            "minimumStudyUnitsPerWeek": 1,
+            "maximumMissedSessions": 8,
+            "tuitionGraceWeeks": 0,
+            "progressRetainedOnFailure": 20
+          },
+          "tags": [
+            "questionable-motivational-seminars"
+          ],
+          "nameKey": "stable-life.course.questionable-motivational-seminar.name",
+          "descriptionKey": "stable-life.course.questionable-motivational-seminar.description"
+        }
+      ],
       "housing": [
         {
           "id": "housing-rented-room",
@@ -1717,6 +1893,18 @@
     "stable-life.action.plan-remove": "Unplan",
     "stable-life.campaign.description": "Life in the Fast Lane — the Stable Life scenario. Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "stable-life.campaign.title": "Life in the Fast Lane — Stable Life",
+    "stable-life.course.high-school-equivalency.description": "Eight weeks to a piece of paper the last one should have already provided.",
+    "stable-life.course.high-school-equivalency.name": "High-School Equivalency",
+    "stable-life.course.night-class-supervision.description": "Two evenings a week, a whiteboard, and the beginnings of telling other people what to do.",
+    "stable-life.course.night-class-supervision.name": "Night Class: Basic Supervision",
+    "stable-life.course.professional-certification-it.description": "Sixteen weeks, a proctored exam, and a certificate suitable for framing or for nothing.",
+    "stable-life.course.professional-certification-it.name": "Professional Certification: Entry IT",
+    "stable-life.course.questionable-motivational-seminar.description": "Nobody has ever explained what week nine covers. Week nine attendees have stopped asking.",
+    "stable-life.course.questionable-motivational-seminar.name": "Peak Potential: A Twenty-Four-Week Journey",
+    "stable-life.course.university-degree-module-management.description": "Twenty-four weeks, one module of a longer degree, and the most expensive line item this scenario offers.",
+    "stable-life.course.university-degree-module-management.name": "University Degree Module: Management",
+    "stable-life.course.vocational-certificate-culinary.description": "Sixteen weeks of a working kitchen, minus the part where anyone pays you for it yet.",
+    "stable-life.course.vocational-certificate-culinary.name": "Vocational Certificate: Culinary Trade",
     "stable-life.difficulty.standard.label": "Standard",
     "stable-life.employer.bright-mart-retail.name": "BrightMart Retail",
     "stable-life.employer.civic-data-office.name": "Civic Data Office",

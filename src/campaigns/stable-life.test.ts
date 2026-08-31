@@ -95,10 +95,10 @@ describe("Stable Life — the authoring path", () => {
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
     // §16.1's jobs/employers/skills targets are now authored (S15), 15 of 30 events (S16),
-    // and 20 items (S19); the rest are still an honest statement that the content is
-    // unwritten.
+    // courses (S17), and 20 items (S19); the rest are still an honest statement that the
+    // content is unwritten.
     const empty = [
-      "courses", "npcs", "opportunities", "achievements",
+      "npcs", "opportunities", "achievements",
       "headlines", "backgrounds", "traits",
     ] as const;
     for (const key of empty) {
@@ -425,6 +425,107 @@ describe("Stable Life — purchasable items (S19)", () => {
   });
 
   it("builds and validates with items wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — courses (S17)", () => {
+  const courses = stableLifeSource.courses;
+
+  // `03` §7.1's ten education types, kebab-cased verbatim from the corpus's own list.
+  // `CourseDefinition` (content.ts) has no dedicated type field — the same `tags` mechanism
+  // S16.2 used for event types carries it here.
+  const VALID_EDUCATION_TYPES = new Set([
+    "high-school-equivalency", "vocational-certificates", "university-degrees",
+    "night-classes", "professional-certifications", "online-courses",
+    "self-directed-learning", "apprenticeships", "employer-training",
+    "questionable-motivational-seminars",
+  ]);
+
+  // `03` §16.4's education-cost table, restated as literal cent/unit values rather than read
+  // from the source's own constant — the same independence S15.4's wage-table test used.
+  const EDUCATION_COST_TABLE = [
+    { tuitionCents: 34_000, durationWeeks: 8, weeklyTimeCost: 3 }, // Short certificate
+    { tuitionCents: 90_000, durationWeeks: 16, weeklyTimeCost: 4 }, // Vocational certificate
+    { tuitionCents: 160_000, durationWeeks: 24, weeklyTimeCost: 5 }, // Degree module
+  ] as const;
+
+  function educationTypeOf(course: (typeof courses)[number]): string {
+    const typeTags = course.tags.filter((t) => VALID_EDUCATION_TYPES.has(t));
+    expect(typeTags, `${course.id} should carry exactly one §7.1 type tag`).toHaveLength(1);
+    return typeTags[0]!;
+  }
+
+  it("has 6 entries, each a distinct §7.1 education type (S17.1)", () => {
+    expect(courses).toHaveLength(6);
+    const types = courses.map(educationTypeOf);
+    expect(new Set(types).size, "every course should use a different §7.1 type").toBe(6);
+    for (const type of types) {
+      expect(VALID_EDUCATION_TYPES.has(type), `"${type}" should be one of §7.1's types`).toBe(true);
+    }
+  });
+
+  it("prices tuition, duration and weekly time cost from §16.4's education-cost table exactly (S17.2)", () => {
+    for (const course of courses) {
+      const matches = EDUCATION_COST_TABLE.some(
+        (row) =>
+          row.tuitionCents === course.tuitionCents &&
+          row.durationWeeks === course.durationWeeks &&
+          row.weeklyTimeCost === course.weeklyTimeCost,
+      );
+      expect(matches, `${course.id}'s tuition/duration/weeklyTimeCost should match a §16.4 row exactly`).toBe(
+        true,
+      );
+    }
+    // All three rows are actually used, not just one stretched across all six.
+    for (const row of EDUCATION_COST_TABLE) {
+      const used = courses.some(
+        (c) =>
+          c.tuitionCents === row.tuitionCents &&
+          c.durationWeeks === row.durationWeeks &&
+          c.weeklyTimeCost === row.weeklyTimeCost,
+      );
+      expect(used, `no course prices from the $${row.tuitionCents / 100} row`).toBe(true);
+    }
+  });
+
+  it("carries §7.4's failure rules — attendance floor, study floor, retained progress — within range (S17.3)", () => {
+    for (const course of courses) {
+      const rules = course.failureRules;
+      expect(rules, `${course.id} should carry failureRules`).toBeDefined();
+      expect(rules.minimumAttendanceRatio, `${course.id}'s attendance floor`).toBeGreaterThan(0);
+      expect(rules.minimumAttendanceRatio, `${course.id}'s attendance floor`).toBeLessThanOrEqual(100);
+      expect(rules.minimumStudyUnitsPerWeek, `${course.id}'s study floor`).toBeGreaterThan(0);
+      expect(rules.progressRetainedOnFailure, `${course.id}'s retained progress`).toBeGreaterThanOrEqual(0);
+      expect(rules.progressRetainedOnFailure, `${course.id}'s retained progress`).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("names only credentials a course actually grants, checked against every job requirement (S17.4)", () => {
+    const grantedLevels = new Set(
+      courses.map((c) => c.awardsCredential).filter((level): level is NonNullable<typeof level> => level !== undefined),
+    );
+    const credentialRequirements = stableLifeSource.jobs
+      .flatMap((job) => job.requirements)
+      .filter((r) => r.type === "credential");
+    for (const requirement of credentialRequirements) {
+      if ("field" in requirement.condition) {
+        expect(
+          grantedLevels.has(
+            requirement.condition.value as NonNullable<(typeof courses)[number]["awardsCredential"]>,
+          ),
+          `a job requires credential "${requirement.condition.value}", which no course grants`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("builds and validates with courses wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);

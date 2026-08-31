@@ -9,12 +9,13 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: courses, NPCs, opportunities, achievements,
- * headlines, backgrounds and traits (jobs, employers and skills were added by S15; 15 of
- * §16.1's 30 events were added by S16; 20 purchasable items were added by S19). Each
- * remaining collection is its own authoring slice against §16.1's content targets. They are
- * present and empty rather than absent, because `SimulationCampaignSource` requires all
- * seventeen and an empty one is an honest statement that the content is unwritten.
+ * What it deliberately does not yet carry: NPCs, opportunities, achievements, headlines,
+ * backgrounds and traits (jobs, employers and skills were added by S15; 15 of §16.1's 30
+ * events were added by S16, the other 15 are S21; courses were added by S17; 20 purchasable
+ * items were added by S19). Each remaining collection is its own authoring slice against
+ * §16.1's content targets. They are present and empty rather than absent, because
+ * `SimulationCampaignSource` requires all seventeen and an empty one is an honest statement
+ * that the content is unwritten.
  *
  * **§10.2 names four item effects this pinned engine cannot express, for the same reason as
  * the goal and event gaps above.** `validateModifiers` (`validate.ts`) restricts every
@@ -591,6 +592,198 @@ const skills: SimulationCampaignSource["skills"] = [
     name: { key: "stable-life.skill.programming.name", text: "Programming" },
     category: "technical",
     decayPerWeek: 0,
+  },
+];
+
+/**
+ * §16.4's education-cost table, by duration tier. Cited once here rather than re-typed into
+ * each course, the same reason `WAGE_TABLE_CENTS` above exists — a rate change touches one
+ * place. `CourseDefinition` (content.ts) carries no tier field of its own; these three keys
+ * are local to this file and exist only to group the six courses onto the table's three rows.
+ */
+const EDUCATION_COST_TABLE: Record<
+  "short" | "vocational" | "degree",
+  { tuitionCents: number; durationWeeks: number; weeklyTimeCost: number }
+> = {
+  short: { tuitionCents: DOLLARS(340), durationWeeks: 8, weeklyTimeCost: 3 },
+  vocational: { tuitionCents: DOLLARS(900), durationWeeks: 16, weeklyTimeCost: 4 },
+  degree: { tuitionCents: DOLLARS(1600), durationWeeks: 24, weeklyTimeCost: 5 },
+};
+
+/**
+ * §7.1/§16.1 — the six courses, each a distinct §7.1 education type (carried as a tag, the
+ * same mechanism S16.2 used for event types — `CourseDefinition` has no dedicated type
+ * field). Every one prices from `EDUCATION_COST_TABLE` exactly (§16.4, S17.2); two courses
+ * share the vocational tier and two share the short tier, the same way S15's jobs shared a
+ * wage-table tier across career paths. `providerId` has no matching collection in
+ * `SimulationCampaignSource` — it is a free descriptive string, not a foreign key.
+ *
+ * Where a reward references a skill, it is one S15 already authored (`cooking`,
+ * `management`, `programming`) and its value is chosen to meaningfully close the gap toward
+ * that skill's job or promotion requirement — §7.3's "job eligibility" reward, made concrete.
+ */
+const courses: SimulationCampaignSource["courses"] = [
+  // §7.1 "High-school equivalency" — short tier.
+  {
+    id: "course-high-school-equivalency",
+    name: {
+      key: "stable-life.course.high-school-equivalency.name",
+      text: "High-School Equivalency",
+    },
+    description: {
+      key: "stable-life.course.high-school-equivalency.description",
+      text: "Eight weeks to a piece of paper the last one should have already provided.",
+    },
+    providerId: "provider-community-college",
+    ...EDUCATION_COST_TABLE.short,
+    difficulty: 25,
+    requirements: [],
+    rewards: [{ type: "attribute", target: "player.attributes.intelligence", value: 5 }],
+    awardsCredential: "school",
+    failureRules: {
+      minimumAttendanceRatio: 70,
+      minimumStudyUnitsPerWeek: 1,
+      maximumMissedSessions: 3,
+      tuitionGraceWeeks: 1,
+      progressRetainedOnFailure: 40,
+    },
+    tags: ["high-school-equivalency"],
+  },
+  // §7.1 "Night classes" — short tier.
+  {
+    id: "course-night-class-supervision",
+    name: {
+      key: "stable-life.course.night-class-supervision.name",
+      text: "Night Class: Basic Supervision",
+    },
+    description: {
+      key: "stable-life.course.night-class-supervision.description",
+      text: "Two evenings a week, a whiteboard, and the beginnings of telling other people what to do.",
+    },
+    providerId: "provider-community-college",
+    ...EDUCATION_COST_TABLE.short,
+    difficulty: 20,
+    requirements: [],
+    rewards: [{ type: "skill", target: "player.skills.management", value: 10 }],
+    failureRules: {
+      minimumAttendanceRatio: 70,
+      minimumStudyUnitsPerWeek: 1,
+      maximumMissedSessions: 3,
+      tuitionGraceWeeks: 1,
+      progressRetainedOnFailure: 40,
+    },
+    tags: ["night-classes"],
+  },
+  // §7.1 "Vocational certificates" — vocational tier. §6.2's cooking requirement for
+  // job-line-cook is the same field this course's reward moves.
+  {
+    id: "course-vocational-certificate-culinary",
+    name: {
+      key: "stable-life.course.vocational-certificate-culinary.name",
+      text: "Vocational Certificate: Culinary Trade",
+    },
+    description: {
+      key: "stable-life.course.vocational-certificate-culinary.description",
+      text: "Sixteen weeks of a working kitchen, minus the part where anyone pays you for it yet.",
+    },
+    providerId: "provider-community-college",
+    ...EDUCATION_COST_TABLE.vocational,
+    difficulty: 45,
+    requirements: [],
+    rewards: [{ type: "skill", target: "player.skills.cooking", value: 20 }],
+    awardsCredential: "certificate",
+    failureRules: {
+      minimumAttendanceRatio: 75,
+      minimumStudyUnitsPerWeek: 2,
+      maximumMissedSessions: 4,
+      tuitionGraceWeeks: 2,
+      maximumStress: 80,
+      progressRetainedOnFailure: 50,
+    },
+    tags: ["vocational-certificates"],
+  },
+  // §7.1 "Professional certifications" — vocational tier. §6.2's programming requirement
+  // for job-systems-administrator is the same field this course's reward moves.
+  {
+    id: "course-professional-certification-it",
+    name: {
+      key: "stable-life.course.professional-certification-it.name",
+      text: "Professional Certification: Entry IT",
+    },
+    description: {
+      key: "stable-life.course.professional-certification-it.description",
+      text: "Sixteen weeks, a proctored exam, and a certificate suitable for framing or for nothing.",
+    },
+    providerId: "provider-professional-institute",
+    ...EDUCATION_COST_TABLE.vocational,
+    difficulty: 50,
+    requirements: [],
+    rewards: [{ type: "skill", target: "player.skills.programming", value: 20 }],
+    awardsCredential: "certificate",
+    failureRules: {
+      minimumAttendanceRatio: 75,
+      minimumStudyUnitsPerWeek: 2,
+      maximumMissedSessions: 4,
+      tuitionGraceWeeks: 2,
+      maximumStress: 80,
+      progressRetainedOnFailure: 50,
+    },
+    tags: ["professional-certifications"],
+  },
+  // §7.1 "University degrees" — degree tier, authored as one module per §16.4's own naming
+  // ("Degree module"), not a full multi-year degree.
+  {
+    id: "course-university-degree-module-management",
+    name: {
+      key: "stable-life.course.university-degree-module-management.name",
+      text: "University Degree Module: Management",
+    },
+    description: {
+      key: "stable-life.course.university-degree-module-management.description",
+      text: "Twenty-four weeks, one module of a longer degree, and the most expensive line item this scenario offers.",
+    },
+    providerId: "provider-state-university",
+    ...EDUCATION_COST_TABLE.degree,
+    difficulty: 65,
+    requirements: [],
+    rewards: [{ type: "skill", target: "player.skills.management", value: 30 }],
+    awardsCredential: "degree",
+    failureRules: {
+      minimumAttendanceRatio: 80,
+      minimumStudyUnitsPerWeek: 3,
+      maximumMissedSessions: 5,
+      tuitionGraceWeeks: 3,
+      maximumStress: 85,
+      progressRetainedOnFailure: 55,
+    },
+    tags: ["university-degrees"],
+  },
+  // §7.1 "Questionable motivational seminars" — degree tier, priced and scheduled as the
+  // corpus's own joke: the most expensive, longest-running course, and the one that grants
+  // nothing a credential column can name.
+  {
+    id: "course-questionable-motivational-seminar",
+    name: {
+      key: "stable-life.course.questionable-motivational-seminar.name",
+      text: "Peak Potential: A Twenty-Four-Week Journey",
+    },
+    description: {
+      key: "stable-life.course.questionable-motivational-seminar.description",
+      text: "Nobody has ever explained what week nine covers. Week nine attendees have stopped asking.",
+    },
+    providerId: "provider-peak-potential-seminars",
+    ...EDUCATION_COST_TABLE.degree,
+    difficulty: 10,
+    requirements: [],
+    rewards: [{ type: "attribute", target: "player.attributes.charisma", value: 5 }],
+    failureRules: {
+      minimumAttendanceRatio: 50,
+      minimumStudyUnitsPerWeek: 1,
+      maximumMissedSessions: 8,
+      tuitionGraceWeeks: 0,
+      progressRetainedOnFailure: 20,
+    },
+    tags: ["questionable-motivational-seminars"],
   },
 ];
 
@@ -1444,7 +1637,7 @@ export const stableLifeSource: SimulationCampaignSource = {
   },
 
   jobs,
-  courses: [],
+  courses,
   housing,
   items,
   events,
@@ -1484,7 +1677,7 @@ const CAMPAIGN_TITLE = {
 /**
  * The catalog card that travels with the published campaign. `contentNotice` says plainly
  * that this is a seed — a player reaching it from a catalog should not be told it is the
- * game when eight of its seventeen content collections are empty.
+ * game when six of its seventeen content collections are empty.
  */
 export const stableLifeCatalog = {
   title: "Life in the Fast Lane — Stable Life",
@@ -1492,7 +1685,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map, the scenario, the career ladder, 15 of 30 random events and 20 purchasable items are authored; courses are not yet written.",
+    "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events and 20 purchasable items are authored; NPCs and the rest are not yet written.",
   featured: false,
   hidden: true,
 } as const;
