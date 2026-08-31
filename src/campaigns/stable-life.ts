@@ -9,13 +9,40 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: NPCs, opportunities, achievements and headlines
+ * What it deliberately does not yet carry: opportunities, achievements and headlines
  * (jobs, employers and skills were added by S15; 15 of §16.1's 30 events were added by S16,
  * the other 15 are S21; courses were added by S17; 20 purchasable items were added by S19;
- * backgrounds and traits were added by S22). Each remaining collection is its own authoring
- * slice against §16.1's content targets. They are present and empty rather than absent,
- * because `SimulationCampaignSource` requires all seventeen and an empty one is an honest
- * statement that the content is unwritten.
+ * 8 NPCs were added by S20; backgrounds and traits were added by S22). Each remaining
+ * collection is its own authoring slice against §16.1's content targets. They are present
+ * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
+ * and an empty one is an honest statement that the content is unwritten.
+ *
+ * **§12.3's NPC memories cannot be authored here at all, for a reason distinct from every
+ * other CP10 gap above.** Those gaps are a restricted validator rejecting a value; this one
+ * is a missing field. `NPCDefinitionSource` (`kinds/simulation/source.ts`) mirrors
+ * `NPCDefinition` exactly — `id`, `defaultRole`, `initialRelationship`, `availability`,
+ * `tags` plus the name/description text — and carries no memory field at all.
+ * `NPCMemory[]` lives only on the runtime `NPCState`, populated by play, not on the content
+ * an author writes. So no NPC below carries a starting memory, not because §12.3's shape is
+ * unreachable through validation but because the authoring surface has nowhere to put one.
+ * Named here per CP10 and recorded under `## Open` in `design/90-decisions.md`.
+ *
+ * **§12.1 states no numeric range for the four relationship dimensions, and the engine's own
+ * regression suite confirms it deliberately** (`resolvers.test.ts`: "§6.11 declares no range
+ * for the affective dimensions", exercising a negative `affinity` on purpose so an
+ * adversarial relationship is not clamped to zero on first contact). Every `initialRelationship`
+ * below is still authored within `0`–`100` — this campaign's own convention, matching the
+ * `0`–`100` default `03` §3.2/§3.5 states for needs and skills and consistent with §11.3's
+ * "any NPC with resentment above 50" example threshold — not a bound the corpus itself states
+ * for relationships. A future NPC with a genuinely adversarial starting relationship is not
+ * bound by this convention; the engine accepts negative values and this file would say so at
+ * that NPC's own site.
+ *
+ * **Landlord attachment has no dedicated field either.** `HousingDefinitionSource` carries no
+ * landlord reference (`HousingState.landlordNpcId` is runtime-only, set when a player moves
+ * in), so the one landlord below names the housing tier it attaches to as a `tags` entry —
+ * the same mechanism S15/S16 used for a schema field that does not exist. Employer attachment
+ * does have a real field, `EmployerDefinition.npcIds`, and is used instead of a tag.
  *
  * **`BackgroundDefinition` carries no starting-items field** (`content.ts`) — §8.10's own
  * player-creation lifecycle text says starting inventory comes from `ScenarioDefinition`, not
@@ -1136,8 +1163,8 @@ const jobs: SimulationCampaignSource["jobs"] = [
  *  wrong on their own), not an engine gap. */
 
 /**
- * §16.1/§6 — the three employers the eight jobs above name. `npcIds` stays empty; NPCs are
- * S20, not this slice.
+ * §16.1/§6 — the three employers the eight jobs above name. `npcIds` now names the S20 NPCs
+ * attached to each; `employer-bright-mart-retail` stays empty — not every employer needs one.
  */
 const employers: SimulationCampaignSource["employers"] = [
   {
@@ -1146,7 +1173,7 @@ const employers: SimulationCampaignSource["employers"] = [
     sector: "food-service",
     reputation: 40,
     jobIds: ["job-dishwasher", "job-line-cook", "job-shift-supervisor"],
-    npcIds: [],
+    npcIds: ["npc-diner-manager"],
   },
   {
     id: "employer-civic-data-office",
@@ -1154,7 +1181,7 @@ const employers: SimulationCampaignSource["employers"] = [
     sector: "clerical",
     reputation: 55,
     jobIds: ["job-data-entry-clerk", "job-systems-administrator", "job-infrastructure-engineer", "job-wifi-scapegoat"],
-    npcIds: [],
+    npcIds: ["npc-civic-office-coworker"],
   },
   {
     id: "employer-bright-mart-retail",
@@ -1163,6 +1190,122 @@ const employers: SimulationCampaignSource["employers"] = [
     reputation: 50,
     jobIds: ["job-retail-associate"],
     npcIds: [],
+  },
+];
+
+/**
+ * §12/§16.1 — the eight NPCs, covering 7 of §12.2's fourteen roles (manager, coworker,
+ * landlord, teacher, friend, lender, government employee — one over S20.1's target of 6).
+ * Every `initialRelationship` is authored within `0`–`100`; the file header above explains
+ * why that is this campaign's own convention rather than a number `03` §12.1 states.
+ * `availability` places each at one of §16.2's eight locations. Every id below is bare
+ * (`npc-<descriptor>`), matching the natural-key convention every other collection uses.
+ */
+const npcs: SimulationCampaignSource["npcs"] = [
+  // §12.2 "Managers" — attached to employer-greasy-spoon-diner via its npcIds above.
+  {
+    id: "npc-diner-manager",
+    name: { key: "stable-life.npc.diner-manager.name", text: "Deb" },
+    description: {
+      key: "stable-life.npc.diner-manager.description",
+      text: "Runs the floor at the Greasy Spoon. Remembers who showed up for the double shift.",
+    },
+    defaultRole: "manager",
+    initialRelationship: { affinity: 40, trust: 35, respect: 30, resentment: 10 },
+    availability: [{ locationId: "workplace" }],
+    tags: [],
+  },
+  // §12.2 "Coworkers" — attached to employer-civic-data-office via its npcIds above.
+  {
+    id: "npc-civic-office-coworker",
+    name: { key: "stable-life.npc.civic-office-coworker.name", text: "Marcus" },
+    description: {
+      key: "stable-life.npc.civic-office-coworker.description",
+      text: "Two desks over at the Civic Data Office. Knows exactly how long lunch can stretch.",
+    },
+    defaultRole: "coworker",
+    initialRelationship: { affinity: 55, trust: 50, respect: 45, resentment: 5 },
+    availability: [{ locationId: "workplace" }],
+    tags: [],
+  },
+  // §12.2 "Landlords" — attached to housing-rented-room by tag; see the file header for why
+  // this is a tag rather than a field.
+  {
+    id: "npc-landlord-rented-room",
+    name: { key: "stable-life.npc.landlord-rented-room.name", text: "Mrs. Okafor" },
+    description: {
+      key: "stable-life.npc.landlord-rented-room.description",
+      text: "Owns the rented room and three others like it. Collects rent in person, on principle.",
+    },
+    defaultRole: "landlord",
+    initialRelationship: { affinity: 25, trust: 30, respect: 20, resentment: 15 },
+    availability: [{ locationId: "home" }],
+    tags: ["housing-rented-room"],
+  },
+  // §12.2 "Teachers".
+  {
+    id: "npc-community-college-teacher",
+    name: { key: "stable-life.npc.community-college-teacher.name", text: "Mr. Alavi" },
+    description: {
+      key: "stable-life.npc.community-college-teacher.description",
+      text: "Teaches whichever course is short a room. Grades on attendance more than he admits.",
+    },
+    defaultRole: "teacher",
+    initialRelationship: { affinity: 45, trust: 40, respect: 50, resentment: 0 },
+    availability: [{ locationId: "community-college" }],
+    tags: [],
+  },
+  // §12.2 "Friends".
+  {
+    id: "npc-old-friend",
+    name: { key: "stable-life.npc.old-friend.name", text: "Priya" },
+    description: {
+      key: "stable-life.npc.old-friend.description",
+      text: "Known since before any of this started. Still shows up at the recreation area on a bad week.",
+    },
+    defaultRole: "friend",
+    initialRelationship: { affinity: 70, trust: 65, respect: 55, resentment: 0 },
+    availability: [{ locationId: "recreation-area" }],
+    tags: [],
+  },
+  // §12.2 "Lenders".
+  {
+    id: "npc-bank-loan-officer",
+    name: { key: "stable-life.npc.bank-loan-officer.name", text: "Mr. Petrov" },
+    description: {
+      key: "stable-life.npc.bank-loan-officer.description",
+      text: "Approves the borrowing and reviews the repaying. Reads the fine print out loud, slowly.",
+    },
+    defaultRole: "lender",
+    initialRelationship: { affinity: 20, trust: 25, respect: 20, resentment: 5 },
+    availability: [{ locationId: "bank" }],
+    tags: [],
+  },
+  // §12.2 "Government employees".
+  {
+    id: "npc-forms-clerk",
+    name: { key: "stable-life.npc.forms-clerk.name", text: "Ms. Dinh" },
+    description: {
+      key: "stable-life.npc.forms-clerk.description",
+      text: "Stamps the forms at the Department of Forms. Has seen every version of this form fail before.",
+    },
+    defaultRole: "government-employee",
+    initialRelationship: { affinity: 15, trust: 20, respect: 15, resentment: 10 },
+    availability: [{ locationId: "department-of-forms" }],
+    tags: [],
+  },
+  // §12.2 "Neighbors".
+  {
+    id: "npc-next-door-neighbor",
+    name: { key: "stable-life.npc.next-door-neighbor.name", text: "Tomasz" },
+    description: {
+      key: "stable-life.npc.next-door-neighbor.description",
+      text: "Lives one door down. Borrows things and, to be fair, returns most of them.",
+    },
+    defaultRole: "neighbor",
+    initialRelationship: { affinity: 35, trust: 30, respect: 25, resentment: 5 },
+    availability: [{ locationId: "home" }],
+    tags: [],
   },
 ];
 
@@ -1831,7 +1974,7 @@ export const stableLifeSource: SimulationCampaignSource = {
   housing,
   items,
   events,
-  npcs: [],
+  npcs,
   goals,
   scenarios,
   difficulties,
@@ -1867,7 +2010,7 @@ const CAMPAIGN_TITLE = {
 /**
  * The catalog card that travels with the published campaign. `contentNotice` says plainly
  * that this is a seed — a player reaching it from a catalog should not be told it is the
- * game when six of its seventeen content collections are empty.
+ * game when three of its seventeen content collections are empty.
  */
 export const stableLifeCatalog = {
   title: "Life in the Fast Lane — Stable Life",
@@ -1875,7 +2018,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items and 3 starting backgrounds are authored; NPCs and the rest are not yet written.",
+    "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items, 8 NPCs and 3 starting backgrounds are authored; the rest is not yet written.",
   featured: false,
   hidden: true,
 } as const;
