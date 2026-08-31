@@ -7,6 +7,8 @@
  * would leave the scaffold looking finished and producing nothing.
  */
 
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 import {
   buildValidatedContentRegistry,
@@ -931,6 +933,168 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
   });
 
   it("builds and validates with the full 30-event set wired in (S21.6)", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — goals and victory (S23)", () => {
+  const goals = stableLifeSource.goals;
+  const scenario = stableLifeSource.scenarios[0]!;
+
+  it("covers 4 of §13's goal categories, the existing scenario goal among them (S23.1)", () => {
+    expect(goals.some((g) => g.id === "goal-stable-life" && g.category === "scenario")).toBe(true);
+    const categories = new Set(goals.map((g) => g.category));
+    expect(categories.size).toBe(4);
+  });
+
+  it("has at least one persistent goal, its consecutive-week count present and greater than one (S23.2)", () => {
+    const persistent = goals.filter((g) => g.requiredDurationWeeks !== undefined);
+    expect(persistent.length).toBeGreaterThan(0);
+    for (const goal of persistent) {
+      expect(goal.requiredDurationWeeks!).toBeGreaterThan(1);
+    }
+  });
+
+  it("carries a starting background from S22 and a starting inventory drawn from S19's items, every id resolving (S23.3)", () => {
+    expect(scenario.startingBackgroundIds.length).toBeGreaterThan(0);
+    const backgroundIds = new Set(stableLifeSource.backgrounds.map((b) => b.id));
+    for (const id of scenario.startingBackgroundIds) {
+      expect(backgroundIds.has(id), `unknown background "${id}"`).toBe(true);
+    }
+
+    expect(scenario.startingInventory.length).toBeGreaterThan(0);
+    const itemIds = new Set(stableLifeSource.items.map((i) => i.id));
+    for (const entry of scenario.startingInventory) {
+      expect(itemIds.has(entry.definitionId), `unknown item "${entry.definitionId}"`).toBe(true);
+    }
+  });
+
+  it("still omits §16.3's credential completion requirement, the open decision-log entry still open (S23.4)", () => {
+    // `player.education.credentials` is a collection (`Credential[]`, `actor.ts`); the
+    // pinned engine's `exists`/`count` quantifiers throw on `collection` (file header,
+    // and S16.5/S21.5's identical finding). Not expressible as a scalar comparison either
+    // — there is no `highestCredentialLevel` field. Still omitted; the decision-log entry
+    // this slice was asked to confirm is `## Open`'s S16.5, which names this same gap and
+    // has not been converted to an issue or closed.
+    const stableLifeGoal = goals.find((g) => g.id === "goal-stable-life")!;
+    const conditionText = JSON.stringify(stableLifeGoal.conditions);
+    expect(conditionText).not.toContain("credential");
+
+    const decisionsLog = readFileSync(
+      new URL("../../design/90-decisions.md", import.meta.url),
+      "utf8",
+    );
+    const openSection = decisionsLog.slice(
+      decisionsLog.indexOf("## Open"),
+      decisionsLog.indexOf("\n## ", decisionsLog.indexOf("## Open") + 1),
+    );
+    expect(openSection).toContain("S16.5");
+    expect(openSection).toContain("credential completion requirement");
+  });
+
+  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
+    if ("exists" in condition || "count" in condition) {
+      throw new Error("this campaign's goal conditions never use a collection quantifier (S23.4)");
+    }
+    const actual = resolveField(condition.field);
+    switch (condition.operator) {
+      case "equals": return actual === condition.value;
+      case "not_equals": return actual !== condition.value;
+      case "greater_or_equal": return (actual as number) >= (condition.value as number);
+      case "less_or_equal": return (actual as number) <= (condition.value as number);
+      case "contains": return Array.isArray(actual) && actual.includes(condition.value);
+      default:
+        throw new Error(`test evaluator: extend for operator "${condition.operator}"`);
+    }
+  }
+
+  function fieldOf(state: Record<string, unknown>, path: string): unknown {
+    return path.split(".").reduce<unknown>((current, segment) => {
+      if (current === null || typeof current !== "object") return undefined;
+      return (current as Record<string, unknown>)[segment];
+    }, state);
+  }
+
+  /** A finances/career/needs/education fixture built from the scenario's own starting
+   *  numbers and real content ids, not invented ones. */
+  function fixtureState(overrides: {
+    cashCents?: number;
+    overdueBalanceCents?: number;
+    careerTier?: string;
+    happiness?: number;
+    health?: number;
+    completedCourseIds?: string[];
+  }): Record<string, unknown> {
+    return {
+      player: {
+        finances: {
+          cashCents: overrides.cashCents ?? scenario.startingCashCents,
+          overdueBalanceCents: overrides.overdueBalanceCents ?? 0,
+        },
+        career: { highestTierAchieved: overrides.careerTier },
+        needs: { happiness: overrides.happiness ?? 50, health: overrides.health ?? 50 },
+        education: { completedCourseIds: overrides.completedCourseIds ?? [] },
+      },
+    };
+  }
+
+  it("evaluates every goal's conditions against a built campaign, both false and true (S23.5)", () => {
+    built(); // proves the campaign actually builds before conditions are evaluated against it
+
+    for (const goal of goals) {
+      const atStart = evaluateTestCondition(goal.conditions, (p) => fieldOf(fixtureState({}), p));
+      expect(atStart, `${goal.id} should not already be met at the scenario's starting state`).toBe(false);
+    }
+
+    const stableLifeGoal = goals.find((g) => g.id === "goal-stable-life")!;
+    expect(
+      evaluateTestCondition(
+        stableLifeGoal.conditions,
+        (p) =>
+          fieldOf(
+            fixtureState({ cashCents: 2000_00, careerTier: "skilled", happiness: 60, health: 60 }),
+            p,
+          ),
+      ),
+    ).toBe(true);
+
+    const cushion = goals.find((g) => g.id === "goal-financial-cushion")!;
+    expect(
+      evaluateTestCondition(cushion.conditions, (p) => fieldOf(fixtureState({ cashCents: 500_00 }), p)),
+    ).toBe(true);
+
+    const advancement = goals.find((g) => g.id === "goal-career-advancement")!;
+    expect(
+      evaluateTestCondition(advancement.conditions, (p) => fieldOf(fixtureState({ careerTier: "senior" }), p)),
+    ).toBe(true);
+
+    const certified = goals.find((g) => g.id === "goal-certified-professional")!;
+    expect(
+      evaluateTestCondition(
+        certified.conditions,
+        (p) =>
+          fieldOf(fixtureState({ completedCourseIds: ["course-professional-certification-it"] }), p),
+      ),
+    ).toBe(true);
+  });
+
+  it("resolves every id the scenario's goalIds name (S23.5)", () => {
+    const goalIds = new Set(goals.map((g) => g.id));
+    expect(scenario.goalIds.length).toBeGreaterThan(0);
+    for (const id of scenario.goalIds) {
+      expect(goalIds.has(id), `scenario names unknown goal "${id}"`).toBe(true);
+    }
+  });
+
+  it("builds and validates with the full goal/scenario set wired in (S23.6)", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);

@@ -2368,6 +2368,26 @@ const events: SimulationCampaignSource["events"] = [
  * express yet (see the file header). `highestTierAchieved` is a string, so "skilled or
  * better" is authored as the explicit set rather than an ordering comparison — the tier
  * union has no numeric rank the evaluator could compare against.
+ *
+ * §13's goal category list is a prose enumeration, not a code-level enum — `category` is a
+ * free `string` on `GoalDefinition` (`content.ts`). §16.1 targets four goal categories; the
+ * three below are chosen from fields the pinned engine can already address without a
+ * collection quantifier (the same restriction the file header documents for events),
+ * alongside `goal-stable-life`'s own `"scenario"` — four distinct categories total (S23.1).
+ *
+ * `goal-financial-cushion` is the persistent one §13.1 asks for (S23.2): the corpus's own
+ * example is an eight-consecutive-week maintenance goal, reused here at a lower cash
+ * threshold than the scenario goal so it reads as a stepping stone rather than a restatement.
+ * `requiredDurationWeeks` is `GoalDefinition`'s field for it; the engine resets the
+ * consecutive-week counter on any week the condition fails (04 §13.1), which this file has
+ * no state to exercise directly — asserted here only as "present and greater than one",
+ * per S23.2's own wording.
+ *
+ * `goal-career-advancement` and `goal-certified-professional` are stretch goals against
+ * S15/S17 content already authored — a tier above the scenario goal's "skilled or better",
+ * and a specific course completion rather than the scenario's omitted credential-level
+ * check. Both are ordinary `player.career.*`/`player.education.completedCourseIds` field
+ * reads, the same forms the scenario goal and `event-credential-recognized` already use.
  */
 const goals: SimulationCampaignSource["goals"] = [
   {
@@ -2394,9 +2414,62 @@ const goals: SimulationCampaignSource["goals"] = [
       ],
     },
   },
+  {
+    id: "goal-financial-cushion",
+    label: { key: "stable-life.goal.financial-cushion.label", text: "A Financial Cushion" },
+    description: {
+      key: "stable-life.goal.financial-cushion.description",
+      text: "Five hundred dollars in hand, and keep it there for eight straight weeks.",
+    },
+    category: "wealth",
+    conditions: { field: "player.finances.cashCents", operator: "greater_or_equal", value: DOLLARS(500) },
+    requiredDurationWeeks: 8,
+  },
+  {
+    id: "goal-career-advancement",
+    label: { key: "stable-life.goal.career-advancement.label", text: "Career Advancement" },
+    description: {
+      key: "stable-life.goal.career-advancement.description",
+      text: "Professional work, or better.",
+    },
+    category: "career",
+    conditions: {
+      any: [
+        { field: "player.career.highestTierAchieved", operator: "equals", value: "professional" },
+        { field: "player.career.highestTierAchieved", operator: "equals", value: "senior" },
+      ],
+    },
+  },
+  {
+    id: "goal-certified-professional",
+    label: { key: "stable-life.goal.certified-professional.label", text: "Certified Professional" },
+    description: {
+      key: "stable-life.goal.certified-professional.description",
+      text: "Finish the entry IT certification.",
+    },
+    category: "education",
+    conditions: {
+      field: "player.education.completedCourseIds",
+      operator: "contains",
+      value: "course-professional-certification-it",
+    },
+  },
 ];
 
-/** §16.3 — twelve months to establish a stable life. */
+/**
+ * §16.3 — twelve months to establish a stable life. `startingBackgroundIds` names
+ * `background-kitchen-hand` (S23.3): of S22's three, it is the one whose
+ * `startingCashModifierCents` is `0` (`initial.ts` sums every listed background's modifier
+ * into `scenario.startingCashCents`), so the player's actual starting cash stays §16.3's
+ * literal $200 — the number this file states three times over (here, the scenario
+ * description below, and the catalog card). `background-office-temp`'s `"school"`
+ * credential reads closer to §16.3's loose "Basic education" phrase, but that is prose
+ * flavor text where $200 is a specific, repeated figure; preserving the figure exactly
+ * is the choice made here. `startingInventory` is §16.3's "one week of food"
+ * (`item-groceries-poor`, matching the scenario's tight-budget framing over the pricier
+ * `item-groceries-basic`) plus one of "minimal possessions" (`item-secondhand-coat`), both
+ * from S19's items.
+ */
 const scenarios: SimulationCampaignSource["scenarios"] = [
   {
     id: STABLE_LIFE_SCENARIO_ID,
@@ -2405,12 +2478,15 @@ const scenarios: SimulationCampaignSource["scenarios"] = [
       key: "stable-life.scenario.description",
       text: "Two hundred dollars, no job, basic education, a rented room, one week of food, and fifty-two weeks.",
     },
-    startingBackgroundIds: [],
+    startingBackgroundIds: ["background-kitchen-hand"],
     startingCashCents: DOLLARS(200),
     startingHousingId: "housing-rented-room",
     startingLocationId: "home",
-    startingInventory: [],
-    goalIds: ["goal-stable-life"],
+    startingInventory: [
+      { definitionId: "item-groceries-poor", quantity: 1 },
+      { definitionId: "item-secondhand-coat", quantity: 1 },
+    ],
+    goalIds: ["goal-stable-life", "goal-financial-cushion", "goal-career-advancement", "goal-certified-professional"],
     weekLimit: 52,
     mode: "classic",
     goalFailurePrecedence: "goals_win",
