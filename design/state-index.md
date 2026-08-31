@@ -157,6 +157,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-30-the-content-path-is-contracted-as-a-third-scope-with-its-own-cp-invariant-namespace | `unit/document/design-20-contract` |
 | decision/2026-08-30-the-engine-s-published-surface-is-enforced-by-a-check-not-only-by-prose | `unit/document/design-10-design`, `unit/document/design-20-contract` |
 | decision/2026-08-30-the-game-content-path-enters-design-through-a-design-pass-before-it-is-contracted-or-sliced | `unit/document/design-10-design`, `unit/document/design-20-contract`, `unit/document/design-30-slices` |
+| decision/2026-08-31-a-length-narrowing-on-a-collection-field-is-cp10-compliant-s21-3-is-fully-met | — |
 <!-- decision-affects:end -->
 
 ## Question affects

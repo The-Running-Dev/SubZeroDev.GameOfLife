@@ -9,7 +9,59 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 - **S19** — `03` §10.2 names four item effects `validateModifiers` (`validate.ts`) cannot accept, since `Modifier.target` is restricted to `player.needs.*`/`player.attributes.*`/`player.skills.*`/`calendar.committedTimeUnits`: clothing's employability/prestige boost (`item-work-uniform`, `item-secondhand-coat`), a computer's remote-jobs-and-online-education unlock (`item-basic-computer`), a vehicle's travel-time reduction (`item-used-bicycle`), and tools' maintenance-check improvement (`item-basic-toolkit`, `item-sewing-kit`). All four omitted rather than approximated, per CP10, named in `stable-life.ts`'s file header and at each item. Related but distinct: a vehicle's recurring fuel/insurance/repair expenses (§10.2) are also omitted, because `ItemDefinition.weeklyCostCents` exists on the type but only `HousingState.weeklyCostCents` is levied by `endOfWeek.ts` — the same dead-field gap S18 found for housing's utilities/transport lines.
 - **S18.4** — Two of `03` §16.4's five recurring weekly costs have no home in the pinned engine: `HousingDefinition` (`content.ts`) carries no `utilities` or `transport` field, and while `ItemDefinition.weeklyCostCents` exists, nothing in `kinds/simulation/endOfWeek.ts`'s end-of-week step reads it — only `HousingState.weeklyCostCents` (rent) is actually levied against `cashCents`. Named at the authoring site per CP10, in the comment above `housing` in `stable-life.ts`. Groceries and poor-quality groceries are not part of this gap — they are items, out of this slice's scope, and belong to S19.
 - **S20.4** — `03` §12.3's NPC memories cannot be authored at all by the pinned engine's surface, for a different reason than the other CP10 gaps above: `NPCDefinitionSource` (`kinds/simulation/source.ts`) mirrors `NPCDefinition` exactly and carries no memory field — `NPCMemory[]` lives only on the runtime `NPCState`, populated by play. No S20 NPC carries a starting memory; named at the file header in `stable-life.ts`. Distinct and also unresolved by any corpus statement: `03` §12.1 states no numeric range for the four relationship dimensions (`affinity`/`trust`/`respect`/`resentment`), confirmed deliberate by the engine's own regression suite (`resolvers.test.ts`: "§6.11 declares no range for the affective dimensions", exercising a negative `affinity` on purpose). S20 authors every `initialRelationship` within `0`–`100` as this campaign's own convention — not a number the corpus states — per the user's own choice when asked.
-- **S21.5** — The same `exists`/`count` gap as S16.5, reached from two more collections, for a running total of five omitted quantifiers across S16 and S21. `event-landlord-inspection`, `event-friend-needs-a-favor` and `event-neighbor-borrows-again` each want a condition over `player.relationships` (affinity in two cases, `03` §11.3's own literal "any NPC with resentment above 50" in the third); `event-tutor-offers-extra-session` wants one over `player.education.enrollments` filtered on `status: "active"`. Both are arrays on the actor (`kinds/simulation/actor.ts`), so neither addressing form reaches them — the quantifiers throw on `collection`, and §7.1's documented natural-key path (`player.relationships.<npcId>.affinity`) throws too, because `resolveField`'s generic per-segment walk cannot key an array by an id. Verified against the pinned engine rather than inferred. All omitted per CP10 and named at each authoring site plus the `stable-life.ts` file header. **Consequence for the slice: S21.3 is not met** — it requires an event conditional on an NPC relationship and one on a course in progress, and neither is expressible. The housing-condition third of S21.3 is met (`event-boiler-gives-up`, on `player.housing.damage`). `player.relationships.0.affinity` does resolve and was deliberately not used: §7.1 rejects index addressing because it targets a different NPC after any reordering, making it the approximation CP10 forbids. The engine-side fix is collection support in `kinds/simulation/conditions.ts`, which the engine already marks "not yet" rather than "never" — to be raised in the engine repository, per CP10.
+- **S21.5** — The same `exists`/`count` gap as S16.5, reached from two more collections, for a running total of four omitted quantifiers across S16 and S21 (see the 2026-08-31 entry below for why this is four, not the five first recorded here). `event-landlord-inspection` and `event-neighbor-borrows-again` each want a condition over `player.relationships` (affinity in one case, `03` §11.3's own literal "any NPC with resentment above 50" in the other). Both are arrays on the actor (`kinds/simulation/actor.ts`), so neither addressing form reaches a specific item: the quantifiers throw on `collection`, and §7.1's documented natural-key path (`player.relationships.<npcId>.affinity`) throws too, because `resolveField`'s generic per-segment walk cannot key an array by an id. Verified against the pinned engine rather than inferred. Both omitted per CP10 and named at each authoring site plus the `stable-life.ts` file header. The engine-side fix is collection support in `kinds/simulation/conditions.ts`, which the engine already marks "not yet" rather than "never" — to be raised in the engine repository, per CP10.
+
+---
+
+### 2026-08-31 — A `.length` narrowing on a collection field is CP10-compliant; S21.3 is fully met
+Context: #103 landed S21 with S21.3 only partially met — of the three required conditions
+(housing, an NPC relationship, a course in progress), only the housing one
+(`event-boiler-gives-up`, on `player.housing.damage`) was authored; the other two were left
+entirely unconditioned, on the reasoning that `player.relationships`/`player.education
+.enrollments` are arrays with no addressable per-item field, and that a documented weaker
+condition ("approximation") is exactly what CP10 forbids. A parallel session (this one)
+started the same slice independently before #103 merged, authored the relationship and
+course conditions as `player.relationships.length greater_than 0` and `player.education
+.enrollments.length greater_than 0`, and reported S21.3 fully met. Two sessions reached
+opposite conclusions about the same contract line (`20-contract.md` § *Content path errors*
+CP10: "the source omits it visibly and names the omission... Never approximate: an
+approximation is a silent divergence") on the same criterion, so this needed a decision
+rather than either PR simply landing first.
+Chosen: `.length` narrowing is compliant, and S21.3 is fully met. Verified directly against
+the pinned engine (not inferred): `player.relationships.length` and `player.education
+.enrollments.length` both resolve without throwing, correctly false on an empty array and
+true once populated (`kinds/simulation/conditions.ts`'s generic per-segment walk treats
+`.length` as an ordinary property access, since JS arrays carry a real `length` property).
+The deciding distinction from the rejected `player.relationships.0.affinity` form: index
+addressing names a *specific* NPC by position, so it is wrong the moment the array
+reorders — a silent divergence, exactly what CP10's "never approximate" forbids. `.length`
+names no item at all; it is an aggregate cardinality check that cannot be made wrong by
+reordering, only ever weaker than the corpus's own per-item gate. That is the same shape of
+narrowing S16.5 already used and shipped unchallenged across four merged slices
+(`event-job-interview-invitation`'s "currently unemployed" stands in for "has a pending
+application," a different and weaker question, not the one §11.3 asks either) — CP10's
+"never approximate" is read as forbidding a *silent* divergence, and "the source omits it
+visibly and names the omission" as satisfied by a narrower condition that is named as
+narrower, not only by an absent condition. `event-friend-needs-a-favor` and
+`event-tutor-offers-extra-session` (S21's own events) were updated to the `.length` form;
+`event-landlord-inspection` and `event-neighbor-borrows-again` were left as before, since
+S21.3 needs only one event per condition and a second relationship-shaped omission is still
+worth keeping visible. The S16.5/S21.5 open item and `stable-life.ts`'s file header are
+updated to a running total of four omitted quantifiers, not five.
+Rejected: Leaving #103's landed reading in place (S21.3 partially met, escalate to the
+engine repository or a `/slices` amendment before it can be fully satisfied) — the more
+conservative reading of CP10, and rejected because a `.length` check is not a workaround
+invented to dodge the rule; it is a real, engine-supported field the same shape as every
+other narrowed condition already accepted in this campaign, so treating it differently here
+would make CP10's own accepted precedent (S16.5) retroactively non-compliant too, for no
+stated reason the corpus or the contract gives. Escalating to the engine repository is still
+the right move for the *fully* correct per-item conditions (a real per-NPC relationship
+gate, a real active-enrollment gate) — that gap remains open under S21.5 for
+`event-landlord-inspection` and `event-neighbor-borrows-again` — but is not a reason to
+leave a weaker, honestly-narrower, already-precedented condition unauthored when one is
+available.
+Reversibility: cheap — two `conditions` fields and their comments, revertible in one commit
+if a future reading of CP10 draws the line differently.
 
 ---
 

@@ -1918,7 +1918,9 @@
           "category": "relationships",
           "weight": 9,
           "conditions": {
-            "all": []
+            "field": "player.relationships.length",
+            "operator": "greater_than",
+            "value": 0
           },
           "choices": [
             {
@@ -2047,7 +2049,9 @@
           "category": "education",
           "weight": 7,
           "conditions": {
-            "all": []
+            "field": "player.education.enrollments.length",
+            "operator": "greater_than",
+            "value": 0
           },
           "automaticOutcome": {
             "effects": [

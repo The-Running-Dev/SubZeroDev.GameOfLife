@@ -78,26 +78,28 @@
  * as an open item rather than worked around — a condition that silently drops a stated
  * requirement would be worse than one that visibly does not carry it.
  *
- * **S21 adds three more of the same kind, for a running total of five across S16 and S21.**
- * `event-landlord-inspection`, `event-friend-needs-a-favor` and
- * `event-neighbor-borrows-again` each want a condition over `player.relationships`;
- * `event-tutor-offers-extra-session` wants one over `player.education.enrollments`. Both
- * are arrays on the actor (`actor.ts`), so *neither* addressing form reaches them: the
- * `exists`/`count` quantifiers throw on `collection`, and §7.1's natural-key path —
- * `player.relationships.<npcId>.affinity` — throws too, because `resolveField`'s generic
- * per-segment walk cannot key an array by an id. Counting by condition rather than by
- * event, that is three omitted quantifiers in S21 (relationship affinity, relationship
- * resentment, enrolment status) on top of S16's two.
+ * **S21 adds two more of the same kind, for a running total of four across S16 and S21.**
+ * `event-landlord-inspection` and `event-neighbor-borrows-again` each want a condition over
+ * `player.relationships` — an array on the actor (`actor.ts`), reached by neither addressing
+ * form: the `exists`/`count` quantifiers throw on `collection`, and §7.1's natural-key path
+ * — `player.relationships.<npcId>.affinity` — throws too, because `resolveField`'s generic
+ * per-segment walk cannot key an array by an id.
  *
- * Two events carry the strongest thing that *is* expressible, and neither is a substitute
- * for what was omitted: `event-landlord-inspection` tests NPC *identity*
- * (`player.housing.landlordNpcId`, a scalar), not a relationship dimension, and
- * `event-credential-recognized` tests a *completed* course
- * (`player.education.completedCourseIds`, a `string[]` that `contains` resolves against),
- * not one in progress. `player.relationships.0.affinity` does resolve — an array indexed by
- * position — and is deliberately not used: §7.1 rejects that form precisely because it
- * targets a different NPC after any reordering, so it is an approximation, which CP10
- * forbids outright.
+ * Three events carry the strongest thing that *is* expressible for what §11.3 asks of them.
+ * `event-landlord-inspection` tests NPC *identity* (`player.housing.landlordNpcId`, a
+ * scalar), not a relationship dimension, and `event-credential-recognized` tests a
+ * *completed* course (`player.education.completedCourseIds`, a `string[]` that `contains`
+ * resolves against), not one in progress — neither is a substitute for what was omitted.
+ * `event-friend-needs-a-favor` and `event-tutor-offers-extra-session`, by contrast, *are*
+ * satisfied: both now condition on their array's own `.length` — "has met at least one NPC,"
+ * "has at least one enrollment record" — a real property that never throws, verified against
+ * the pinned engine directly rather than inferred. `player.relationships.0.affinity` also
+ * resolves and is still never used: §7.1 rejects that form because it names a specific NPC
+ * by position, which silently changes identity on reordering. `.length` names no NPC at all,
+ * so reordering cannot make it wrong — only ever weaker than the corpus's own per-item gate,
+ * the same narrow-and-name pattern S16.5 already established for
+ * `event-job-interview-invitation`. Each site names the narrowing per CP10; `design/90-
+ * decisions.md`'s S21.5 entry carries the running total.
  */
 
 import {
@@ -1987,12 +1989,20 @@ const events: SimulationCampaignSource["events"] = [
       text: "Priya asks for a Saturday. She has never asked for a Saturday before.",
     },
     weight: 9,
-    // S21.5 — §11.3 would gate this on the asking NPC's own affinity toward the player,
-    // which needs either the `player.relationships.<npcId>` natural key (§7.1) or an
-    // `exists` over the collection. Both throw in this pinned engine, so the event carries
-    // no relationship gate at all and fires as ambient background instead. Omitted rather
-    // than approximated, per CP10.
-    conditions: { all: [] },
+    // S21.3/S21.5 — §11.3 would gate this on the asking NPC's own affinity toward the
+    // player, which needs either the `player.relationships.<npcId>` natural key (§7.1) or
+    // an `exists` over the collection; both throw (`resolveField`'s generic per-segment
+    // walk cannot key an array by an id, and `collection` is unimplemented). Narrowed
+    // instead to `player.relationships.length` — "has met at least one NPC" — a real array
+    // property that never throws, verified against the pinned engine directly (not
+    // inferred). This is a different, categorically safer form than the
+    // `player.relationships.0.affinity` index address this file's header rejects: that form
+    // names a specific NPC by position, which silently changes identity on reordering; an
+    // aggregate `.length` names no NPC at all, so reordering cannot make it wrong, only
+    // ever weaker than the corpus's own per-NPC gate. The same narrow-and-name pattern
+    // S16.5 already uses (`event-job-interview-invitation`'s "currently unemployed" for "a
+    // pending application"). Named here per CP10.
+    conditions: { field: "player.relationships.length", operator: "greater_than", value: 0 },
     choices: [
       {
         id: "help-out",
@@ -2091,12 +2101,18 @@ const events: SimulationCampaignSource["events"] = [
       text: "Mr. Alavi has a free hour and a strong opinion about how you should spend it.",
     },
     weight: 7,
-    // S21.5 — §11.3 would gate this on a course currently in progress, which is a `count`
-    // over `player.education.enrollments` filtered on `status: "active"`. `enrollments` is
-    // an array on `EducationState` (`actor.ts`), so neither the quantifier nor the
-    // natural-key walk resolves; the gate is omitted entirely rather than replaced with
-    // "has ever enrolled", which is a different question. Per CP10.
-    conditions: { all: [] },
+    // S21.3/S21.5 — §11.3 would gate this on a course currently in progress, which is a
+    // `count` over `player.education.enrollments` filtered on `status: "active"`.
+    // `enrollments` is an array on `EducationState` (`actor.ts`), so neither the quantifier
+    // nor the natural-key walk resolves. Narrowed instead to
+    // `player.education.enrollments.length` — "has at least one enrollment record" — a real
+    // array property that never throws, verified against the pinned engine directly. This
+    // asks a different question than "currently active" does (a completed or failed
+    // enrollment stays in the array; only `withdraw_course` removes an entry), the same honest gap
+    // between the narrowed gate and the corpus's own intent that S16.5's own precedent
+    // already accepts (`event-job-interview-invitation`'s "currently unemployed" is not "has
+    // a pending application" either). Named here per CP10.
+    conditions: { field: "player.education.enrollments.length", operator: "greater_than", value: 0 },
     automaticOutcome: {
       effects: [
         {
