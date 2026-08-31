@@ -138,7 +138,7 @@ subsets would have passed the one case this machinery exists to catch.
 
 **What that costs, stated rather than left to be discovered: the obligation set is small and does
 not grow on its own.** A site that describes part of a declaration is not a weak obligation, it is
-not an obligation — `03` §12.1 names four of `RelationshipState`'s ten members, and §13.3's
+not an obligation — `03` §12.1 names four of `RelationshipState`'s nine members, and §13.3's
 "Classic Mode / Open Life Mode / Challenge Mode" does not contain `classic`, `open_life` or
 `challenge` as identifiers, so neither can be obligated as written. Such a site is reduced per
 `90-decisions.md` (2026-08-20, reduce the mirrored surface) or left to the full-audit path; making
@@ -996,7 +996,7 @@ corpus's type claims fail a build and leaves its numeric claims exactly where th
 full-audit path.** That is the honest bound on the brief's claim that authoring makes the spec
 set checkable, and it sits beside SS16's bound rather than under it.
 
-**The value of this path as evidence is proportional to the content authored.** Fourteen of the
+**The value of this path as evidence is proportional to the content authored.** Three of the
 seed campaign's seventeen collections are empty, and every empty one is a region of the corpus
 no compiler has yet been asked about. Nothing in this table changes as they fill; what changes
 is how much the table is worth.

@@ -179,8 +179,8 @@ make on its own. See *Open questions* 1.
 
 #### What the seed carries, and what makes it a seed
 
-`src/campaigns/` holds one campaign today and it is deliberately not the game: the map and the
-scenario are authored, and most of its collections are present and empty. Empty rather than absent
+`src/campaigns/` holds one campaign today and it is deliberately not the game: fourteen of its
+seventeen collections are authored and three are present and empty. Empty rather than absent
 is a data-model decision worth keeping — an empty collection is an honest statement that the
 content is unwritten, where an absent one would be indistinguishable from a source that got the
 shape wrong. The catalog card says the same thing to a player, and hides the campaign while it is
@@ -365,9 +365,9 @@ diff being reviewed. Landing them together is what keeps the cause and the effec
 ### 6. Authoring discovers an engine gap — triggered by a spec requirement the surface cannot express
 
 The outer loop for system 2, and the sibling of path 3. Path 3 detects meaning missing from the
-corpus; this detects capability missing from the engine. It has already fired once: a completion
-requirement in `03` §16.3 needs a condition over a collection, and the condition language
-implements only scalar fields.
+corpus; this detects capability missing from the engine. It has fired repeatedly, and the first
+instance is the shape of them all: a completion requirement in `03` §16.3 needs a condition
+over a collection, and the condition language implements only scalar fields.
 
 The response is fixed by the brief's non-goals and is not a judgement call: the gap is raised in
 the engine repository and **never worked around here**. The campaign visibly omits what it cannot
