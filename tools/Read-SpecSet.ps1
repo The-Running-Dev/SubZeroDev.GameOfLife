@@ -165,13 +165,20 @@ function Get-SpecSetLineNumber {
 function Get-DeclaredRegions {
     param([string] $Text, [string] $DocumentPath)
 
-    $pattern = '<!--\s*(?<sid>[A-Za-z][\w.-]*):declared:start\s*-->|<!--\s*(?<eid>[A-Za-z][\w.-]*):declared:end\s*-->'
+    # Both marker forms are matched, though only the declared one may appear here. The corpus
+    # has no projector - every module is read-only (SS1), so nothing can write a rendered
+    # region into it - which makes a projected marker in a corpus document always wrong, and
+    # silently so if it is not looked for: dropping ':declared:' from both markers of a region
+    # retires that obligation without a trace, and the run still reports Valid. The id
+    # character class excludes ':', so the projected alternative cannot match the declared form.
+    $pattern = '<!--\s*(?<sid>[A-Za-z][\w.-]*):declared:start\s*-->|<!--\s*(?<eid>[A-Za-z][\w.-]*):declared:end\s*-->|<!--\s*(?<pid>[A-Za-z][\w.-]*):(?:start|end)\s*-->'
     $regions = [System.Collections.Generic.List[object]]::new()
     $seenIds = [System.Collections.Generic.HashSet[string]]::new()
     $openId = $null; $openLine = 0; $openBodyStart = 0
 
     foreach ($m in [regex]::Matches($Text, $pattern)) {
         $line = Get-SpecSetLineNumber -Text $Text -Index $m.Index
+        if ($m.Groups['pid'].Success) { return [pscustomobject]@{ Failure = 'MalformedRegion'; Line = $line } }
         if ($m.Groups['sid'].Success) {
             if ($openId) { return [pscustomobject]@{ Failure = 'MalformedRegion'; Line = $line } }
             $openId = $m.Groups['sid'].Value; $openLine = $line; $openBodyStart = $m.Index + $m.Length

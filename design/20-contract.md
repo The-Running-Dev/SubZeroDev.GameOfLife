@@ -480,8 +480,12 @@ Authors write these; no code declares them, so this is their only home. The four
 *Authored records* above. Binding on the corpus:
 
 - A region's opening and closing markers must match and must not nest.
-- A `(document, id)` pair must be unique, and one id must not appear in both marker forms anywhere
-  in the repository.
+- A `(document, id)` pair must be unique within the corpus.
+- **Every region in the corpus is declared, and a projected marker anywhere in it is a finding.**
+  The corpus has no projector — SS1 makes every module read-only — so a rendered region cannot
+  legitimately appear here, and treating one as merely unrecognised is how an obligation
+  disappears without trace: drop `:declared:` from both of a region's markers and the region
+  ceases to exist, the obligation with it, on a run that still reports `Valid`.
 - A region must have a non-empty body.
 - `provisional-register` occurs exactly once across the whole corpus.
 
@@ -742,9 +746,25 @@ clean. A declaration the index skipped is a declaration no check examined.
 |---|---|---|
 | `UnreadableDocument` | A corpus file cannot be opened or decoded as UTF-8 | Fix the file; check encoding, per `agent.md` on CP1252 imports |
 | `UnknownDeclarationForm` | A fence contains a construct the restricted grammar does not accept | Extend the grammar, or rewrite the declaration into a known form |
-| `MalformedRegion` | A marker is unclosed, mismatched, or nested | Fix the markers |
-| `DuplicateRegionId` | A `(document, id)` repeats, or one id appears in both marker forms anywhere in the repository | Rename one region or make the form consistent |
+| `MalformedRegion` | A marker is unclosed, mismatched, nested, or written in the projected form, which the corpus has no writer for | Fix the markers |
+| `DuplicateRegionId` | A `(document, id)` repeats within the corpus | Rename one region |
 | `CorpusNotFound` | `-CorpusPath` does not resolve to a directory | Fix the invocation |
+
+**`MalformedRegion` covers the projected form as well as the unbalanced ones, and the name
+reading narrower than what it checks is the price** — paid deliberately, for the third time in
+this document, on the reasoning that widened `AnchorMissing` and `EnforcementUnevidenced` rather
+than splitting them: the check, the remedy, and the reason are the same in every case, and a
+second reason would have split one rule across two names for nothing.
+
+**What this does not reach, stated rather than left to be found: an id declared in the corpus and
+projected outside it.** `AGENTS.md` § *Marked regions* makes form consistency repository-wide and
+`90-decisions.md` (2026-08-21, marked-region identity) settled it, but no checker applies it
+across both roots. `IdCollision` enforces it over the design-state document set, which
+§ *Artifacts of a unit kind* never resolves into `docs/docs/games/`; the spec-set checker cannot
+reach the other direction either, because CP9 keeps it to exactly one corpus root and widening
+that is a contract amendment rather than a slice's call. The exposure is small and worth naming:
+the corpus's ids are `mirror-`, `provisional-`, `lifecycle-` prefixed and nothing outside it
+projects under those names. The rule stands; what is checked is each root against itself.
 
 `UnknownDeclarationForm` becoming frequent is the countable condition that reverses
 `90-decisions.md` (2026-08-20, restricted grammar). When status 2 stops meaning "look at this" and

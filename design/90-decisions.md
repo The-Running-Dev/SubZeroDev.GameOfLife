@@ -9,6 +9,40 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-31 — A projected marker in the corpus is a finding; form consistency is checked per root
+Context: `20-contract.md` claimed in two places — § *The marker vocabulary* and the
+`DuplicateRegionId` row — that an id appearing in both marker forms "anywhere in the repository"
+is raised by the spec-set index. Nothing enforced it for the corpus: `Get-DeclaredRegions` matched
+only the declared form, and `IdCollision`, which does enforce the policy, runs over the
+design-state document set that § *Artifacts of a unit kind* never resolves into
+`docs/docs/games/`. The gap was not theoretical. Dropping `:declared:` from both markers of
+`mirror-AttributeState` made the region invisible, took the obligation guarding the `wisdom`
+defect the brief is named for with it, and the run still reported `Valid`, exit 0, with the
+obligation count quietly down from two to one.
+Chosen: A projected-form marker anywhere in the corpus is `MalformedRegion`, not a both-forms
+collision. A both-forms rule would not have caught this at all — the typo drops `:declared:` from
+the start and the end together, so the id never appears in declared form and there is nothing to
+collide with. The corpus has no projector (SS1 makes every module read-only), so a rendered region
+there is always wrong and can be rejected on its own. `MalformedRegion` absorbs it rather than a
+new reason being minted, on the reasoning that widened `AnchorMissing` and `EnforcementUnevidenced`
+rather than splitting them. The two contract sites are narrowed to what is actually checked —
+`(document, id)` uniqueness within the corpus — and the half that stays open is named: an id
+declared in the corpus and projected outside it is checked by neither root, because CP9 keeps the
+spec-set checker to one corpus root. The 2026-08-21 policy is untouched; only who enforces it
+where is now written down truthfully.
+Rejected: Correcting the contract and leaving the index alone — prose only, no code, and rejected
+because it writes the silent retirement of an obligation down as accepted when the fix is one
+alternative in the pattern the file already owns (SS2) plus a test. Also rejected: adding
+`docs/docs/games/*.md` to § *Artifacts of a unit kind*'s document row so `IdCollision` covers the
+corpus, which would make the repository-wide claim literally true — rejected because it raises
+`UnrecordedArtifact` on all eight corpus files at once, and changes the installed design-state
+path's policy for another path's benefit, the shape `90-decisions.md` (2026-08-30, the content
+path is contracted as a third scope) already rejected by name when it declined to make
+`src/campaigns/` a unit kind.
+Reversibility: cheap — one regex alternative, one guard, one test, and three prose edits.
+
+---
+
 ### 2026-08-31 — The `lifecycle-` marker vocabulary is reserved to the derived concept set
 Context: `Test-SpecSet.ps1`'s concept check raises a third finding the contract's § *Checks* table
 does not list — a `lifecycle-` region whose name is outside the derived concept set — and S6.5
