@@ -9,6 +9,33 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-08-31 — The `lifecycle-` marker vocabulary is reserved to the derived concept set
+Context: `Test-SpecSet.ps1`'s concept check raises a third finding the contract's § *Checks* table
+does not list — a `lifecycle-` region whose name is outside the derived concept set — and S6.5
+tests it. § *Authored records* meanwhile says stateless mechanisms "are outside the derived
+concept set and are judged on the full-audit path", which reads as the checker staying out of the
+way for them, while the check next door fails the build on one. Two readings of one rule, with the
+code and the prose each holding a different half.
+Chosen: The contract gains the finding row and the rule behind it — the `lifecycle-` vocabulary
+is reserved to the derived set, a stateless mechanism's lifecycle is documented in ordinary prose
+where the full-audit path reads it, and a region naming anything else is a finding. This is SS15's
+rule one check over ("only a closed declaration may carry a mirror obligation") and is kept for
+the same reason: what the reservation actually buys is the misspelling. `lifecycle-PlayerStat` is
+otherwise an orphaned region every check silently skips, on a document the report then calls
+clean. No new `SS` id is minted for it — an id is assigned once and never renumbered, and the
+finding row plus the sentence already bind.
+Rejected: Deleting the third variant and its S6.5 test, which makes the contract true as written
+and lets an author put a stateless mechanism's lifecycle in a marked region. Rejected because it
+removes tested behaviour to match prose rather than the other way round, and because it buys that
+freedom by making the typo case silent — the mirror check flags "names a declaration that does not
+exist" for exactly this reason, and the two checks would then disagree about the same mistake.
+Also rejected: adding the row and leaving § *Authored records* alone — cheapest, and it leaves the
+sentence still reading as though the checker stays out of the way, which is the two-readings state
+this entry exists to end.
+Reversibility: cheap — one table row and one paragraph, and the deletion stays available.
+
+---
+
 ### 2026-08-31 — CP2 and CP3 are scoped to production sources, and the CP3 check is tightened to match
 Context: `/reconcile` found CP3 ("Nothing in this repository reads a file under `content/`",
 Enforcement `Code`, Evidence `src/published-surface.test.ts`) broken in the tree:

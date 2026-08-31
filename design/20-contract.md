@@ -157,6 +157,14 @@ judged on the full-audit path. This bounds the fourth brief condition to somethi
 the index; the broad reading is not enumerable mechanically at all, and a check that cannot know
 what is missing does not check completeness.
 
+**The `lifecycle-` vocabulary is reserved to the derived set, and a region naming anything else
+is a finding** — SS15's rule one check over, and for the same reason. A stateless mechanism's
+lifecycle is documented in ordinary prose, which is where the full-audit path reads it; a marked
+region is how a *checked* obligation is declared, and one naming a subject no check can enumerate
+declares nothing. What the reservation actually buys is the misspelling: `lifecycle-PlayerStat`
+is otherwise an orphaned region that every check silently skips, on a document the report then
+calls clean.
+
 ### Content path records
 
 Nine record classes, five authored and four derived, and the authored/derived split answers the
@@ -754,6 +762,7 @@ A check produces findings, not errors. Findings yield `State = 'Invalid'`, exit 
 | `provisional` | A provisional site has no register row, or a register row has no site |
 | `concept` | A state-bearing concept has no `lifecycle-` region |
 | `concept` | A lifecycle region states creation but not retirement, or retirement but not creation |
+| `concept` | A `lifecycle-` region names something outside the derived concept set |
 | `reference` | A section or document reference resolves to nothing |
 | `reference` | A cross-repository reference carries no pinned sha |
 
