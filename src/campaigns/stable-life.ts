@@ -71,12 +71,33 @@
  * yet" rather than "never". The goal below carries the five requirements that are scalar
  * comparisons and omits that one. §11.3 names the same quantifiers for events —
  * "owns any item tagged formal_clothing", "any NPC with resentment above 50" — and two of
- * the 15 events below would have used one (S16.5): `event-job-interview-invitation` would
- * gate on a `count` over `player.career.pendingApplications`, and `event-car-breakdown`
- * would gate on an `exists` over `player.inventory` for an owned vehicle. Both omit that
- * condition and name the omission at the site, per CP10. Recorded as an open item rather
- * than worked around — a condition that silently drops a stated requirement would be worse
- * than one that visibly does not carry it.
+ * the first 15 events below would have used one (S16.5): `event-job-interview-invitation`
+ * would gate on a `count` over `player.career.pendingApplications`, and
+ * `event-car-breakdown` would gate on an `exists` over `player.inventory` for an owned
+ * vehicle. Both omit that condition and name the omission at the site, per CP10. Recorded
+ * as an open item rather than worked around — a condition that silently drops a stated
+ * requirement would be worse than one that visibly does not carry it.
+ *
+ * **S21 adds three more of the same kind, for a running total of five across S16 and S21.**
+ * `event-landlord-inspection`, `event-friend-needs-a-favor` and
+ * `event-neighbor-borrows-again` each want a condition over `player.relationships`;
+ * `event-tutor-offers-extra-session` wants one over `player.education.enrollments`. Both
+ * are arrays on the actor (`actor.ts`), so *neither* addressing form reaches them: the
+ * `exists`/`count` quantifiers throw on `collection`, and §7.1's natural-key path —
+ * `player.relationships.<npcId>.affinity` — throws too, because `resolveField`'s generic
+ * per-segment walk cannot key an array by an id. Counting by condition rather than by
+ * event, that is three omitted quantifiers in S21 (relationship affinity, relationship
+ * resentment, enrolment status) on top of S16's two.
+ *
+ * Two events carry the strongest thing that *is* expressible, and neither is a substitute
+ * for what was omitted: `event-landlord-inspection` tests NPC *identity*
+ * (`player.housing.landlordNpcId`, a scalar), not a relationship dimension, and
+ * `event-credential-recognized` tests a *completed* course
+ * (`player.education.completedCourseIds`, a `string[]` that `contains` resolves against),
+ * not one in progress. `player.relationships.0.affinity` does resolve — an array indexed by
+ * position — and is deliberately not used: §7.1 rejects that form precisely because it
+ * targets a different NPC after any reordering, so it is an approximation, which CP10
+ * forbids outright.
  */
 
 import {
@@ -1310,9 +1331,11 @@ const npcs: SimulationCampaignSource["npcs"] = [
 ];
 
 /**
- * §16.1's random events — 15 of the 30 targeted (the other 15 are S21), drawn only from the
- * seven `03` §11.1 categories S16 scopes: employment, economy, purchases, crime,
- * bureaucracy, transportation, business. Every category appears at least once (S16.1).
+ * §16.1's random events — all 30 targeted. The first 15 (S16) are drawn from seven of
+ * `03` §11.1's fourteen categories: employment, economy, purchases, crime, bureaucracy,
+ * transportation, business. The 15 after them (S21) are drawn from the remaining seven:
+ * housing, health, relationships, education, weather, opportunity, pure absurdity. Every
+ * one of the fourteen appears at least once (S16.1, S21.1, S21.2).
  *
  * §11.2 names ten event *types*, but `EventDefinition` (`content.ts`) has no dedicated type
  * field — the closest fit already in the schema is `tags`, the same mechanism S15 used to
@@ -1784,6 +1807,540 @@ const events: SimulationCampaignSource["events"] = [
       rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(100) }],
       messages: [
         { key: "stable-life.event.employee-of-the-month.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    tags: ["unique"],
+  },
+
+  // ===================================================================================
+  // S21 — the remaining seven `03` §11.1 categories. Same rules as the fifteen above:
+  // one §11.2 type tag each, cash as a `Reward` rather than a `Modifier`.
+  // ===================================================================================
+
+  // --- Housing -----------------------------------------------------------------------
+  {
+    id: "event-boiler-gives-up",
+    category: "housing",
+    title: { key: "stable-life.event.boiler-gives-up.title", text: "The Boiler Gives Up" },
+    description: {
+      key: "stable-life.event.boiler-gives-up.description",
+      text: "It had been making the noise for weeks. The noise has stopped, which is worse.",
+    },
+    weight: 8,
+    // S21.3 — the housing-condition event. `player.housing.damage` is §9.1's accumulated
+    // disrepair, `0–100`, a stored scalar on `HousingState` (`actor.ts`), so this is a
+    // plain field comparison with no collection anywhere in it.
+    conditions: { field: "player.housing.damage", operator: "greater_than", value: 30 },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 8, sourceId: "event-boiler-gives-up" },
+        { target: "player.needs.health", operation: "subtract", value: 4, sourceId: "event-boiler-gives-up" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(120) }],
+      messages: [{ key: "stable-life.event.boiler-gives-up.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-landlord-inspection",
+    category: "housing",
+    title: { key: "stable-life.event.landlord-inspection.title", text: "Routine Inspection" },
+    description: {
+      key: "stable-life.event.landlord-inspection.description",
+      text: "Two days' notice, delivered one day ago. Everything you own is now visible.",
+    },
+    weight: 7,
+    cooldownWeeks: 6,
+    // S21.5 — `03` §11.3's own worked example is "any NPC with resentment above 50", which
+    // needs an `exists` over `player.relationships`; that throws in this pinned engine
+    // (`conditions.ts`'s `unresolvableCollection`), and the natural-key form §7.1 documents
+    // — `player.relationships.<npcId>.affinity` — throws too, because `relationships` is an
+    // array and the generic per-segment walk cannot key into it. The condition narrows to
+    // NPC *identity*: does this player's landlord happen to be this NPC. That is strictly
+    // weaker than the corpus intends and is not a relationship condition. Named here rather
+    // than approximated with `player.relationships.0.affinity`, which resolves but addresses
+    // by index — the exact form §7.1 rejects, since it targets a different NPC after any
+    // reordering. Per CP10.
+    conditions: {
+      field: "player.housing.landlordNpcId",
+      operator: "equals",
+      value: "npc-landlord-rented-room",
+    },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 5, sourceId: "event-landlord-inspection" },
+      ],
+      rewards: [{ type: "relationship", target: "npc-landlord-rented-room", value: 2 }],
+      messages: [
+        { key: "stable-life.event.landlord-inspection.outcome.message", visible: true, tone: "neutral" },
+      ],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-storm-repair-bill",
+    category: "housing",
+    title: { key: "stable-life.event.storm-repair-bill.title", text: "The Repair Bill" },
+    description: {
+      key: "stable-life.event.storm-repair-bill.description",
+      text: "The roof is fixed. The invoice explains, at length, why it took three weeks.",
+    },
+    weight: 5,
+    conditions: { all: [] },
+    chainId: "storm-damage-chain",
+    chainStep: 2,
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 4, sourceId: "event-storm-repair-bill" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(180) }],
+      messages: [
+        { key: "stable-life.event.storm-repair-bill.outcome.message", visible: true, tone: "negative" },
+      ],
+      endsChain: true,
+    },
+    tags: ["chained"],
+  },
+
+  // --- Health ------------------------------------------------------------------------
+  {
+    id: "event-winter-flu",
+    category: "health",
+    title: { key: "stable-life.event.winter-flu.title", text: "Winter Flu" },
+    description: {
+      key: "stable-life.event.winter-flu.description",
+      text: "Everyone at work had it. Now it is your turn, and the week has other plans.",
+    },
+    weight: 11,
+    // §11.3 — a plain scalar comparison on a derived need. `player.needs.health` resolves
+    // through `resolveEffectiveField`, so this reads the same value the player is shown.
+    conditions: { field: "player.needs.health", operator: "less_than", value: 70 },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.health", operation: "subtract", value: 10, sourceId: "event-winter-flu" },
+        { target: "player.needs.energy", operation: "subtract", value: 12, sourceId: "event-winter-flu" },
+      ],
+      rewards: [{ type: "item", target: "item-otc-medicine", value: 1 }],
+      messages: [{ key: "stable-life.event.winter-flu.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-dental-emergency",
+    category: "health",
+    title: { key: "stable-life.event.dental-emergency.title", text: "Dental Emergency" },
+    description: {
+      key: "stable-life.event.dental-emergency.description",
+      text: "A tooth that had been managing quietly for years decides to stop managing.",
+    },
+    weight: 4,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "pay-for-treatment",
+        labelKey: "stable-life.event.dental-emergency.choice.pay-for-treatment",
+        timeCost: 2,
+        moneyCostCents: DOLLARS(150),
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                { target: "player.needs.health", operation: "add", value: 8, sourceId: "event-dental-emergency" },
+              ],
+              rewards: [],
+              messages: [
+                { key: "stable-life.event.dental-emergency.outcome.treated", visible: true, tone: "positive" },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "endure-it",
+        labelKey: "stable-life.event.dental-emergency.choice.endure-it",
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                { target: "player.needs.health", operation: "subtract", value: 6, sourceId: "event-dental-emergency" },
+                { target: "player.needs.stress", operation: "add", value: 9, sourceId: "event-dental-emergency" },
+              ],
+              rewards: [],
+              messages: [
+                { key: "stable-life.event.dental-emergency.outcome.endured", visible: true, tone: "negative" },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["player-triggered"],
+  },
+
+  // --- Relationships -----------------------------------------------------------------
+  {
+    id: "event-friend-needs-a-favor",
+    category: "relationships",
+    title: { key: "stable-life.event.friend-needs-a-favor.title", text: "A Friend Needs a Favor" },
+    description: {
+      key: "stable-life.event.friend-needs-a-favor.description",
+      text: "Priya asks for a Saturday. She has never asked for a Saturday before.",
+    },
+    weight: 9,
+    // S21.5 — §11.3 would gate this on the asking NPC's own affinity toward the player,
+    // which needs either the `player.relationships.<npcId>` natural key (§7.1) or an
+    // `exists` over the collection. Both throw in this pinned engine, so the event carries
+    // no relationship gate at all and fires as ambient background instead. Omitted rather
+    // than approximated, per CP10.
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "help-out",
+        labelKey: "stable-life.event.friend-needs-a-favor.choice.help-out",
+        timeCost: 4,
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.happiness",
+                  operation: "add",
+                  value: 7,
+                  sourceId: "event-friend-needs-a-favor",
+                },
+                {
+                  target: "player.needs.energy",
+                  operation: "subtract",
+                  value: 8,
+                  sourceId: "event-friend-needs-a-favor",
+                },
+              ],
+              rewards: [{ type: "relationship", target: "npc-old-friend", value: 6 }],
+              messages: [
+                { key: "stable-life.event.friend-needs-a-favor.outcome.helped", visible: true, tone: "positive" },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "beg-off",
+        labelKey: "stable-life.event.friend-needs-a-favor.choice.beg-off",
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.happiness",
+                  operation: "subtract",
+                  value: 4,
+                  sourceId: "event-friend-needs-a-favor",
+                },
+              ],
+              rewards: [{ type: "relationship", target: "npc-old-friend", value: -4 }],
+              messages: [
+                { key: "stable-life.event.friend-needs-a-favor.outcome.declined", visible: true, tone: "negative" },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["npc-triggered"],
+  },
+  {
+    id: "event-neighbor-borrows-again",
+    category: "relationships",
+    title: { key: "stable-life.event.neighbor-borrows-again.title", text: "Borrowed, Again" },
+    description: {
+      key: "stable-life.event.neighbor-borrows-again.description",
+      text: "Tomasz needs the toolkit. Tomasz has needed the toolkit since March.",
+    },
+    weight: 8,
+    cooldownWeeks: 4,
+    // S21.5 — the same omission as `event-friend-needs-a-favor`: §11.3's literal example
+    // ("any NPC with resentment above 50") is unauthorable here.
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "subtract",
+          value: 3,
+          sourceId: "event-neighbor-borrows-again",
+        },
+      ],
+      rewards: [
+        { type: "relationship", target: "npc-next-door-neighbor", value: 3 },
+        { type: "item", target: "item-basic-toolkit", value: -1 },
+      ],
+      messages: [
+        { key: "stable-life.event.neighbor-borrows-again.outcome.message", visible: true, tone: "neutral" },
+      ],
+    },
+    tags: ["repeatable"],
+  },
+
+  // --- Education ---------------------------------------------------------------------
+  {
+    id: "event-tutor-offers-extra-session",
+    category: "education",
+    title: { key: "stable-life.event.tutor-offers-extra-session.title", text: "An Extra Session" },
+    description: {
+      key: "stable-life.event.tutor-offers-extra-session.description",
+      text: "Mr. Alavi has a free hour and a strong opinion about how you should spend it.",
+    },
+    weight: 7,
+    // S21.5 — §11.3 would gate this on a course currently in progress, which is a `count`
+    // over `player.education.enrollments` filtered on `status: "active"`. `enrollments` is
+    // an array on `EducationState` (`actor.ts`), so neither the quantifier nor the
+    // natural-key walk resolves; the gate is omitted entirely rather than replaced with
+    // "has ever enrolled", which is a different question. Per CP10.
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.energy",
+          operation: "subtract",
+          value: 5,
+          sourceId: "event-tutor-offers-extra-session",
+        },
+      ],
+      rewards: [{ type: "relationship", target: "npc-community-college-teacher", value: 4 }],
+      messages: [
+        { key: "stable-life.event.tutor-offers-extra-session.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    tags: ["npc-triggered"],
+  },
+  {
+    id: "event-credential-recognized",
+    category: "education",
+    title: { key: "stable-life.event.credential-recognized.title", text: "Someone Noticed" },
+    description: {
+      key: "stable-life.event.credential-recognized.description",
+      text: "The equivalency certificate comes up in conversation and, for once, lands well.",
+    },
+    weight: 6,
+    unique: true,
+    // `player.education.completedCourseIds` is a `string[]` on `EducationState`, so
+    // `contains` resolves against it directly — no collection quantifier needed. This is a
+    // *completed*-course condition, which is a different question from the in-progress one
+    // `event-tutor-offers-extra-session` had to omit; it is not a substitute for it.
+    conditions: {
+      field: "player.education.completedCourseIds",
+      operator: "contains",
+      value: "course-high-school-equivalency",
+    },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 9,
+          sourceId: "event-credential-recognized",
+        },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.credential-recognized.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    tags: ["unique"],
+  },
+
+  // --- Weather -----------------------------------------------------------------------
+  {
+    id: "event-heatwave",
+    category: "weather",
+    title: { key: "stable-life.event.heatwave.title", text: "Heatwave" },
+    description: {
+      key: "stable-life.event.heatwave.description",
+      text: "The city holds the heat overnight and gives it back at eight in the morning.",
+    },
+    weight: 10,
+    cooldownWeeks: 10,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.energy", operation: "subtract", value: 7, sourceId: "event-heatwave" },
+        { target: "player.needs.stress", operation: "add", value: 3, sourceId: "event-heatwave" },
+      ],
+      rewards: [],
+      messages: [{ key: "stable-life.event.heatwave.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["recurring"],
+  },
+  {
+    id: "event-storm-damages-roof",
+    category: "weather",
+    title: { key: "stable-life.event.storm-damages-roof.title", text: "The Storm Finds the Roof" },
+    description: {
+      key: "stable-life.event.storm-damages-roof.description",
+      text: "Wind overnight, and a stain on the ceiling by morning that was not there before.",
+    },
+    weight: 5,
+    conditions: { all: [] },
+    chainId: "storm-damage-chain",
+    chainStep: 1,
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 6, sourceId: "event-storm-damages-roof" },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.storm-damages-roof.outcome.message", visible: true, tone: "negative" },
+      ],
+      // S21.4 — the id below must name a real event in this same collection.
+      scheduledEvents: [{ eventId: "event-storm-repair-bill", inWeeks: 3 }],
+      advancesChain: true,
+    },
+    tags: ["chained"],
+  },
+
+  // --- Opportunity -------------------------------------------------------------------
+  {
+    id: "event-overtime-offered",
+    category: "opportunity",
+    title: { key: "stable-life.event.overtime-offered.title", text: "Overtime Offered" },
+    description: {
+      key: "stable-life.event.overtime-offered.description",
+      text: "Someone called in sick. The hours are yours if you want them, and they are not good hours.",
+    },
+    weight: 12,
+    // The same job-held scalar comparison S16 established — `currentEmployment` compared
+    // whole against `undefined`, never walked into, so an unemployed player does not throw.
+    conditions: { field: "player.career.currentEmployment", operator: "not_equals", value: undefined },
+    choices: [
+      {
+        id: "take-the-shift",
+        labelKey: "stable-life.event.overtime-offered.choice.take-the-shift",
+        timeCost: 6,
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                { target: "player.needs.energy", operation: "subtract", value: 10, sourceId: "event-overtime-offered" },
+                { target: "player.needs.stress", operation: "add", value: 6, sourceId: "event-overtime-offered" },
+              ],
+              rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(85) }],
+              messages: [
+                { key: "stable-life.event.overtime-offered.outcome.took-it", visible: true, tone: "neutral" },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "decline-the-shift",
+        labelKey: "stable-life.event.overtime-offered.choice.decline-the-shift",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                { key: "stable-life.event.overtime-offered.outcome.declined", visible: true, tone: "neutral" },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["player-triggered"],
+  },
+  {
+    id: "event-apartment-viewing-offered",
+    category: "opportunity",
+    title: { key: "stable-life.event.apartment-viewing-offered.title", text: "A Studio Comes Free" },
+    description: {
+      key: "stable-life.event.apartment-viewing-offered.description",
+      text: "A studio on the next street is between tenants. It will not be for long.",
+    },
+    weight: 6,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 3,
+          sourceId: "event-apartment-viewing-offered",
+        },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.apartment-viewing-offered.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    // The housing tier this opportunity concerns, carried as a tag: `EventDefinition` has no
+    // field for the content a §11.1 "Opportunity" event points at, the same schema gap S20's
+    // landlord met when naming its housing tier. The §11.2 type tag is the first entry.
+    tags: ["world-triggered", "housing-cheap-studio"],
+  },
+
+  // --- Pure absurdity ----------------------------------------------------------------
+  {
+    id: "event-pigeon-territorial-dispute",
+    category: "pure-absurdity",
+    title: { key: "stable-life.event.pigeon-territorial-dispute.title", text: "Territorial Dispute" },
+    description: {
+      key: "stable-life.event.pigeon-territorial-dispute.description",
+      text: "A pigeon has decided the bicycle is its bicycle. It has brought documentation.",
+    },
+    weight: 3,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 4,
+          sourceId: "event-pigeon-territorial-dispute",
+        },
+        {
+          target: "player.needs.stress",
+          operation: "add",
+          value: 2,
+          sourceId: "event-pigeon-territorial-dispute",
+        },
+      ],
+      rewards: [{ type: "item", target: "item-used-bicycle", value: 0 }],
+      messages: [
+        { key: "stable-life.event.pigeon-territorial-dispute.outcome.message", visible: true, tone: "absurd" },
+      ],
+    },
+    tags: ["repeatable"],
+  },
+  {
+    id: "event-neon-sign-misunderstanding",
+    category: "pure-absurdity",
+    title: { key: "stable-life.event.neon-sign-misunderstanding.title", text: "A Municipal Misunderstanding" },
+    description: {
+      key: "stable-life.event.neon-sign-misunderstanding.description",
+      text: "The neon sign in the window has been mistaken for a business. A form has been sent.",
+    },
+    weight: 2,
+    unique: true,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.stress",
+          operation: "add",
+          value: 4,
+          sourceId: "event-neon-sign-misunderstanding",
+        },
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 6,
+          sourceId: "event-neon-sign-misunderstanding",
+        },
+      ],
+      rewards: [{ type: "item", target: "item-novelty-neon-sign", value: 0 }],
+      messages: [
+        { key: "stable-life.event.neon-sign-misunderstanding.outcome.message", visible: true, tone: "absurd" },
       ],
     },
     tags: ["unique"],

@@ -242,19 +242,22 @@ describe("Stable Life — random events (S16)", () => {
     "player-triggered", "npc-triggered", "world-triggered", "unique", "repeatable",
   ]);
 
+  /** The events S16 itself authored. S21 grew `stableLifeSource.events` to 30 across all
+   *  fourteen of §11.1's categories, so the assertions below are scoped to the seven
+   *  categories S16 drew from rather than to the whole collection — which is what they
+   *  always meant. S16.1's count is unchanged: exactly 15 events fall in those seven. */
+  const s16Events = events.filter((e) => (REQUIRED_CATEGORIES as readonly string[]).includes(e.category));
+
   it("has 15 entries, drawn only from the seven scoped categories, each represented at least once (S16.1)", () => {
-    expect(events).toHaveLength(15);
-    const categories = new Set(events.map((e) => e.category));
-    for (const event of events) {
-      expect(REQUIRED_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
-    }
+    expect(s16Events).toHaveLength(15);
+    const categories = new Set(s16Events.map((e) => e.category));
     for (const category of REQUIRED_CATEGORIES) {
       expect(categories.has(category), `no event names category "${category}"`).toBe(true);
     }
   });
 
   it("names its category and its type, both drawn from the corpus's closed lists (S16.2)", () => {
-    for (const event of events) {
+    for (const event of s16Events) {
       expect(REQUIRED_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
       const typeTags = event.tags.filter((t) => VALID_TYPES.has(t));
       expect(typeTags, `${event.id} should carry exactly one §11.2 type tag`).toHaveLength(1);
@@ -720,6 +723,184 @@ describe("Stable Life — backgrounds and traits (S22)", () => {
   });
 
   it("builds and validates with backgrounds and traits wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — the rest of the week's events (S21)", () => {
+  const events = stableLifeSource.events;
+
+  /** `03` §11.1's fourteen event categories, kebab-cased. S16 authored the first seven;
+   *  S21 adds the remaining seven, so this list is the whole of §11.1 for the first time. */
+  const CORPUS_CATEGORIES = [
+    "employment", "housing", "health", "relationships", "economy", "education", "purchases",
+    "crime", "weather", "opportunity", "bureaucracy", "transportation", "business",
+    "pure-absurdity",
+  ] as const;
+
+  /** The seven S21 itself draws from — §11.1 minus the seven S16 scoped. */
+  const S21_CATEGORIES = [
+    "housing", "health", "relationships", "education", "weather", "opportunity", "pure-absurdity",
+  ] as const;
+
+  const VALID_TYPES = new Set([
+    "immediate", "delayed", "recurring", "conditional", "chained",
+    "player-triggered", "npc-triggered", "world-triggered", "unique", "repeatable",
+  ]);
+
+  it("reaches 30 entries, the 15 added drawn from S21's seven categories, each represented (S21.1)", () => {
+    expect(events).toHaveLength(30);
+
+    const added = events.filter((e) => (S21_CATEGORIES as readonly string[]).includes(e.category));
+    expect(added).toHaveLength(15);
+
+    const addedCategories = new Set(added.map((e) => e.category));
+    for (const category of S21_CATEGORIES) {
+      expect(addedCategories.has(category), `no S21 event names category "${category}"`).toBe(true);
+    }
+  });
+
+  it("represents every one of §11.1's fourteen categories at least once across all 30 (S21.2)", () => {
+    const categories = new Set(events.map((e) => e.category));
+    for (const category of CORPUS_CATEGORIES) {
+      expect(categories.has(category), `no event names §11.1 category "${category}"`).toBe(true);
+    }
+    // And nothing outside §11.1's closed list has crept in.
+    for (const event of events) {
+      expect(CORPUS_CATEGORIES as readonly string[], `${event.id}'s category`).toContain(event.category);
+    }
+    // Every event still carries exactly one §11.2 type tag, the rule S16.2 set.
+    for (const event of events) {
+      expect(event.tags.filter((t) => VALID_TYPES.has(t)), `${event.id}'s §11.2 type tag`).toHaveLength(1);
+    }
+  });
+
+  /** The same minimal mirror of the engine's `evaluateCondition`/`compare` the S16 block
+   *  uses, extended with the two operators S21's own conditions reach for. Reimplemented
+   *  rather than imported, because CP1 forbids reaching past the published surface even
+   *  from a test. */
+  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
+    if ("exists" in condition || "count" in condition) {
+      throw new Error("this campaign's conditions never use a collection quantifier (S21.5)");
+    }
+    const actual = resolveField(condition.field);
+    switch (condition.operator) {
+      case "equals": return actual === condition.value;
+      case "not_equals": return actual !== condition.value;
+      case "less_than": return (actual as number) < (condition.value as number);
+      case "greater_than": return (actual as number) > (condition.value as number);
+      case "contains": return Array.isArray(actual) && actual.includes(condition.value);
+      default:
+        throw new Error(`test evaluator: extend for operator "${condition.operator}"`);
+    }
+  }
+
+  function fieldOf(state: Record<string, unknown>, path: string): unknown {
+    return path.split(".").reduce<unknown>((current, segment) => {
+      if (current === null || typeof current !== "object") return undefined;
+      return (current as Record<string, unknown>)[segment];
+    }, state);
+  }
+
+  /**
+   * A housing/education state fixture, seeded from the campaign's own authored ids rather
+   * than invented ones — the scenario's real starting housing tier, and a real course id.
+   * `damage` and `completedCourseIds` are the two fields `HousingState`/`EducationState`
+   * expose as directly addressable (`actor.ts`); every collection-shaped sibling is the
+   * S21.5 omission named in the source's file header.
+   */
+  function fixtureState(overrides: {
+    damage?: number;
+    landlordNpcId?: string;
+    completedCourseIds?: string[];
+  }): Record<string, unknown> {
+    const room = stableLifeSource.housing.find((h) => h.id === "housing-rented-room")!;
+    return {
+      player: {
+        housing: {
+          definitionId: room.id,
+          damage: overrides.damage ?? 0,
+          landlordNpcId: overrides.landlordNpcId,
+        },
+        education: {
+          completedCourseIds: overrides.completedCourseIds ?? [],
+        },
+      },
+    };
+  }
+
+  it("evaluates a housing-condition event against a built campaign's real state (S21.3)", () => {
+    // `player.housing.damage` is `03` §9.1's accumulated disrepair, `0–100`. A tier the
+    // player has just moved into carries no damage, so the boiler event is false at the
+    // real starting state and true once disrepair passes its threshold.
+    const boiler = events.find((e) => e.id === "event-boiler-gives-up")!;
+    expect(evaluateTestCondition(boiler.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(evaluateTestCondition(boiler.conditions, (p) => fieldOf(fixtureState({ damage: 60 }), p))).toBe(true);
+  });
+
+  it("evaluates the two conditions that stood in for the ones §11.3 wanted (S21.3, S21.5)", () => {
+    // Neither of these is the condition S21.3 asks for — see the source's file header. The
+    // landlord event tests an NPC *identity*, not a relationship dimension; the credential
+    // event tests a *completed* course, not one in progress. Both are the strongest form
+    // this pinned engine can express, and both are asserted here so that the day the engine
+    // grows collection support, these are the two sites to revisit.
+    const inspection = events.find((e) => e.id === "event-landlord-inspection")!;
+    expect(evaluateTestCondition(inspection.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(
+      evaluateTestCondition(inspection.conditions, (p) =>
+        fieldOf(fixtureState({ landlordNpcId: "npc-landlord-rented-room" }), p),
+      ),
+    ).toBe(true);
+
+    const credential = events.find((e) => e.id === "event-credential-recognized")!;
+    expect(evaluateTestCondition(credential.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(
+      evaluateTestCondition(credential.conditions, (p) =>
+        fieldOf(fixtureState({ completedCourseIds: ["course-high-school-equivalency"] }), p),
+      ),
+    ).toBe(true);
+  });
+
+  it("names only ids that exist, wherever an event mentions one (S21.4)", () => {
+    // Iterating the serialized event rather than restating its references: every string
+    // anywhere in an event that looks like one of this campaign's ids must resolve. That
+    // catches a reference in a `Reward.target` or a tag as readily as one in
+    // `scheduledEvents`, without this test having to know where authors put them.
+    const collections: Record<string, Set<string>> = {
+      "npc-": new Set(stableLifeSource.npcs.map((n) => n.id)),
+      "housing-": new Set(stableLifeSource.housing.map((h) => h.id)),
+      "item-": new Set(stableLifeSource.items.map((i) => i.id)),
+      "course-": new Set(stableLifeSource.courses.map((c) => c.id)),
+      "event-": new Set(events.map((e) => e.id)),
+    };
+    const idLike = /"((?:npc|housing|item|course|event)-[a-z0-9-]+)"/g;
+    // `npc-triggered` and `world-triggered` are §11.2 *type* tags, not ids, and the first
+    // shares the `npc-` prefix. Excluded by name so the scan stays strict everywhere else.
+    const NOT_AN_ID = VALID_TYPES;
+
+    let checked = 0;
+    for (const event of events) {
+      for (const match of JSON.stringify(event).matchAll(idLike)) {
+        const id = match[1]!;
+        if (NOT_AN_ID.has(id)) continue;
+        const prefix = Object.keys(collections).find((p) => id.startsWith(p))!;
+        expect(collections[prefix]!.has(id), `${event.id} references unknown id "${id}"`).toBe(true);
+        checked += 1;
+      }
+    }
+    // The scan is only evidence if it actually found references to check.
+    expect(checked).toBeGreaterThan(events.length);
+  });
+
+  it("builds and validates with the full 30-event set wired in (S21.6)", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
