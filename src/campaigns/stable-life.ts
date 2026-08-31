@@ -9,12 +9,26 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: courses, items, NPCs, opportunities,
- * achievements, headlines, backgrounds and traits (jobs, employers and skills were added by
- * S15; 15 of §16.1's 30 events were added by S16, the other 15 are S21). Each remaining
- * collection is its own authoring slice against §16.1's content targets. They are present
- * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
- * and an empty one is an honest statement that the content is unwritten.
+ * What it deliberately does not yet carry: courses, NPCs, opportunities, achievements,
+ * headlines, backgrounds and traits (jobs, employers and skills were added by S15; 15 of
+ * §16.1's 30 events were added by S16; 20 purchasable items were added by S19). Each
+ * remaining collection is its own authoring slice against §16.1's content targets. They are
+ * present and empty rather than absent, because `SimulationCampaignSource` requires all
+ * seventeen and an empty one is an honest statement that the content is unwritten.
+ *
+ * **§10.2 names four item effects this pinned engine cannot express, for the same reason as
+ * the goal and event gaps above.** `validateModifiers` (`validate.ts`) restricts every
+ * `Modifier.target` to `player.needs.*`, `player.attributes.*`, `player.skills.*` and
+ * `calendar.committedTimeUnits` — there is no employability, prestige, job-unlock or
+ * travel-time field a `Modifier` can write to. Clothing's "improves employability or
+ * prestige", a computer's "unlocks remote jobs and online education", a vehicle's "reduces
+ * travel time", and tools' "improve maintenance checks" are each omitted rather than
+ * approximated, named at the authoring site per CP10, and reproduced here as a group because
+ * the gap is one cause repeated across `items`, not four different ones. A vehicle's fuel,
+ * insurance and repair expenses are omitted for a related but distinct reason: `ItemDefinition
+ * .weeklyCostCents` exists on the type but only `HousingState.weeklyCostCents` is levied by
+ * `endOfWeek.ts` (found authoring S18) — authoring a nonzero value there would silently charge
+ * nothing, which is the CP10 approximation this omits instead.
  *
  * **Two completion/condition requirements are not expressible today, for the same reason.**
  * §16.3's "Education: certificate or better" needs a condition over
@@ -176,6 +190,365 @@ const housing: SimulationCampaignSource["housing"] = [
     maintenanceRisk: 20,
     requirements: [],
     tags: ["starting", "cheapest"],
+  },
+];
+
+/**
+ * §16.1/§10 — the twenty purchasable items, covering 10 of §10.1's twelve categories. Every
+ * `effects` entry targets `player.needs.*` or `calendar.committedTimeUnits` — the only
+ * writable `Modifier` targets `validate.ts` allows — per §10.2; what §10.2 names that no such
+ * target reaches is omitted per CP10 and recorded in the file header above.
+ *
+ * §16.4's two grocery lines are authored exactly: basic at $45 restoring satiety to full,
+ * poor at $25 restoring satiety to full and costing 3 health. "Restores ... for a week" has
+ * no literal `Modifier` — an item's effects apply every week it stays owned (`endOfWeek.ts`'s
+ * `inventory` sync), not once — so `operation: "set"` is used for the literal number ("full"
+ * = 100) rather than an `add` that would misstate a one-off top-up as a standing boost.
+ */
+const items: SimulationCampaignSource["items"] = [
+  // --- Food (§10.1) ---------------------------------------------------------------------
+  {
+    id: "item-groceries-basic",
+    name: { key: "stable-life.item.groceries-basic.name", text: "Basic Groceries" },
+    description: {
+      key: "stable-life.item.groceries-basic.description",
+      text: "A week's worth of food, bought all at once so it is over with.",
+    },
+    category: "food",
+    purchasePriceCents: DOLLARS(45),
+    baseResaleValueCents: 0,
+    effects: [{ target: "player.needs.satiety", operation: "set", value: 100, sourceId: "item-groceries-basic" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["food", "consumable"],
+  },
+  {
+    id: "item-groceries-poor",
+    name: { key: "stable-life.item.groceries-poor.name", text: "Bargain-Bin Groceries" },
+    description: {
+      key: "stable-life.item.groceries-poor.description",
+      text: "Cheaper, and it shows. Full all the same, eventually regretted.",
+    },
+    category: "food",
+    purchasePriceCents: DOLLARS(25),
+    baseResaleValueCents: 0,
+    effects: [
+      { target: "player.needs.satiety", operation: "set", value: 100, sourceId: "item-groceries-poor" },
+      { target: "player.needs.health", operation: "subtract", value: 3, sourceId: "item-groceries-poor" },
+    ],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["food", "consumable"],
+  },
+
+  // --- Clothing (§10.1) — effects omitted, see file header --------------------------------
+  {
+    id: "item-work-uniform",
+    name: { key: "stable-life.item.work-uniform.name", text: "Work Uniform" },
+    description: {
+      key: "stable-life.item.work-uniform.description",
+      text: "§10.2's employability boost has nothing to write to. It still looks the part.",
+    },
+    category: "clothing",
+    purchasePriceCents: DOLLARS(60),
+    baseResaleValueCents: DOLLARS(10),
+    effects: [],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["clothing"],
+  },
+  {
+    id: "item-secondhand-coat",
+    name: { key: "stable-life.item.secondhand-coat.name", text: "Secondhand Coat" },
+    description: {
+      key: "stable-life.item.secondhand-coat.description",
+      text: "Someone else's winter, worn a second time.",
+    },
+    category: "clothing",
+    purchasePriceCents: DOLLARS(22),
+    baseResaleValueCents: DOLLARS(5),
+    effects: [],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["clothing", "secondhand"],
+  },
+
+  // --- Furniture (§10.1) — §10.2's happiness/energy-recovery effect ------------------------
+  {
+    id: "item-secondhand-mattress",
+    name: { key: "stable-life.item.secondhand-mattress.name", text: "Secondhand Mattress" },
+    description: {
+      key: "stable-life.item.secondhand-mattress.description",
+      text: "An improvement over the floor, which was the previous mattress.",
+    },
+    category: "furniture",
+    purchasePriceCents: DOLLARS(85),
+    baseResaleValueCents: DOLLARS(15),
+    effects: [{ target: "player.needs.energy", operation: "add", value: 4, sourceId: "item-secondhand-mattress" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["furniture"],
+  },
+  {
+    id: "item-folding-desk",
+    name: { key: "stable-life.item.folding-desk.name", text: "Folding Desk" },
+    description: {
+      key: "stable-life.item.folding-desk.description",
+      text: "Somewhere to put things down that is not the floor.",
+    },
+    category: "furniture",
+    purchasePriceCents: DOLLARS(45),
+    baseResaleValueCents: DOLLARS(8),
+    effects: [{ target: "player.needs.happiness", operation: "add", value: 2, sourceId: "item-folding-desk" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["furniture"],
+  },
+  {
+    id: "item-threadbare-sofa",
+    name: { key: "stable-life.item.threadbare-sofa.name", text: "Threadbare Sofa" },
+    description: {
+      key: "stable-life.item.threadbare-sofa.description",
+      text: "Comfortable in the specific way that a chair someone gave up on is comfortable.",
+    },
+    category: "furniture",
+    purchasePriceCents: DOLLARS(130),
+    baseResaleValueCents: DOLLARS(20),
+    effects: [{ target: "player.needs.happiness", operation: "add", value: 4, sourceId: "item-threadbare-sofa" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["furniture"],
+  },
+
+  // --- Appliances (§10.1) — §10.2's recurring-time-cost reduction --------------------------
+  {
+    id: "item-microwave",
+    name: { key: "stable-life.item.microwave.name", text: "Microwave" },
+    description: {
+      key: "stable-life.item.microwave.description",
+      text: "Cooking, in the sense that heating something up is cooking.",
+    },
+    category: "appliances",
+    purchasePriceCents: DOLLARS(55),
+    baseResaleValueCents: DOLLARS(10),
+    effects: [{ target: "calendar.committedTimeUnits", operation: "subtract", value: 1, sourceId: "item-microwave" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["appliance"],
+  },
+  {
+    id: "item-washing-machine",
+    name: { key: "stable-life.item.washing-machine.name", text: "Washing Machine" },
+    description: {
+      key: "stable-life.item.washing-machine.description",
+      text: "The laundromat, but it stays home.",
+    },
+    category: "appliances",
+    purchasePriceCents: DOLLARS(220),
+    baseResaleValueCents: DOLLARS(60),
+    effects: [
+      { target: "calendar.committedTimeUnits", operation: "subtract", value: 1, sourceId: "item-washing-machine" },
+    ],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["appliance"],
+  },
+
+  // --- Electronics (§10.1) -----------------------------------------------------------------
+  {
+    id: "item-basic-computer",
+    name: { key: "stable-life.item.basic-computer.name", text: "Basic Computer" },
+    description: {
+      key: "stable-life.item.basic-computer.description",
+      text: "§10.2's remote-jobs-and-online-education unlock has nothing to write to.",
+    },
+    category: "electronics",
+    purchasePriceCents: DOLLARS(300),
+    baseResaleValueCents: DOLLARS(90),
+    effects: [],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["electronics"],
+  },
+  {
+    id: "item-prepaid-phone",
+    name: { key: "stable-life.item.prepaid-phone.name", text: "Prepaid Phone" },
+    description: {
+      key: "stable-life.item.prepaid-phone.description",
+      text: "Reachable, and one fewer thing to worry about forgetting.",
+    },
+    category: "electronics",
+    purchasePriceCents: DOLLARS(40),
+    baseResaleValueCents: DOLLARS(10),
+    effects: [{ target: "player.needs.stress", operation: "subtract", value: 2, sourceId: "item-prepaid-phone" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["electronics"],
+  },
+
+  // --- Vehicles (§10.1) — durability and §10.3 maintenance (S19.3) -------------------------
+  {
+    id: "item-used-bicycle",
+    name: { key: "stable-life.item.used-bicycle.name", text: "Used Bicycle" },
+    description: {
+      key: "stable-life.item.used-bicycle.description",
+      text: "§10.2's travel-time reduction has nothing to write to. It still needs oiling.",
+    },
+    category: "vehicles",
+    purchasePriceCents: DOLLARS(180),
+    baseResaleValueCents: DOLLARS(60),
+    effects: [],
+    stacking: "refresh",
+    durability: 100,
+    maintenanceRules: [
+      {
+        intervalWeeks: 4,
+        costCents: DOLLARS(15),
+        timeCost: 1,
+        conditionLossIfSkipped: 20,
+        breakageChanceAtZeroCondition: 15,
+      },
+    ],
+    requirements: [],
+    tags: ["vehicle", "maintained"],
+  },
+
+  // --- Tools (§10.1) — §10.2's maintenance-check improvement has nothing to write to --------
+  {
+    id: "item-basic-toolkit",
+    name: { key: "stable-life.item.basic-toolkit.name", text: "Basic Toolkit" },
+    description: {
+      key: "stable-life.item.basic-toolkit.description",
+      text: "A wrench, a screwdriver, and the confidence that comes from owning them.",
+    },
+    category: "tools",
+    purchasePriceCents: DOLLARS(50),
+    baseResaleValueCents: DOLLARS(15),
+    effects: [],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["tools"],
+  },
+  {
+    id: "item-sewing-kit",
+    name: { key: "stable-life.item.sewing-kit.name", text: "Sewing Kit" },
+    description: {
+      key: "stable-life.item.sewing-kit.description",
+      text: "A needle, thread, and one button that never finds its shirt again.",
+    },
+    category: "tools",
+    purchasePriceCents: DOLLARS(15),
+    baseResaleValueCents: DOLLARS(3),
+    effects: [],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["tools"],
+  },
+
+  // --- Medical items (§10.1) ----------------------------------------------------------------
+  {
+    id: "item-first-aid-kit",
+    name: { key: "stable-life.item.first-aid-kit.name", text: "First Aid Kit" },
+    description: {
+      key: "stable-life.item.first-aid-kit.description",
+      text: "Bandages, antiseptic, and the general sense that mistakes are now survivable.",
+    },
+    category: "medical-items",
+    purchasePriceCents: DOLLARS(20),
+    baseResaleValueCents: 0,
+    effects: [{ target: "player.needs.health", operation: "add", value: 3, sourceId: "item-first-aid-kit" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["medical"],
+  },
+  {
+    id: "item-otc-medicine",
+    name: { key: "stable-life.item.otc-medicine.name", text: "Over-the-Counter Medicine" },
+    description: {
+      key: "stable-life.item.otc-medicine.description",
+      text: "Takes the edge off. Reads nothing on the label about the actual cause.",
+    },
+    category: "medical-items",
+    purchasePriceCents: DOLLARS(12),
+    baseResaleValueCents: 0,
+    effects: [{ target: "player.needs.health", operation: "add", value: 2, sourceId: "item-otc-medicine" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["medical"],
+  },
+
+  // --- Entertainment (§10.1) ----------------------------------------------------------------
+  {
+    id: "item-paperback-novel",
+    name: { key: "stable-life.item.paperback-novel.name", text: "Paperback Novel" },
+    description: {
+      key: "stable-life.item.paperback-novel.description",
+      text: "Somebody else's problems, bound and portable.",
+    },
+    category: "entertainment",
+    purchasePriceCents: DOLLARS(8),
+    baseResaleValueCents: DOLLARS(2),
+    effects: [{ target: "player.needs.happiness", operation: "add", value: 2, sourceId: "item-paperback-novel" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["entertainment"],
+  },
+  {
+    id: "item-secondhand-guitar",
+    name: { key: "stable-life.item.secondhand-guitar.name", text: "Secondhand Acoustic Guitar" },
+    description: {
+      key: "stable-life.item.secondhand-guitar.description",
+      text: "Three chords in, the neighbours already have opinions.",
+    },
+    category: "entertainment",
+    purchasePriceCents: DOLLARS(70),
+    baseResaleValueCents: DOLLARS(25),
+    effects: [
+      { target: "player.needs.happiness", operation: "add", value: 5, sourceId: "item-secondhand-guitar" },
+      { target: "player.needs.stress", operation: "subtract", value: 2, sourceId: "item-secondhand-guitar" },
+    ],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["entertainment"],
+  },
+
+  // --- Luxury goods (§10.1) — §10.2's "briefly improve happiness ... expensive clutter" -----
+  {
+    id: "item-impulse-espresso-machine",
+    name: { key: "stable-life.item.impulse-espresso-machine.name", text: "Impulse-Bought Espresso Machine" },
+    description: {
+      key: "stable-life.item.impulse-espresso-machine.description",
+      text: "Used twice. Beautiful. Taking up the whole counter.",
+    },
+    category: "luxury-goods",
+    purchasePriceCents: DOLLARS(150),
+    baseResaleValueCents: DOLLARS(40),
+    effects: [
+      {
+        target: "player.needs.happiness",
+        operation: "add",
+        value: 6,
+        sourceId: "item-impulse-espresso-machine",
+      },
+    ],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["luxury", "clutter"],
+  },
+  {
+    id: "item-novelty-neon-sign",
+    name: { key: "stable-life.item.novelty-neon-sign.name", text: "Novelty Neon Sign" },
+    description: {
+      key: "stable-life.item.novelty-neon-sign.description",
+      text: "Says something in cursive. Hums all night.",
+    },
+    category: "luxury-goods",
+    purchasePriceCents: DOLLARS(45),
+    baseResaleValueCents: DOLLARS(10),
+    effects: [{ target: "player.needs.happiness", operation: "add", value: 3, sourceId: "item-novelty-neon-sign" }],
+    stacking: "refresh",
+    requirements: [],
+    tags: ["luxury", "clutter"],
   },
 ];
 
@@ -1073,7 +1446,7 @@ export const stableLifeSource: SimulationCampaignSource = {
   jobs,
   courses: [],
   housing,
-  items: [],
+  items,
   events,
   npcs: [],
   goals,
@@ -1119,7 +1492,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map, the scenario, the career ladder and 15 of 30 random events are authored; courses and possessions are not yet written.",
+    "Seed content. The map, the scenario, the career ladder, 15 of 30 random events and 20 purchasable items are authored; courses are not yet written.",
   featured: false,
   hidden: true,
 } as const;

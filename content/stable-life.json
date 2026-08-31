@@ -4,7 +4,7 @@
     "title": "Life in the Fast Lane — Stable Life",
     "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "duration": "52 weeks",
-    "contentNotice": "Seed content. The map, the scenario, the career ladder and 15 of 30 random events are authored; courses and possessions are not yet written.",
+    "contentNotice": "Seed content. The map, the scenario, the career ladder, 15 of 30 random events and 20 purchasable items are authored; courses are not yet written.",
     "featured": false,
     "hidden": true
   },
@@ -372,7 +372,414 @@
           "descriptionKey": "stable-life.housing.rented-room.description"
         }
       ],
-      "items": [],
+      "items": [
+        {
+          "id": "item-groceries-basic",
+          "category": "food",
+          "purchasePriceCents": 4500,
+          "baseResaleValueCents": 0,
+          "effects": [
+            {
+              "target": "player.needs.satiety",
+              "operation": "set",
+              "value": 100,
+              "sourceId": "item-groceries-basic"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "food",
+            "consumable"
+          ],
+          "nameKey": "stable-life.item.groceries-basic.name",
+          "descriptionKey": "stable-life.item.groceries-basic.description"
+        },
+        {
+          "id": "item-groceries-poor",
+          "category": "food",
+          "purchasePriceCents": 2500,
+          "baseResaleValueCents": 0,
+          "effects": [
+            {
+              "target": "player.needs.satiety",
+              "operation": "set",
+              "value": 100,
+              "sourceId": "item-groceries-poor"
+            },
+            {
+              "target": "player.needs.health",
+              "operation": "subtract",
+              "value": 3,
+              "sourceId": "item-groceries-poor"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "food",
+            "consumable"
+          ],
+          "nameKey": "stable-life.item.groceries-poor.name",
+          "descriptionKey": "stable-life.item.groceries-poor.description"
+        },
+        {
+          "id": "item-work-uniform",
+          "category": "clothing",
+          "purchasePriceCents": 6000,
+          "baseResaleValueCents": 1000,
+          "effects": [],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "clothing"
+          ],
+          "nameKey": "stable-life.item.work-uniform.name",
+          "descriptionKey": "stable-life.item.work-uniform.description"
+        },
+        {
+          "id": "item-secondhand-coat",
+          "category": "clothing",
+          "purchasePriceCents": 2200,
+          "baseResaleValueCents": 500,
+          "effects": [],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "clothing",
+            "secondhand"
+          ],
+          "nameKey": "stable-life.item.secondhand-coat.name",
+          "descriptionKey": "stable-life.item.secondhand-coat.description"
+        },
+        {
+          "id": "item-secondhand-mattress",
+          "category": "furniture",
+          "purchasePriceCents": 8500,
+          "baseResaleValueCents": 1500,
+          "effects": [
+            {
+              "target": "player.needs.energy",
+              "operation": "add",
+              "value": 4,
+              "sourceId": "item-secondhand-mattress"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "furniture"
+          ],
+          "nameKey": "stable-life.item.secondhand-mattress.name",
+          "descriptionKey": "stable-life.item.secondhand-mattress.description"
+        },
+        {
+          "id": "item-folding-desk",
+          "category": "furniture",
+          "purchasePriceCents": 4500,
+          "baseResaleValueCents": 800,
+          "effects": [
+            {
+              "target": "player.needs.happiness",
+              "operation": "add",
+              "value": 2,
+              "sourceId": "item-folding-desk"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "furniture"
+          ],
+          "nameKey": "stable-life.item.folding-desk.name",
+          "descriptionKey": "stable-life.item.folding-desk.description"
+        },
+        {
+          "id": "item-threadbare-sofa",
+          "category": "furniture",
+          "purchasePriceCents": 13000,
+          "baseResaleValueCents": 2000,
+          "effects": [
+            {
+              "target": "player.needs.happiness",
+              "operation": "add",
+              "value": 4,
+              "sourceId": "item-threadbare-sofa"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "furniture"
+          ],
+          "nameKey": "stable-life.item.threadbare-sofa.name",
+          "descriptionKey": "stable-life.item.threadbare-sofa.description"
+        },
+        {
+          "id": "item-microwave",
+          "category": "appliances",
+          "purchasePriceCents": 5500,
+          "baseResaleValueCents": 1000,
+          "effects": [
+            {
+              "target": "calendar.committedTimeUnits",
+              "operation": "subtract",
+              "value": 1,
+              "sourceId": "item-microwave"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "appliance"
+          ],
+          "nameKey": "stable-life.item.microwave.name",
+          "descriptionKey": "stable-life.item.microwave.description"
+        },
+        {
+          "id": "item-washing-machine",
+          "category": "appliances",
+          "purchasePriceCents": 22000,
+          "baseResaleValueCents": 6000,
+          "effects": [
+            {
+              "target": "calendar.committedTimeUnits",
+              "operation": "subtract",
+              "value": 1,
+              "sourceId": "item-washing-machine"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "appliance"
+          ],
+          "nameKey": "stable-life.item.washing-machine.name",
+          "descriptionKey": "stable-life.item.washing-machine.description"
+        },
+        {
+          "id": "item-basic-computer",
+          "category": "electronics",
+          "purchasePriceCents": 30000,
+          "baseResaleValueCents": 9000,
+          "effects": [],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "electronics"
+          ],
+          "nameKey": "stable-life.item.basic-computer.name",
+          "descriptionKey": "stable-life.item.basic-computer.description"
+        },
+        {
+          "id": "item-prepaid-phone",
+          "category": "electronics",
+          "purchasePriceCents": 4000,
+          "baseResaleValueCents": 1000,
+          "effects": [
+            {
+              "target": "player.needs.stress",
+              "operation": "subtract",
+              "value": 2,
+              "sourceId": "item-prepaid-phone"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "electronics"
+          ],
+          "nameKey": "stable-life.item.prepaid-phone.name",
+          "descriptionKey": "stable-life.item.prepaid-phone.description"
+        },
+        {
+          "id": "item-used-bicycle",
+          "category": "vehicles",
+          "purchasePriceCents": 18000,
+          "baseResaleValueCents": 6000,
+          "effects": [],
+          "stacking": "refresh",
+          "durability": 100,
+          "maintenanceRules": [
+            {
+              "intervalWeeks": 4,
+              "costCents": 1500,
+              "timeCost": 1,
+              "conditionLossIfSkipped": 20,
+              "breakageChanceAtZeroCondition": 15
+            }
+          ],
+          "requirements": [],
+          "tags": [
+            "vehicle",
+            "maintained"
+          ],
+          "nameKey": "stable-life.item.used-bicycle.name",
+          "descriptionKey": "stable-life.item.used-bicycle.description"
+        },
+        {
+          "id": "item-basic-toolkit",
+          "category": "tools",
+          "purchasePriceCents": 5000,
+          "baseResaleValueCents": 1500,
+          "effects": [],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "tools"
+          ],
+          "nameKey": "stable-life.item.basic-toolkit.name",
+          "descriptionKey": "stable-life.item.basic-toolkit.description"
+        },
+        {
+          "id": "item-sewing-kit",
+          "category": "tools",
+          "purchasePriceCents": 1500,
+          "baseResaleValueCents": 300,
+          "effects": [],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "tools"
+          ],
+          "nameKey": "stable-life.item.sewing-kit.name",
+          "descriptionKey": "stable-life.item.sewing-kit.description"
+        },
+        {
+          "id": "item-first-aid-kit",
+          "category": "medical-items",
+          "purchasePriceCents": 2000,
+          "baseResaleValueCents": 0,
+          "effects": [
+            {
+              "target": "player.needs.health",
+              "operation": "add",
+              "value": 3,
+              "sourceId": "item-first-aid-kit"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "medical"
+          ],
+          "nameKey": "stable-life.item.first-aid-kit.name",
+          "descriptionKey": "stable-life.item.first-aid-kit.description"
+        },
+        {
+          "id": "item-otc-medicine",
+          "category": "medical-items",
+          "purchasePriceCents": 1200,
+          "baseResaleValueCents": 0,
+          "effects": [
+            {
+              "target": "player.needs.health",
+              "operation": "add",
+              "value": 2,
+              "sourceId": "item-otc-medicine"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "medical"
+          ],
+          "nameKey": "stable-life.item.otc-medicine.name",
+          "descriptionKey": "stable-life.item.otc-medicine.description"
+        },
+        {
+          "id": "item-paperback-novel",
+          "category": "entertainment",
+          "purchasePriceCents": 800,
+          "baseResaleValueCents": 200,
+          "effects": [
+            {
+              "target": "player.needs.happiness",
+              "operation": "add",
+              "value": 2,
+              "sourceId": "item-paperback-novel"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "entertainment"
+          ],
+          "nameKey": "stable-life.item.paperback-novel.name",
+          "descriptionKey": "stable-life.item.paperback-novel.description"
+        },
+        {
+          "id": "item-secondhand-guitar",
+          "category": "entertainment",
+          "purchasePriceCents": 7000,
+          "baseResaleValueCents": 2500,
+          "effects": [
+            {
+              "target": "player.needs.happiness",
+              "operation": "add",
+              "value": 5,
+              "sourceId": "item-secondhand-guitar"
+            },
+            {
+              "target": "player.needs.stress",
+              "operation": "subtract",
+              "value": 2,
+              "sourceId": "item-secondhand-guitar"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "entertainment"
+          ],
+          "nameKey": "stable-life.item.secondhand-guitar.name",
+          "descriptionKey": "stable-life.item.secondhand-guitar.description"
+        },
+        {
+          "id": "item-impulse-espresso-machine",
+          "category": "luxury-goods",
+          "purchasePriceCents": 15000,
+          "baseResaleValueCents": 4000,
+          "effects": [
+            {
+              "target": "player.needs.happiness",
+              "operation": "add",
+              "value": 6,
+              "sourceId": "item-impulse-espresso-machine"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "luxury",
+            "clutter"
+          ],
+          "nameKey": "stable-life.item.impulse-espresso-machine.name",
+          "descriptionKey": "stable-life.item.impulse-espresso-machine.description"
+        },
+        {
+          "id": "item-novelty-neon-sign",
+          "category": "luxury-goods",
+          "purchasePriceCents": 4500,
+          "baseResaleValueCents": 1000,
+          "effects": [
+            {
+              "target": "player.needs.happiness",
+              "operation": "add",
+              "value": 3,
+              "sourceId": "item-novelty-neon-sign"
+            }
+          ],
+          "stacking": "refresh",
+          "requirements": [],
+          "tags": [
+            "luxury",
+            "clutter"
+          ],
+          "nameKey": "stable-life.item.novelty-neon-sign.name",
+          "descriptionKey": "stable-life.item.novelty-neon-sign.description"
+        }
+      ],
       "events": [
         {
           "id": "event-shift-schedule-cut",
@@ -1348,6 +1755,46 @@
     "stable-life.goal.stable-life.label": "A Stable Life",
     "stable-life.housing.rented-room.description": "The cheapest housing tier. It is a room, and it is rented, and the description has now told you everything it has.",
     "stable-life.housing.rented-room.name": "Rented Room",
+    "stable-life.item.basic-computer.description": "§10.2's remote-jobs-and-online-education unlock has nothing to write to.",
+    "stable-life.item.basic-computer.name": "Basic Computer",
+    "stable-life.item.basic-toolkit.description": "A wrench, a screwdriver, and the confidence that comes from owning them.",
+    "stable-life.item.basic-toolkit.name": "Basic Toolkit",
+    "stable-life.item.first-aid-kit.description": "Bandages, antiseptic, and the general sense that mistakes are now survivable.",
+    "stable-life.item.first-aid-kit.name": "First Aid Kit",
+    "stable-life.item.folding-desk.description": "Somewhere to put things down that is not the floor.",
+    "stable-life.item.folding-desk.name": "Folding Desk",
+    "stable-life.item.groceries-basic.description": "A week's worth of food, bought all at once so it is over with.",
+    "stable-life.item.groceries-basic.name": "Basic Groceries",
+    "stable-life.item.groceries-poor.description": "Cheaper, and it shows. Full all the same, eventually regretted.",
+    "stable-life.item.groceries-poor.name": "Bargain-Bin Groceries",
+    "stable-life.item.impulse-espresso-machine.description": "Used twice. Beautiful. Taking up the whole counter.",
+    "stable-life.item.impulse-espresso-machine.name": "Impulse-Bought Espresso Machine",
+    "stable-life.item.microwave.description": "Cooking, in the sense that heating something up is cooking.",
+    "stable-life.item.microwave.name": "Microwave",
+    "stable-life.item.novelty-neon-sign.description": "Says something in cursive. Hums all night.",
+    "stable-life.item.novelty-neon-sign.name": "Novelty Neon Sign",
+    "stable-life.item.otc-medicine.description": "Takes the edge off. Reads nothing on the label about the actual cause.",
+    "stable-life.item.otc-medicine.name": "Over-the-Counter Medicine",
+    "stable-life.item.paperback-novel.description": "Somebody else's problems, bound and portable.",
+    "stable-life.item.paperback-novel.name": "Paperback Novel",
+    "stable-life.item.prepaid-phone.description": "Reachable, and one fewer thing to worry about forgetting.",
+    "stable-life.item.prepaid-phone.name": "Prepaid Phone",
+    "stable-life.item.secondhand-coat.description": "Someone else's winter, worn a second time.",
+    "stable-life.item.secondhand-coat.name": "Secondhand Coat",
+    "stable-life.item.secondhand-guitar.description": "Three chords in, the neighbours already have opinions.",
+    "stable-life.item.secondhand-guitar.name": "Secondhand Acoustic Guitar",
+    "stable-life.item.secondhand-mattress.description": "An improvement over the floor, which was the previous mattress.",
+    "stable-life.item.secondhand-mattress.name": "Secondhand Mattress",
+    "stable-life.item.sewing-kit.description": "A needle, thread, and one button that never finds its shirt again.",
+    "stable-life.item.sewing-kit.name": "Sewing Kit",
+    "stable-life.item.threadbare-sofa.description": "Comfortable in the specific way that a chair someone gave up on is comfortable.",
+    "stable-life.item.threadbare-sofa.name": "Threadbare Sofa",
+    "stable-life.item.used-bicycle.description": "§10.2's travel-time reduction has nothing to write to. It still needs oiling.",
+    "stable-life.item.used-bicycle.name": "Used Bicycle",
+    "stable-life.item.washing-machine.description": "The laundromat, but it stays home.",
+    "stable-life.item.washing-machine.name": "Washing Machine",
+    "stable-life.item.work-uniform.description": "§10.2's employability boost has nothing to write to. It still looks the part.",
+    "stable-life.item.work-uniform.name": "Work Uniform",
     "stable-life.job.data-entry-clerk.description": "Entry tier. No credential required, per §6.1.",
     "stable-life.job.data-entry-clerk.title": "Data Entry Clerk",
     "stable-life.job.dishwasher.description": "Entry tier. No credential required, per §6.1 — just a sink and a willingness.",
