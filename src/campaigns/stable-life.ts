@@ -165,9 +165,23 @@ const locations: SimulationCampaignSource["locations"] = [
 ];
 
 /**
- * §16.3 — the cheap rented room the player starts in. §16.4 prices it at $95 weekly rent;
- * utilities ($18) and transport ($15) are separate baseline lines that no housing field
- * carries, so they are not folded into `weeklyCostCents` here.
+ * §9.1–§9.2, §16.1, §16.4 — four housing tiers, ascending along §9.2's progression from the
+ * starting rented room through the cheap studio and decent apartment to the house.
+ * `weeklyCostCents` rises strictly tier to tier (§18.2); comfort, safety, prestige and
+ * storage rise with it, and `maintenanceRisk` — the damage-facing field §9.1 ties `damage`
+ * accrual to — falls, on the premise that a better-built property needs less upkeep. None of
+ * the four sets `quality`: §9.1 makes it a derived, read-only combination of comfort/safety
+ * against current damage, and `HousingDefinition` (the engine's `content.ts`) carries no such
+ * field to set.
+ *
+ * §16.4's five recurring weekly costs, by where each lands: **rent** is `weeklyCostCents`
+ * below — the only one of the five `endOfWeek.ts`'s `housing()` step actually levies against
+ * `cashCents`. **Utilities** and **transport** are omitted: no `HousingDefinition` field
+ * carries either, and while `ItemDefinition.weeklyCostCents` exists, nothing in the engine's
+ * end-of-week step reads it, so authoring transport onto an item would not charge anything
+ * either. Named here per CP10 and recorded under `## Open` in `design/90-decisions.md`.
+ * **Groceries** and **poor-quality groceries** are out of this slice's scope — they are
+ * items, and belong to S19.
  */
 const housing: SimulationCampaignSource["housing"] = [
   {
@@ -191,6 +205,72 @@ const housing: SimulationCampaignSource["housing"] = [
     maintenanceRisk: 20,
     requirements: [],
     tags: ["starting", "cheapest"],
+  },
+  {
+    id: "housing-cheap-studio",
+    name: { key: "stable-life.housing.cheap-studio.name", text: "Cheap Studio" },
+    description: {
+      key: "stable-life.housing.cheap-studio.description",
+      text: "One room, but it is the whole apartment, and nobody else's name is on the lease.",
+    },
+    upfrontCostCents: DOLLARS(100),
+    weeklyCostCents: DOLLARS(150),
+    capacity: 1,
+    comfort: 45,
+    safety: 55,
+    prestige: 15,
+    storage: 20,
+    commuteModifier: 0,
+    energyRecoveryModifier: 5,
+    happinessModifier: 5,
+    healthModifier: 0,
+    maintenanceRisk: 15,
+    requirements: [],
+    tags: ["studio"],
+  },
+  {
+    id: "housing-decent-apartment",
+    name: { key: "stable-life.housing.decent-apartment.name", text: "Decent Apartment" },
+    description: {
+      key: "stable-life.housing.decent-apartment.description",
+      text: "Enough rooms that guests no longer have to guess which pile is furniture.",
+    },
+    upfrontCostCents: DOLLARS(400),
+    weeklyCostCents: DOLLARS(260),
+    capacity: 2,
+    comfort: 60,
+    safety: 70,
+    prestige: 30,
+    storage: 35,
+    commuteModifier: 0,
+    energyRecoveryModifier: 10,
+    happinessModifier: 10,
+    healthModifier: 5,
+    maintenanceRisk: 10,
+    requirements: [],
+    tags: ["apartment"],
+  },
+  {
+    id: "housing-house",
+    name: { key: "stable-life.housing.house.name", text: "House" },
+    description: {
+      key: "stable-life.housing.house.description",
+      text: "Four walls, times more than one, and a lawn nobody asked for.",
+    },
+    upfrontCostCents: DOLLARS(800),
+    weeklyCostCents: DOLLARS(420),
+    capacity: 4,
+    comfort: 75,
+    safety: 80,
+    prestige: 50,
+    storage: 55,
+    commuteModifier: 0,
+    energyRecoveryModifier: 15,
+    happinessModifier: 15,
+    healthModifier: 10,
+    maintenanceRisk: 8,
+    requirements: [],
+    tags: ["house"],
   },
 ];
 
