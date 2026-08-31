@@ -95,9 +95,10 @@ describe("Stable Life — the authoring path", () => {
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
     // §16.1's jobs/employers/skills targets are now authored (S15), 15 of 30 events (S16),
-    // and courses (S17); the rest are still an honest statement that the content is unwritten.
+    // courses (S17), and 20 items (S19); the rest are still an honest statement that the
+    // content is unwritten.
     const empty = [
-      "items", "npcs", "opportunities", "achievements",
+      "npcs", "opportunities", "achievements",
       "headlines", "backgrounds", "traits",
     ] as const;
     for (const key of empty) {
@@ -337,6 +338,93 @@ describe("Stable Life — random events (S16)", () => {
   });
 
   it("builds and validates with events wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — purchasable items (S19)", () => {
+  const items = stableLifeSource.items;
+
+  // `03` §10.1's twelve item categories, kebab-cased the same way §11.1's event categories
+  // are; this campaign draws from ten of them (S19.1 requires at least eight).
+  const CORPUS_CATEGORIES = [
+    "food", "clothing", "furniture", "appliances", "electronics", "vehicles", "tools",
+    "medical-items", "entertainment", "education-materials", "business-equipment", "luxury-goods",
+  ] as const;
+
+  // Every `Modifier.target` an item's `effects` may write to — `validate.ts`'s
+  // `WRITABLE_TARGET_PREFIXES` plus its `calendar.committedTimeUnits` special case.
+  const WRITABLE_TARGET_PREFIXES = ["player.needs.", "player.attributes.", "player.skills."];
+  function isWritableTarget(target: string): boolean {
+    return target === "calendar.committedTimeUnits"
+      || WRITABLE_TARGET_PREFIXES.some((prefix) => target.startsWith(prefix));
+  }
+
+  it("has 20 entries, covering at least 8 of §10.1's twelve categories, each category one the corpus lists (S19.1)", () => {
+    expect(items).toHaveLength(20);
+    const categories = new Set(items.map((i) => i.category));
+    for (const item of items) {
+      expect(CORPUS_CATEGORIES as readonly string[], `${item.id}'s category`).toContain(item.category);
+    }
+    expect(categories.size).toBeGreaterThanOrEqual(8);
+  });
+
+  it("carries §16.4's two exact grocery lines (S19.2)", () => {
+    const basic = items.find((i) => i.id === "item-groceries-basic")!;
+    const poor = items.find((i) => i.id === "item-groceries-poor")!;
+    expect(basic.purchasePriceCents).toBe(4_500);
+    expect(poor.purchasePriceCents).toBe(2_500);
+
+    const satietyEffect = (item: typeof basic) =>
+      item.effects.find((e) => e.target === "player.needs.satiety");
+    expect(satietyEffect(basic)?.value).toBe(100);
+    expect(satietyEffect(poor)?.value).toBe(100);
+
+    const healthEffect = poor.effects.find((e) => e.target === "player.needs.health");
+    expect(healthEffect?.operation).toBe("subtract");
+    expect(healthEffect?.value).toBe(3);
+    expect(basic.effects.some((e) => e.target === "player.needs.health")).toBe(false);
+  });
+
+  it("has at least one item with a durability or maintenance rule, its fields within the corpus's 0-100 scale (S19.3)", () => {
+    const withDurability = items.filter((i) => i.durability !== undefined);
+    const withMaintenance = items.filter((i) => (i.maintenanceRules?.length ?? 0) > 0);
+    expect(withDurability.length + withMaintenance.length).toBeGreaterThan(0);
+
+    for (const item of withDurability) {
+      expect(item.durability, `${item.id}'s durability`).toBeGreaterThanOrEqual(0);
+      expect(item.durability, `${item.id}'s durability`).toBeLessThanOrEqual(100);
+    }
+    for (const item of withMaintenance) {
+      for (const rule of item.maintenanceRules!) {
+        expect(rule.intervalWeeks, `${item.id}'s intervalWeeks`).toBeGreaterThan(0);
+        expect(rule.costCents, `${item.id}'s costCents`).toBeGreaterThanOrEqual(0);
+        expect(rule.timeCost, `${item.id}'s timeCost`).toBeGreaterThanOrEqual(0);
+        expect(rule.conditionLossIfSkipped, `${item.id}'s conditionLossIfSkipped`).toBeGreaterThanOrEqual(0);
+        expect(rule.conditionLossIfSkipped, `${item.id}'s conditionLossIfSkipped`).toBeLessThanOrEqual(100);
+        expect(rule.breakageChanceAtZeroCondition, `${item.id}'s breakageChanceAtZeroCondition`).toBeGreaterThanOrEqual(0);
+        expect(rule.breakageChanceAtZeroCondition, `${item.id}'s breakageChanceAtZeroCondition`).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("targets only a writable Modifier field in every item's effects", () => {
+    // Not itself a numbered criterion, but every other item test assumes the engine accepts
+    // these targets — this is what actually proves it, by iterating the collection rather
+    // than trusting the two items checked by id above.
+    for (const item of items) {
+      for (const effect of item.effects) {
+        expect(isWritableTarget(effect.target), `${item.id}'s effect targets ${effect.target}`).toBe(true);
+      }
+    }
+  });
+
+  it("builds and validates with items wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
