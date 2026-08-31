@@ -9,13 +9,13 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: opportunities, achievements, headlines,
- * backgrounds and traits (jobs, employers and skills were added by S15; 15 of §16.1's 30
- * events were added by S16, the other 15 are S21; courses were added by S17; 20 purchasable
- * items were added by S19; 8 NPCs were added by S20). Each remaining collection is its own
- * authoring slice against §16.1's content targets. They are present and empty rather than
- * absent, because `SimulationCampaignSource` requires all seventeen and an empty one is an
- * honest statement that the content is unwritten.
+ * What it deliberately does not yet carry: opportunities, achievements and headlines
+ * (jobs, employers and skills were added by S15; 15 of §16.1's 30 events were added by S16,
+ * the other 15 are S21; courses were added by S17; 20 purchasable items were added by S19;
+ * 8 NPCs were added by S20; backgrounds and traits were added by S22). Each remaining
+ * collection is its own authoring slice against §16.1's content targets. They are present
+ * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
+ * and an empty one is an honest statement that the content is unwritten.
  *
  * **§12.3's NPC memories cannot be authored here at all, for a reason distinct from every
  * other CP10 gap above.** Those gaps are a restricted validator rejecting a value; this one
@@ -43,6 +43,11 @@
  * in), so the one landlord below names the housing tier it attaches to as a `tags` entry —
  * the same mechanism S15/S16 used for a schema field that does not exist. Employer attachment
  * does have a real field, `EmployerDefinition.npcIds`, and is used instead of a tag.
+ *
+ * **`BackgroundDefinition` carries no starting-items field** (`content.ts`) — §8.10's own
+ * player-creation lifecycle text says starting inventory comes from `ScenarioDefinition`, not
+ * the background. Not a CP10 omission: the corpus itself places starting inventory outside a
+ * background (§8.10, S23.3), so there is nothing here to approximate or name as missing.
  *
  * **§10.2 names four item effects this pinned engine cannot express, for the same reason as
  * the goal and event gaps above.** `validateModifiers` (`validate.ts`) restricts every
@@ -1853,6 +1858,111 @@ const difficulties: SimulationCampaignSource["difficulties"] = [
   },
 ];
 
+/**
+ * §3.1/§3.4 — three traits, each granted by exactly one background below (S22.4). Every
+ * `effects` entry targets a writable `Modifier` field (§10.2's restriction, the same one
+ * `items` and `events` are bound by) since `validateModifiers` accepts nothing else; a trait's
+ * effects apply as a permanent `StatusEffect` while the trait is possessed (`04` §5.4.3), not
+ * a one-off. `trait-thick-skinned` and `trait-perfectionist` name each other in
+ * `conflictsWith` — a corpus-plausible pairing (unbothered vs. anxious about small errors),
+ * not a mechanic this slice's acceptance criteria require.
+ */
+const traits: SimulationCampaignSource["traits"] = [
+  {
+    id: "trait-thick-skinned",
+    name: { key: "stable-life.trait.thick-skinned.name", text: "Thick-Skinned" },
+    description: {
+      key: "stable-life.trait.thick-skinned.description",
+      text: "Bad days roll off. A useful trait, in a scenario built almost entirely from bad days.",
+    },
+    effects: [{ target: "player.needs.stress", operation: "subtract", value: 2, sourceId: "trait-thick-skinned" }],
+    conflictsWith: ["trait-perfectionist"],
+  },
+  {
+    id: "trait-organized",
+    name: { key: "stable-life.trait.organized.name", text: "Organized" },
+    description: {
+      key: "stable-life.trait.organized.description",
+      text: "Everything has a place, including the week itself.",
+    },
+    effects: [
+      { target: "calendar.committedTimeUnits", operation: "subtract", value: 1, sourceId: "trait-organized" },
+    ],
+    conflictsWith: [],
+  },
+  {
+    id: "trait-perfectionist",
+    name: { key: "stable-life.trait.perfectionist.name", text: "Perfectionist" },
+    description: {
+      key: "stable-life.trait.perfectionist.description",
+      text: "Careful work, and a running commentary on everything not yet careful enough.",
+    },
+    effects: [
+      { target: "player.attributes.discipline", operation: "add", value: 3, sourceId: "trait-perfectionist" },
+      { target: "player.needs.stress", operation: "add", value: 2, sourceId: "trait-perfectionist" },
+    ],
+    conflictsWith: ["trait-thick-skinned"],
+  },
+];
+
+/**
+ * §3.1/§16.1 — the three starting backgrounds, one per career path S15 authored
+ * (food-service, clerical, retail's own path stays unclaimed — an eight-job budget across
+ * three paths does not stretch to a fourth background), each granted its path's early skill
+ * per §3.5 and one trait from above. §3.4's seven `AttributeState` fields (`03` §3.1's mirror
+ * of the type) are set on every entry; none differs enough to matter mechanically, since §3.4
+ * says attributes "should not increase through trivial repetition" and a background is a
+ * one-time grant, not a repeated action. `startingCredentials` and `startingSkills` are what
+ * S22.2 differentiates the three on.
+ */
+const backgrounds: SimulationCampaignSource["backgrounds"] = [
+  {
+    id: "background-kitchen-hand",
+    name: { key: "stable-life.background.kitchen-hand.name", text: "Kitchen Hand" },
+    description: {
+      key: "stable-life.background.kitchen-hand.description",
+      text: "A run of short-order jobs, none of them long enough to put on a résumé as one line.",
+    },
+    startingAttributes: {
+      intelligence: 40, discipline: 45, charisma: 40, creativity: 35, resilience: 55, wisdom: 35, luck: 20,
+    },
+    startingSkills: { cooking: 15 },
+    startingCredentials: ["none"],
+    startingTraits: ["trait-thick-skinned"],
+    startingCashModifierCents: 0,
+  },
+  {
+    id: "background-office-temp",
+    name: { key: "stable-life.background.office-temp.name", text: "Office Temp" },
+    description: {
+      key: "stable-life.background.office-temp.description",
+      text: "Two years of filling in for whoever was out. Nobody trained you; you just watched.",
+    },
+    startingAttributes: {
+      intelligence: 45, discipline: 55, charisma: 40, creativity: 35, resilience: 40, wisdom: 40, luck: 20,
+    },
+    startingSkills: { programming: 10 },
+    startingCredentials: ["school"],
+    startingTraits: ["trait-organized"],
+    startingCashModifierCents: DOLLARS(20),
+  },
+  {
+    id: "background-overqualified-graduate",
+    name: { key: "stable-life.background.overqualified-graduate.name", text: "Overqualified Graduate" },
+    description: {
+      key: "stable-life.background.overqualified-graduate.description",
+      text: "A certificate, a stack of debt to match it, and a job market that has not read either.",
+    },
+    startingAttributes: {
+      intelligence: 55, discipline: 45, charisma: 40, creativity: 45, resilience: 35, wisdom: 40, luck: 20,
+    },
+    startingSkills: { management: 10 },
+    startingCredentials: ["certificate"],
+    startingTraits: ["trait-perfectionist"],
+    startingCashModifierCents: -DOLLARS(50),
+  },
+];
+
 export const stableLifeSource: SimulationCampaignSource = {
   description: {
     key: "stable-life.campaign.description",
@@ -1873,8 +1983,8 @@ export const stableLifeSource: SimulationCampaignSource = {
   headlines: [],
   employers,
   locations,
-  backgrounds: [],
-  traits: [],
+  backgrounds,
+  traits,
   skills,
 
   scenarioId: STABLE_LIFE_SCENARIO_ID,
@@ -1900,7 +2010,7 @@ const CAMPAIGN_TITLE = {
 /**
  * The catalog card that travels with the published campaign. `contentNotice` says plainly
  * that this is a seed — a player reaching it from a catalog should not be told it is the
- * game when five of its seventeen content collections are empty.
+ * game when three of its seventeen content collections are empty.
  */
 export const stableLifeCatalog = {
   title: "Life in the Fast Lane — Stable Life",
@@ -1908,7 +2018,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items and 8 NPCs are authored; the rest is not yet written.",
+    "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items, 8 NPCs and 3 starting backgrounds are authored; the rest is not yet written.",
   featured: false,
   hidden: true,
 } as const;

@@ -95,11 +95,10 @@ describe("Stable Life — the authoring path", () => {
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
     // §16.1's jobs/employers/skills targets are now authored (S15), 15 of 30 events (S16),
-    // courses (S17), 20 items (S19), and 8 NPCs (S20); the rest are still an honest statement
-    // that the content is unwritten.
+    // courses (S17), 20 items (S19), 8 NPCs (S20), and backgrounds/traits (S22); the rest
+    // are still an honest statement that the content is unwritten.
     const empty = [
-      "opportunities", "achievements",
-      "headlines", "backgrounds", "traits",
+      "opportunities", "achievements", "headlines",
     ] as const;
     for (const key of empty) {
       expect(stableLifeSource[key], `${key} should still be unwritten`).toEqual([]);
@@ -297,12 +296,11 @@ describe("Stable Life — random events (S16)", () => {
    * (the scenario's real starting cash; a real job/employer id pair from `stableLifeSource
    * .jobs`), not invented numbers.
    *
-   * This is not a full `createGame()` session. `createGame` currently throws for this
-   * campaign — `initial.ts`'s `buildPlayer` indexes `backgrounds[0]!.id` unconditionally,
-   * and `stableLifeSource.backgrounds` is still empty (S22, "a player does not start from
-   * nowhere," is what authors it; that is outside this slice's `Touches`). Discovered while
-   * implementing S16.3, not fixed here per `AGENTS.md`'s "note a defect outside this slice,
-   * don't fix it."
+   * This is not a full `createGame()` session — unnecessary for the field-level checks
+   * below. `initial.ts`'s `buildPlayer` indexes `backgrounds[0]!.id` unconditionally; that
+   * indexing no longer throws now that S22 has authored `stableLifeSource.backgrounds`
+   * (discovered while implementing S16.3, resolved as a side effect of S22 rather than
+   * exercised here).
    */
   function fixturePlayerState(overrides: { cashCents?: number; employed?: boolean }): Record<string, unknown> {
     const scenario = stableLifeSource.scenarios.find((s) => s.id === STABLE_LIFE_SCENARIO_ID)!;
@@ -636,6 +634,92 @@ describe("Stable Life — NPCs (S20)", () => {
   });
 
   it("builds and validates with NPCs wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — backgrounds and traits (S22)", () => {
+  const backgrounds = stableLifeSource.backgrounds;
+  const traits = stableLifeSource.traits;
+  const skills = stableLifeSource.skills;
+
+  // `BackgroundDefinition` (engine `content.ts`) carries no starting-items field at all —
+  // `03` §8.10 is explicit that starting inventory comes from `ScenarioDefinition`, not the
+  // background. So S22.2/S22.3's "starting items" clause has nothing to check for a
+  // background; differentiation and existence are asserted over skills and credentials only.
+  const VALID_CREDENTIAL_LEVELS = new Set([
+    "none", "school", "certificate", "diploma", "degree", "postgraduate",
+  ]);
+
+  it("has 3 entries (S22.1)", () => {
+    expect(backgrounds).toHaveLength(3);
+  });
+
+  it("differs pairwise in starting skills or starting credentials (S22.2)", () => {
+    function differs(a: (typeof backgrounds)[number], b: (typeof backgrounds)[number]): boolean {
+      const skillsDiffer = JSON.stringify(a.startingSkills) !== JSON.stringify(b.startingSkills);
+      const credentialsDiffer =
+        JSON.stringify([...a.startingCredentials].sort()) !==
+        JSON.stringify([...b.startingCredentials].sort());
+      return skillsDiffer || credentialsDiffer;
+    }
+    for (let i = 0; i < backgrounds.length; i++) {
+      for (let j = i + 1; j < backgrounds.length; j++) {
+        expect(
+          differs(backgrounds[i]!, backgrounds[j]!),
+          `${backgrounds[i]!.id} should differ from ${backgrounds[j]!.id}`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("names only skills that exist and only valid credential levels, by iterating (S22.3)", () => {
+    const skillIds = new Set(skills.map((s) => s.id));
+    for (const background of backgrounds) {
+      for (const skillId of Object.keys(background.startingSkills)) {
+        expect(skillIds.has(skillId), `${background.id} names skill "${skillId}"`).toBe(true);
+      }
+      for (const level of background.startingCredentials) {
+        expect(VALID_CREDENTIAL_LEVELS.has(level), `${background.id} names credential level "${level}"`).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("wires traits to backgrounds in both directions — every grant resolves, every trait is used (S22.4)", () => {
+    const traitIds = new Set(traits.map((t) => t.id));
+    const usedTraitIds = new Set(backgrounds.flatMap((b) => b.startingTraits));
+    for (const background of backgrounds) {
+      for (const traitId of background.startingTraits) {
+        expect(traitIds.has(traitId), `${background.id} grants unknown trait "${traitId}"`).toBe(true);
+      }
+    }
+    for (const trait of traits) {
+      expect(usedTraitIds.has(trait.id), `trait "${trait.id}" is defined but no background grants it`).toBe(
+        true,
+      );
+    }
+  });
+
+  it("carries every AttributeState field on startingAttributes (S22.3)", () => {
+    const ATTRIBUTE_KEYS = ["intelligence", "discipline", "charisma", "creativity", "resilience", "wisdom", "luck"];
+    for (const background of backgrounds) {
+      for (const key of ATTRIBUTE_KEYS) {
+        expect(
+          typeof background.startingAttributes[key as keyof typeof background.startingAttributes],
+          `${background.id}.startingAttributes.${key}`,
+        ).toBe("number");
+      }
+    }
+  });
+
+  it("builds and validates with backgrounds and traits wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
