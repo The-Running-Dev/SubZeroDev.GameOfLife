@@ -814,13 +814,17 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
    * A housing/education state fixture, seeded from the campaign's own authored ids rather
    * than invented ones — the scenario's real starting housing tier, and a real course id.
    * `damage` and `completedCourseIds` are the two fields `HousingState`/`EducationState`
-   * expose as directly addressable (`actor.ts`); every collection-shaped sibling is the
-   * S21.5 omission named in the source's file header.
+   * expose as directly addressable (`actor.ts`); `relationships`/`enrollments` are the two
+   * collection-shaped siblings the fix below reaches through `.length` rather than a
+   * per-item quantifier — the remaining S21.5 omissions are elsewhere (see the source's
+   * file header).
    */
   function fixtureState(overrides: {
     damage?: number;
     landlordNpcId?: string;
     completedCourseIds?: string[];
+    relationshipCount?: number;
+    enrollmentCount?: number;
   }): Record<string, unknown> {
     const room = stableLifeSource.housing.find((h) => h.id === "housing-rented-room")!;
     return {
@@ -830,8 +834,15 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
           damage: overrides.damage ?? 0,
           landlordNpcId: overrides.landlordNpcId,
         },
+        relationships: Array.from({ length: overrides.relationshipCount ?? 0 }, (_, i) => ({
+          npcId: `npc-fixture-${i}`,
+        })),
         education: {
           completedCourseIds: overrides.completedCourseIds ?? [],
+          enrollments: Array.from({ length: overrides.enrollmentCount ?? 0 }, (_, i) => ({
+            courseId: `course-fixture-${i}`,
+            status: "active",
+          })),
         },
       },
     };
@@ -846,12 +857,31 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
     expect(evaluateTestCondition(boiler.conditions, (p) => fieldOf(fixtureState({ damage: 60 }), p))).toBe(true);
   });
 
-  it("evaluates the two conditions that stood in for the ones §11.3 wanted (S21.3, S21.5)", () => {
-    // Neither of these is the condition S21.3 asks for — see the source's file header. The
-    // landlord event tests an NPC *identity*, not a relationship dimension; the credential
-    // event tests a *completed* course, not one in progress. Both are the strongest form
-    // this pinned engine can express, and both are asserted here so that the day the engine
-    // grows collection support, these are the two sites to revisit.
+  it("evaluates the NPC-relationship and course-in-progress conditions against a built campaign's real state (S21.3)", () => {
+    // Both narrow to their array's own `.length` rather than a per-item quantifier — see the
+    // source's file header for why that is a real, resolvable field rather than the rejected
+    // index-address form. Verified here the same way the housing condition above is: false
+    // at zero, true once the fixture carries at least one entry.
+    const favor = events.find((e) => e.id === "event-friend-needs-a-favor")!;
+    expect(evaluateTestCondition(favor.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(
+      evaluateTestCondition(favor.conditions, (p) => fieldOf(fixtureState({ relationshipCount: 1 }), p)),
+    ).toBe(true);
+
+    const tutor = events.find((e) => e.id === "event-tutor-offers-extra-session")!;
+    expect(evaluateTestCondition(tutor.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(
+      evaluateTestCondition(tutor.conditions, (p) => fieldOf(fixtureState({ enrollmentCount: 1 }), p)),
+    ).toBe(true);
+  });
+
+  it("evaluates the two conditions that stand in for a relationship dimension and an in-progress course (S21.5)", () => {
+    // Neither of these is the condition §11.3 itself asks for — see the source's file
+    // header. The landlord event tests an NPC *identity*, not a relationship dimension; the
+    // credential event tests a *completed* course, not one in progress. Both are the
+    // strongest form this pinned engine can express for what they gate, and both are
+    // asserted here so that the day the engine grows collection support, these are sites to
+    // revisit alongside `event-neighbor-borrows-again`, which carries no gate at all.
     const inspection = events.find((e) => e.id === "event-landlord-inspection")!;
     expect(evaluateTestCondition(inspection.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
     expect(
