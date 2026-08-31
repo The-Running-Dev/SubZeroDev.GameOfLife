@@ -4,7 +4,7 @@
     "title": "Life in the Fast Lane — Stable Life",
     "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "duration": "52 weeks",
-    "contentNotice": "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events and 20 purchasable items are authored; NPCs and the rest are not yet written.",
+    "contentNotice": "Seed content. The map, the scenario, the career ladder, 6 courses, 15 of 30 random events, 20 purchasable items and 3 starting backgrounds are authored; NPCs and the rest are not yet written.",
     "featured": false,
     "hidden": true
   },
@@ -1916,8 +1916,134 @@
           "descriptionKey": "stable-life.location.department-of-forms.description"
         }
       ],
-      "backgrounds": [],
-      "traits": [],
+      "backgrounds": [
+        {
+          "id": "background-kitchen-hand",
+          "startingAttributes": {
+            "intelligence": 40,
+            "discipline": 45,
+            "charisma": 40,
+            "creativity": 35,
+            "resilience": 55,
+            "wisdom": 35,
+            "luck": 20
+          },
+          "startingSkills": {
+            "cooking": 15
+          },
+          "startingCredentials": [
+            "none"
+          ],
+          "startingTraits": [
+            "trait-thick-skinned"
+          ],
+          "startingCashModifierCents": 0,
+          "nameKey": "stable-life.background.kitchen-hand.name",
+          "descriptionKey": "stable-life.background.kitchen-hand.description"
+        },
+        {
+          "id": "background-office-temp",
+          "startingAttributes": {
+            "intelligence": 45,
+            "discipline": 55,
+            "charisma": 40,
+            "creativity": 35,
+            "resilience": 40,
+            "wisdom": 40,
+            "luck": 20
+          },
+          "startingSkills": {
+            "programming": 10
+          },
+          "startingCredentials": [
+            "school"
+          ],
+          "startingTraits": [
+            "trait-organized"
+          ],
+          "startingCashModifierCents": 2000,
+          "nameKey": "stable-life.background.office-temp.name",
+          "descriptionKey": "stable-life.background.office-temp.description"
+        },
+        {
+          "id": "background-overqualified-graduate",
+          "startingAttributes": {
+            "intelligence": 55,
+            "discipline": 45,
+            "charisma": 40,
+            "creativity": 45,
+            "resilience": 35,
+            "wisdom": 40,
+            "luck": 20
+          },
+          "startingSkills": {
+            "management": 10
+          },
+          "startingCredentials": [
+            "certificate"
+          ],
+          "startingTraits": [
+            "trait-perfectionist"
+          ],
+          "startingCashModifierCents": -5000,
+          "nameKey": "stable-life.background.overqualified-graduate.name",
+          "descriptionKey": "stable-life.background.overqualified-graduate.description"
+        }
+      ],
+      "traits": [
+        {
+          "id": "trait-thick-skinned",
+          "effects": [
+            {
+              "target": "player.needs.stress",
+              "operation": "subtract",
+              "value": 2,
+              "sourceId": "trait-thick-skinned"
+            }
+          ],
+          "conflictsWith": [
+            "trait-perfectionist"
+          ],
+          "nameKey": "stable-life.trait.thick-skinned.name",
+          "descriptionKey": "stable-life.trait.thick-skinned.description"
+        },
+        {
+          "id": "trait-organized",
+          "effects": [
+            {
+              "target": "calendar.committedTimeUnits",
+              "operation": "subtract",
+              "value": 1,
+              "sourceId": "trait-organized"
+            }
+          ],
+          "conflictsWith": [],
+          "nameKey": "stable-life.trait.organized.name",
+          "descriptionKey": "stable-life.trait.organized.description"
+        },
+        {
+          "id": "trait-perfectionist",
+          "effects": [
+            {
+              "target": "player.attributes.discipline",
+              "operation": "add",
+              "value": 3,
+              "sourceId": "trait-perfectionist"
+            },
+            {
+              "target": "player.needs.stress",
+              "operation": "add",
+              "value": 2,
+              "sourceId": "trait-perfectionist"
+            }
+          ],
+          "conflictsWith": [
+            "trait-thick-skinned"
+          ],
+          "nameKey": "stable-life.trait.perfectionist.name",
+          "descriptionKey": "stable-life.trait.perfectionist.description"
+        }
+      ],
       "skills": [
         {
           "id": "cooking",
@@ -1954,6 +2080,12 @@
     "stable-life.action.plan-add": "Plan",
     "stable-life.action.plan-clear": "Clear the week",
     "stable-life.action.plan-remove": "Unplan",
+    "stable-life.background.kitchen-hand.description": "A run of short-order jobs, none of them long enough to put on a résumé as one line.",
+    "stable-life.background.kitchen-hand.name": "Kitchen Hand",
+    "stable-life.background.office-temp.description": "Two years of filling in for whoever was out. Nobody trained you; you just watched.",
+    "stable-life.background.office-temp.name": "Office Temp",
+    "stable-life.background.overqualified-graduate.description": "A certificate, a stack of debt to match it, and a job market that has not read either.",
+    "stable-life.background.overqualified-graduate.name": "Overqualified Graduate",
     "stable-life.campaign.description": "Life in the Fast Lane — the Stable Life scenario. Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "stable-life.campaign.title": "Life in the Fast Lane — Stable Life",
     "stable-life.course.high-school-equivalency.description": "Eight weeks to a piece of paper the last one should have already provided.",
@@ -2089,6 +2221,12 @@
     "stable-life.scene": "Week {week}. {location}.",
     "stable-life.skill.cooking.name": "Cooking",
     "stable-life.skill.management.name": "Management",
-    "stable-life.skill.programming.name": "Programming"
+    "stable-life.skill.programming.name": "Programming",
+    "stable-life.trait.organized.description": "Everything has a place, including the week itself.",
+    "stable-life.trait.organized.name": "Organized",
+    "stable-life.trait.perfectionist.description": "Careful work, and a running commentary on everything not yet careful enough.",
+    "stable-life.trait.perfectionist.name": "Perfectionist",
+    "stable-life.trait.thick-skinned.description": "Bad days roll off. A useful trait, in a scenario built almost entirely from bad days.",
+    "stable-life.trait.thick-skinned.name": "Thick-Skinned"
   }
 }
