@@ -9,20 +9,27 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: courses, items, events, NPCs, opportunities,
+ * What it deliberately does not yet carry: courses, items, NPCs, opportunities,
  * achievements, headlines, backgrounds and traits (jobs, employers and skills were added by
- * S15). Each remaining collection is its own authoring slice against §16.1's content
- * targets. They are present and empty rather than absent, because `SimulationCampaignSource`
- * requires all seventeen and an empty one is an honest statement that the content is
- * unwritten.
+ * S15; 15 of §16.1's 30 events were added by S16, the other 15 are S21). Each remaining
+ * collection is its own authoring slice against §16.1's content targets. They are present
+ * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
+ * and an empty one is an honest statement that the content is unwritten.
  *
- * **One completion requirement from §16.3 is not expressible today.** "Education:
- * certificate or better" needs a condition over `player.education.credentials`, which is a
- * collection; `kinds/simulation/conditions.ts` implements `field` and throws on
- * `collection`, documenting the gap as "not yet" rather than "never". The goal below
- * carries the five requirements that are scalar comparisons and omits that one. This is
- * recorded as an open item rather than worked around — a goal that silently drops a stated
- * completion requirement would be worse than one that visibly does not carry it.
+ * **Two completion/condition requirements are not expressible today, for the same reason.**
+ * §16.3's "Education: certificate or better" needs a condition over
+ * `player.education.credentials`, a collection; `kinds/simulation/conditions.ts` implements
+ * `field` and throws on `collection` (the engine's `ConditionResolver.collection`, and
+ * therefore every `exists`/`count` quantifier in `Condition`), documenting the gap as "not
+ * yet" rather than "never". The goal below carries the five requirements that are scalar
+ * comparisons and omits that one. §11.3 names the same quantifiers for events —
+ * "owns any item tagged formal_clothing", "any NPC with resentment above 50" — and two of
+ * the 15 events below would have used one (S16.5): `event-job-interview-invitation` would
+ * gate on a `count` over `player.career.pendingApplications`, and `event-car-breakdown`
+ * would gate on an `exists` over `player.inventory` for an owned vehicle. Both omit that
+ * condition and name the omission at the site, per CP10. Recorded as an open item rather
+ * than worked around — a condition that silently drops a stated requirement would be worse
+ * than one that visibly does not carry it.
  */
 
 import {
@@ -509,6 +516,487 @@ const employers: SimulationCampaignSource["employers"] = [
 ];
 
 /**
+ * §16.1's random events — 15 of the 30 targeted (the other 15 are S21), drawn only from the
+ * seven `03` §11.1 categories S16 scopes: employment, economy, purchases, crime,
+ * bureaucracy, transportation, business. Every category appears at least once (S16.1).
+ *
+ * §11.2 names ten event *types*, but `EventDefinition` (`content.ts`) has no dedicated type
+ * field — the closest fit already in the schema is `tags`, the same mechanism S15 used to
+ * carry a job's career path outside its own strict schema. Every event below carries exactly
+ * one type tag, kebab-cased from §11.2 (S16.2).
+ *
+ * `Modifier.target` is restricted at validation time to `player.needs.*`,
+ * `player.attributes.*`, `player.skills.*`, and `calendar.committedTimeUnits`
+ * (`validate.ts`'s `WRITABLE_TARGET_PREFIXES`) — every cash effect below is therefore a
+ * `Reward` of type `"money"`, never a `Modifier`, since `player.finances.cashCents` is not a
+ * writable Modifier target.
+ */
+const events: SimulationCampaignSource["events"] = [
+  // --- Employment ---------------------------------------------------------------------
+  {
+    id: "event-shift-schedule-cut",
+    category: "employment",
+    title: { key: "stable-life.event.shift-schedule-cut.title", text: "Shift Cut Short" },
+    description: {
+      key: "stable-life.event.shift-schedule-cut.description",
+      text: "The schedule changes and a shift disappears from under you. The rent does not follow suit.",
+    },
+    weight: 12,
+    // S16.3 — conditional on a job the player holds. Comparing the whole optional
+    // `currentEmployment` object against `value: undefined` (documented in
+    // `core/condition/types.ts`) reads it in one hop; walking to `.jobId` beyond it would
+    // throw on an unemployed player, per `conditions.ts`'s generic per-segment walk.
+    conditions: { field: "player.career.currentEmployment", operator: "not_equals", value: undefined },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 6, sourceId: "event-shift-schedule-cut" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(40) }],
+      messages: [
+        { key: "stable-life.event.shift-schedule-cut.outcome.message", visible: true, tone: "negative" },
+      ],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-surprise-bonus",
+    category: "employment",
+    title: { key: "stable-life.event.surprise-bonus.title", text: "Surprise Bonus" },
+    description: {
+      key: "stable-life.event.surprise-bonus.description",
+      text: "The till balanced for once, and some of the difference lands in your pay.",
+    },
+    weight: 6,
+    // S16.3 — the second example of the job-held condition (S16.3 only requires one; this
+    // is a second, unforced instance).
+    conditions: { field: "player.career.currentEmployment", operator: "not_equals", value: undefined },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.happiness", operation: "add", value: 8, sourceId: "event-surprise-bonus" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(50) }],
+      messages: [{ key: "stable-life.event.surprise-bonus.outcome.message", visible: true, tone: "positive" }],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-job-interview-invitation",
+    category: "employment",
+    title: { key: "stable-life.event.job-interview-invitation.title", text: "Interview Invitation" },
+    description: {
+      key: "stable-life.event.job-interview-invitation.description",
+      text: "Someone read the application after all, and wants to meet the person who wrote it.",
+    },
+    weight: 10,
+    // S16.5 — `03` §11.3 would gate this on a `count` over `player.career.pendingApplications`
+    // (has the player actually applied anywhere?). `count`/`exists` throw in this pinned
+    // engine (`conditions.ts`'s `unresolvableCollection`), so that quantifier is omitted;
+    // the condition narrows to "currently unemployed" only, which is a strictly weaker gate
+    // than the corpus intends. Named here rather than worked around, per CP10.
+    conditions: { field: "player.career.currentEmployment", operator: "equals", value: undefined },
+    choices: [
+      {
+        id: "attend-interview",
+        labelKey: "stable-life.event.job-interview-invitation.choice.attend-interview",
+        timeCost: 3,
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.stress",
+                  operation: "add",
+                  value: 5,
+                  sourceId: "event-job-interview-invitation",
+                },
+              ],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.job-interview-invitation.outcome.attended",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "skip-interview",
+        labelKey: "stable-life.event.job-interview-invitation.choice.skip-interview",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                {
+                  key: "stable-life.event.job-interview-invitation.outcome.skipped",
+                  visible: true,
+                  tone: "neutral",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["conditional"],
+  },
+
+  // --- Economy -------------------------------------------------------------------------
+  {
+    id: "event-inflation-adjustment",
+    category: "economy",
+    title: { key: "stable-life.event.inflation-adjustment.title", text: "Prices Creep Up" },
+    description: {
+      key: "stable-life.event.inflation-adjustment.description",
+      text: "Nothing on the shelf changed except the number under it.",
+    },
+    weight: 15,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 3, sourceId: "event-inflation-adjustment" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(15) }],
+      messages: [
+        { key: "stable-life.event.inflation-adjustment.outcome.message", visible: true, tone: "negative" },
+      ],
+    },
+    tags: ["world-triggered"],
+  },
+  {
+    id: "event-hardship-relief-payment",
+    category: "economy",
+    title: { key: "stable-life.event.hardship-relief-payment.title", text: "Hardship Relief Payment" },
+    description: {
+      key: "stable-life.event.hardship-relief-payment.description",
+      text: "A form filed months ago is finally worth something.",
+    },
+    weight: 5,
+    unique: true,
+    // S16.3 — conditional on the player's cash.
+    conditions: { field: "player.finances.cashCents", operator: "less_than", value: DOLLARS(50) },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 5,
+          sourceId: "event-hardship-relief-payment",
+        },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(80) }],
+      messages: [
+        { key: "stable-life.event.hardship-relief-payment.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    tags: ["unique"],
+  },
+
+  // --- Purchases -----------------------------------------------------------------------
+  {
+    id: "event-appliance-breaks",
+    category: "purchases",
+    title: { key: "stable-life.event.appliance-breaks.title", text: "The Fridge Dies" },
+    description: {
+      key: "stable-life.event.appliance-breaks.description",
+      text: "It gives one last hum and stops. Everything in it has opinions about that now.",
+    },
+    weight: 10,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 4, sourceId: "event-appliance-breaks" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(35) }],
+      messages: [{ key: "stable-life.event.appliance-breaks.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["immediate"],
+  },
+  {
+    id: "event-limited-time-sale",
+    category: "purchases",
+    title: { key: "stable-life.event.limited-time-sale.title", text: "Limited-Time Sale" },
+    description: {
+      key: "stable-life.event.limited-time-sale.description",
+      text: "A sign in the window insists this will never happen again. It happened last month too.",
+    },
+    weight: 8,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "buy-now",
+        labelKey: "stable-life.event.limited-time-sale.choice.buy-now",
+        moneyCostCents: DOLLARS(20),
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                {
+                  target: "player.needs.happiness",
+                  operation: "add",
+                  value: 4,
+                  sourceId: "event-limited-time-sale",
+                },
+              ],
+              rewards: [],
+              messages: [
+                { key: "stable-life.event.limited-time-sale.outcome.bought", visible: true, tone: "positive" },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "skip-sale",
+        labelKey: "stable-life.event.limited-time-sale.choice.skip-sale",
+        outcomes: [
+          {
+            outcome: {
+              effects: [],
+              rewards: [],
+              messages: [
+                { key: "stable-life.event.limited-time-sale.outcome.skipped", visible: true, tone: "neutral" },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["repeatable"],
+  },
+
+  // --- Crime ---------------------------------------------------------------------------
+  {
+    id: "event-pickpocketed",
+    category: "crime",
+    title: { key: "stable-life.event.pickpocketed.title", text: "Pickpocketed" },
+    description: {
+      key: "stable-life.event.pickpocketed.description",
+      text: "A crowd, a jostle, and a lighter pocket than you started the day with.",
+    },
+    weight: 6,
+    // S16.3 — a second, distinct example of a cash-conditional event (S16.3 only requires
+    // one; this one gates on cash being present at all rather than below a threshold).
+    conditions: { field: "player.finances.cashCents", operator: "greater_than", value: 0 },
+    automaticOutcome: {
+      effects: [{ target: "player.needs.stress", operation: "add", value: 8, sourceId: "event-pickpocketed" }],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(20) }],
+      messages: [{ key: "stable-life.event.pickpocketed.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["conditional"],
+  },
+  {
+    id: "event-mugging-attempt",
+    category: "crime",
+    title: { key: "stable-life.event.mugging-attempt.title", text: "Mugging Attempt" },
+    description: {
+      key: "stable-life.event.mugging-attempt.description",
+      text: "Someone blocks the alley shortcut and asks, not very politely, for your wallet.",
+    },
+    weight: 4,
+    conditions: { all: [] },
+    choices: [
+      {
+        id: "hand-over-wallet",
+        labelKey: "stable-life.event.mugging-attempt.choice.hand-over-wallet",
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                { target: "player.needs.stress", operation: "add", value: 10, sourceId: "event-mugging-attempt" },
+              ],
+              rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(30) }],
+              messages: [
+                {
+                  key: "stable-life.event.mugging-attempt.outcome.handed-over",
+                  visible: true,
+                  tone: "negative",
+                },
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "run-away",
+        labelKey: "stable-life.event.mugging-attempt.choice.run-away",
+        outcomes: [
+          {
+            outcome: {
+              effects: [
+                { target: "player.needs.stress", operation: "add", value: 6, sourceId: "event-mugging-attempt" },
+                { target: "player.needs.energy", operation: "subtract", value: 5, sourceId: "event-mugging-attempt" },
+              ],
+              rewards: [],
+              messages: [
+                { key: "stable-life.event.mugging-attempt.outcome.ran-away", visible: true, tone: "neutral" },
+              ],
+            },
+          },
+        ],
+      },
+    ],
+    tags: ["world-triggered"],
+  },
+
+  // --- Bureaucracy — a two-step chain (03 §11.6) ----------------------------------------
+  {
+    id: "event-late-tax-filing-notice",
+    category: "bureaucracy",
+    title: { key: "stable-life.event.late-tax-filing-notice.title", text: "Late Filing Notice" },
+    description: {
+      key: "stable-life.event.late-tax-filing-notice.description",
+      text: "A form due last season is due again, this time with a tone.",
+    },
+    weight: 7,
+    conditions: { all: [] },
+    chainId: "tax-filing-chain",
+    chainStep: 1,
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.stress",
+          operation: "add",
+          value: 5,
+          sourceId: "event-late-tax-filing-notice",
+        },
+      ],
+      rewards: [],
+      messages: [
+        { key: "stable-life.event.late-tax-filing-notice.outcome.message", visible: true, tone: "negative" },
+      ],
+      // S16.4 — the id below must name a real event in this same collection.
+      scheduledEvents: [{ eventId: "event-tax-penalty-assessment", inWeeks: 2 }],
+    },
+    tags: ["chained"],
+  },
+  {
+    id: "event-tax-penalty-assessment",
+    category: "bureaucracy",
+    title: { key: "stable-life.event.tax-penalty-assessment.title", text: "Penalty Assessment" },
+    description: {
+      key: "stable-life.event.tax-penalty-assessment.description",
+      text: "The tone from two weeks ago becomes a number.",
+    },
+    // `weight: 0` — reachable only via the `scheduledEvents` link above, never by random
+    // draw. `endOfWeek.ts`'s own `drawable()` comment names this as the intended way to
+    // author a schedule-only event; scheduled firing also ignores `conditions` entirely
+    // (same file), so the trivial condition below is never actually evaluated for this one.
+    weight: 0,
+    conditions: { all: [] },
+    chainId: "tax-filing-chain",
+    chainStep: 2,
+    automaticOutcome: {
+      effects: [],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(45) }],
+      messages: [
+        { key: "stable-life.event.tax-penalty-assessment.outcome.message", visible: true, tone: "negative" },
+      ],
+      endsChain: true,
+    },
+    tags: ["chained"],
+  },
+
+  // --- Transportation --------------------------------------------------------------------
+  {
+    id: "event-bus-fare-increase",
+    category: "transportation",
+    title: { key: "stable-life.event.bus-fare-increase.title", text: "Fare Goes Up Again" },
+    description: {
+      key: "stable-life.event.bus-fare-increase.description",
+      text: "The board votes on a Tuesday no one attends. The fare box votes every day after.",
+    },
+    weight: 12,
+    cooldownWeeks: 8,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.stress", operation: "add", value: 2, sourceId: "event-bus-fare-increase" },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(5) }],
+      messages: [{ key: "stable-life.event.bus-fare-increase.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["recurring"],
+  },
+  {
+    id: "event-car-breakdown",
+    category: "transportation",
+    title: { key: "stable-life.event.car-breakdown.title", text: "Car Breakdown" },
+    description: {
+      key: "stable-life.event.car-breakdown.description",
+      text: "Something under the hood decides today is the day.",
+    },
+    weight: 3,
+    // S16.5 — `03` §11.3 would gate this on an `exists` over `player.inventory` for an
+    // owned vehicle ("owns any item tagged formal_clothing" is the corpus's own worked
+    // example of exactly this shape). `exists`/`count` throw in this pinned engine, and
+    // `items` is unauthored this slice regardless, so the ownership check is omitted
+    // entirely rather than approximated; the event fires as ambient background instead.
+    // Named here per CP10.
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [{ target: "player.needs.stress", operation: "add", value: 7, sourceId: "event-car-breakdown" }],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(60) }],
+      messages: [{ key: "stable-life.event.car-breakdown.outcome.message", visible: true, tone: "negative" }],
+    },
+    tags: ["world-triggered"],
+  },
+
+  // --- Business ----------------------------------------------------------------------
+  {
+    id: "event-team-morale-day",
+    category: "business",
+    title: { key: "stable-life.event.team-morale-day.title", text: "Team Morale Day" },
+    description: {
+      key: "stable-life.event.team-morale-day.description",
+      text: "Someone brought a cake. It is being treated as a major event.",
+    },
+    weight: 9,
+    conditions: { all: [] },
+    automaticOutcome: {
+      effects: [
+        { target: "player.needs.happiness", operation: "add", value: 6, sourceId: "event-team-morale-day" },
+      ],
+      rewards: [],
+      messages: [{ key: "stable-life.event.team-morale-day.outcome.message", visible: true, tone: "positive" }],
+    },
+    tags: ["world-triggered"],
+  },
+  {
+    id: "event-employee-of-the-month",
+    category: "business",
+    title: { key: "stable-life.event.employee-of-the-month.title", text: "Employee of the Month" },
+    description: {
+      key: "stable-life.event.employee-of-the-month.description",
+      text: "A laminated certificate and a small cash bonus, in that order of perceived value.",
+    },
+    weight: 4,
+    unique: true,
+    // S16.3 — a third example of the job-held condition.
+    conditions: { field: "player.career.currentEmployment", operator: "not_equals", value: undefined },
+    automaticOutcome: {
+      effects: [
+        {
+          target: "player.needs.happiness",
+          operation: "add",
+          value: 10,
+          sourceId: "event-employee-of-the-month",
+        },
+      ],
+      rewards: [{ type: "money", target: "player.finances.cashCents", value: DOLLARS(100) }],
+      messages: [
+        { key: "stable-life.event.employee-of-the-month.outcome.message", visible: true, tone: "positive" },
+      ],
+    },
+    tags: ["unique"],
+  },
+];
+
+/**
  * §16.3's completion requirements, minus the credential one the condition language cannot
  * express yet (see the file header). `highestTierAchieved` is a string, so "skilled or
  * better" is authored as the explicit set rather than an ordering comparison — the tier
@@ -586,7 +1074,7 @@ export const stableLifeSource: SimulationCampaignSource = {
   courses: [],
   housing,
   items: [],
-  events: [],
+  events,
   npcs: [],
   goals,
   scenarios,
@@ -623,7 +1111,7 @@ const CAMPAIGN_TITLE = {
 /**
  * The catalog card that travels with the published campaign. `contentNotice` says plainly
  * that this is a seed — a player reaching it from a catalog should not be told it is the
- * game when fourteen of its seventeen content collections are empty.
+ * game when eight of its seventeen content collections are empty.
  */
 export const stableLifeCatalog = {
   title: "Life in the Fast Lane — Stable Life",
@@ -631,7 +1119,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. The map, the scenario and the career ladder are authored; courses, events and possessions are not yet written.",
+    "Seed content. The map, the scenario, the career ladder and 15 of 30 random events are authored; courses and possessions are not yet written.",
   featured: false,
   hidden: true,
 } as const;

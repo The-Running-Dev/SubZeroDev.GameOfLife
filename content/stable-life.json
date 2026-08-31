@@ -4,7 +4,7 @@
     "title": "Life in the Fast Lane — Stable Life",
     "description": "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
     "duration": "52 weeks",
-    "contentNotice": "Seed content. The map, the scenario and the career ladder are authored; courses, events and possessions are not yet written.",
+    "contentNotice": "Seed content. The map, the scenario, the career ladder and 15 of 30 random events are authored; courses and possessions are not yet written.",
     "featured": false,
     "hidden": true
   },
@@ -373,7 +373,656 @@
         }
       ],
       "items": [],
-      "events": [],
+      "events": [
+        {
+          "id": "event-shift-schedule-cut",
+          "category": "employment",
+          "weight": 12,
+          "conditions": {
+            "field": "player.career.currentEmployment",
+            "operator": "not_equals"
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 6,
+                "sourceId": "event-shift-schedule-cut"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -4000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.shift-schedule-cut.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.shift-schedule-cut.title",
+          "descriptionKey": "stable-life.event.shift-schedule-cut.description"
+        },
+        {
+          "id": "event-surprise-bonus",
+          "category": "employment",
+          "weight": 6,
+          "conditions": {
+            "field": "player.career.currentEmployment",
+            "operator": "not_equals"
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 8,
+                "sourceId": "event-surprise-bonus"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": 5000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.surprise-bonus.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.surprise-bonus.title",
+          "descriptionKey": "stable-life.event.surprise-bonus.description"
+        },
+        {
+          "id": "event-job-interview-invitation",
+          "category": "employment",
+          "weight": 10,
+          "conditions": {
+            "field": "player.career.currentEmployment",
+            "operator": "equals"
+          },
+          "choices": [
+            {
+              "id": "attend-interview",
+              "labelKey": "stable-life.event.job-interview-invitation.choice.attend-interview",
+              "timeCost": 3,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.stress",
+                        "operation": "add",
+                        "value": 5,
+                        "sourceId": "event-job-interview-invitation"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.job-interview-invitation.outcome.attended",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "skip-interview",
+              "labelKey": "stable-life.event.job-interview-invitation.choice.skip-interview",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.job-interview-invitation.outcome.skipped",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.job-interview-invitation.title",
+          "descriptionKey": "stable-life.event.job-interview-invitation.description"
+        },
+        {
+          "id": "event-inflation-adjustment",
+          "category": "economy",
+          "weight": 15,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 3,
+                "sourceId": "event-inflation-adjustment"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -1500
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.inflation-adjustment.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "world-triggered"
+          ],
+          "titleKey": "stable-life.event.inflation-adjustment.title",
+          "descriptionKey": "stable-life.event.inflation-adjustment.description"
+        },
+        {
+          "id": "event-hardship-relief-payment",
+          "category": "economy",
+          "weight": 5,
+          "unique": true,
+          "conditions": {
+            "field": "player.finances.cashCents",
+            "operator": "less_than",
+            "value": 5000
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 5,
+                "sourceId": "event-hardship-relief-payment"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": 8000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.hardship-relief-payment.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "unique"
+          ],
+          "titleKey": "stable-life.event.hardship-relief-payment.title",
+          "descriptionKey": "stable-life.event.hardship-relief-payment.description"
+        },
+        {
+          "id": "event-appliance-breaks",
+          "category": "purchases",
+          "weight": 10,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 4,
+                "sourceId": "event-appliance-breaks"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -3500
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.appliance-breaks.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "immediate"
+          ],
+          "titleKey": "stable-life.event.appliance-breaks.title",
+          "descriptionKey": "stable-life.event.appliance-breaks.description"
+        },
+        {
+          "id": "event-limited-time-sale",
+          "category": "purchases",
+          "weight": 8,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "buy-now",
+              "labelKey": "stable-life.event.limited-time-sale.choice.buy-now",
+              "moneyCostCents": 2000,
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.happiness",
+                        "operation": "add",
+                        "value": 4,
+                        "sourceId": "event-limited-time-sale"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.limited-time-sale.outcome.bought",
+                        "visible": true,
+                        "tone": "positive"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "skip-sale",
+              "labelKey": "stable-life.event.limited-time-sale.choice.skip-sale",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.limited-time-sale.outcome.skipped",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "repeatable"
+          ],
+          "titleKey": "stable-life.event.limited-time-sale.title",
+          "descriptionKey": "stable-life.event.limited-time-sale.description"
+        },
+        {
+          "id": "event-pickpocketed",
+          "category": "crime",
+          "weight": 6,
+          "conditions": {
+            "field": "player.finances.cashCents",
+            "operator": "greater_than",
+            "value": 0
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 8,
+                "sourceId": "event-pickpocketed"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -2000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.pickpocketed.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "conditional"
+          ],
+          "titleKey": "stable-life.event.pickpocketed.title",
+          "descriptionKey": "stable-life.event.pickpocketed.description"
+        },
+        {
+          "id": "event-mugging-attempt",
+          "category": "crime",
+          "weight": 4,
+          "conditions": {
+            "all": []
+          },
+          "choices": [
+            {
+              "id": "hand-over-wallet",
+              "labelKey": "stable-life.event.mugging-attempt.choice.hand-over-wallet",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.stress",
+                        "operation": "add",
+                        "value": 10,
+                        "sourceId": "event-mugging-attempt"
+                      }
+                    ],
+                    "rewards": [
+                      {
+                        "type": "money",
+                        "target": "player.finances.cashCents",
+                        "value": -3000
+                      }
+                    ],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.mugging-attempt.outcome.handed-over",
+                        "visible": true,
+                        "tone": "negative"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "run-away",
+              "labelKey": "stable-life.event.mugging-attempt.choice.run-away",
+              "outcomes": [
+                {
+                  "outcome": {
+                    "effects": [
+                      {
+                        "target": "player.needs.stress",
+                        "operation": "add",
+                        "value": 6,
+                        "sourceId": "event-mugging-attempt"
+                      },
+                      {
+                        "target": "player.needs.energy",
+                        "operation": "subtract",
+                        "value": 5,
+                        "sourceId": "event-mugging-attempt"
+                      }
+                    ],
+                    "rewards": [],
+                    "messages": [
+                      {
+                        "key": "stable-life.event.mugging-attempt.outcome.ran-away",
+                        "visible": true,
+                        "tone": "neutral"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "tags": [
+            "world-triggered"
+          ],
+          "titleKey": "stable-life.event.mugging-attempt.title",
+          "descriptionKey": "stable-life.event.mugging-attempt.description"
+        },
+        {
+          "id": "event-late-tax-filing-notice",
+          "category": "bureaucracy",
+          "weight": 7,
+          "conditions": {
+            "all": []
+          },
+          "chainId": "tax-filing-chain",
+          "chainStep": 1,
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 5,
+                "sourceId": "event-late-tax-filing-notice"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.late-tax-filing-notice.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ],
+            "scheduledEvents": [
+              {
+                "eventId": "event-tax-penalty-assessment",
+                "inWeeks": 2
+              }
+            ]
+          },
+          "tags": [
+            "chained"
+          ],
+          "titleKey": "stable-life.event.late-tax-filing-notice.title",
+          "descriptionKey": "stable-life.event.late-tax-filing-notice.description"
+        },
+        {
+          "id": "event-tax-penalty-assessment",
+          "category": "bureaucracy",
+          "weight": 0,
+          "conditions": {
+            "all": []
+          },
+          "chainId": "tax-filing-chain",
+          "chainStep": 2,
+          "automaticOutcome": {
+            "effects": [],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -4500
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.tax-penalty-assessment.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ],
+            "endsChain": true
+          },
+          "tags": [
+            "chained"
+          ],
+          "titleKey": "stable-life.event.tax-penalty-assessment.title",
+          "descriptionKey": "stable-life.event.tax-penalty-assessment.description"
+        },
+        {
+          "id": "event-bus-fare-increase",
+          "category": "transportation",
+          "weight": 12,
+          "cooldownWeeks": 8,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 2,
+                "sourceId": "event-bus-fare-increase"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -500
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.bus-fare-increase.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "recurring"
+          ],
+          "titleKey": "stable-life.event.bus-fare-increase.title",
+          "descriptionKey": "stable-life.event.bus-fare-increase.description"
+        },
+        {
+          "id": "event-car-breakdown",
+          "category": "transportation",
+          "weight": 3,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.stress",
+                "operation": "add",
+                "value": 7,
+                "sourceId": "event-car-breakdown"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": -6000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.car-breakdown.outcome.message",
+                "visible": true,
+                "tone": "negative"
+              }
+            ]
+          },
+          "tags": [
+            "world-triggered"
+          ],
+          "titleKey": "stable-life.event.car-breakdown.title",
+          "descriptionKey": "stable-life.event.car-breakdown.description"
+        },
+        {
+          "id": "event-team-morale-day",
+          "category": "business",
+          "weight": 9,
+          "conditions": {
+            "all": []
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 6,
+                "sourceId": "event-team-morale-day"
+              }
+            ],
+            "rewards": [],
+            "messages": [
+              {
+                "key": "stable-life.event.team-morale-day.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "world-triggered"
+          ],
+          "titleKey": "stable-life.event.team-morale-day.title",
+          "descriptionKey": "stable-life.event.team-morale-day.description"
+        },
+        {
+          "id": "event-employee-of-the-month",
+          "category": "business",
+          "weight": 4,
+          "unique": true,
+          "conditions": {
+            "field": "player.career.currentEmployment",
+            "operator": "not_equals"
+          },
+          "automaticOutcome": {
+            "effects": [
+              {
+                "target": "player.needs.happiness",
+                "operation": "add",
+                "value": 10,
+                "sourceId": "event-employee-of-the-month"
+              }
+            ],
+            "rewards": [
+              {
+                "type": "money",
+                "target": "player.finances.cashCents",
+                "value": 10000
+              }
+            ],
+            "messages": [
+              {
+                "key": "stable-life.event.employee-of-the-month.outcome.message",
+                "visible": true,
+                "tone": "positive"
+              }
+            ]
+          },
+          "tags": [
+            "unique"
+          ],
+          "titleKey": "stable-life.event.employee-of-the-month.title",
+          "descriptionKey": "stable-life.event.employee-of-the-month.description"
+        }
+      ],
       "npcs": [],
       "goals": [
         {
@@ -665,6 +1314,36 @@
     "stable-life.employer.bright-mart-retail.name": "BrightMart Retail",
     "stable-life.employer.civic-data-office.name": "Civic Data Office",
     "stable-life.employer.greasy-spoon-diner.name": "The Greasy Spoon Diner",
+    "stable-life.event.appliance-breaks.description": "It gives one last hum and stops. Everything in it has opinions about that now.",
+    "stable-life.event.appliance-breaks.title": "The Fridge Dies",
+    "stable-life.event.bus-fare-increase.description": "The board votes on a Tuesday no one attends. The fare box votes every day after.",
+    "stable-life.event.bus-fare-increase.title": "Fare Goes Up Again",
+    "stable-life.event.car-breakdown.description": "Something under the hood decides today is the day.",
+    "stable-life.event.car-breakdown.title": "Car Breakdown",
+    "stable-life.event.employee-of-the-month.description": "A laminated certificate and a small cash bonus, in that order of perceived value.",
+    "stable-life.event.employee-of-the-month.title": "Employee of the Month",
+    "stable-life.event.hardship-relief-payment.description": "A form filed months ago is finally worth something.",
+    "stable-life.event.hardship-relief-payment.title": "Hardship Relief Payment",
+    "stable-life.event.inflation-adjustment.description": "Nothing on the shelf changed except the number under it.",
+    "stable-life.event.inflation-adjustment.title": "Prices Creep Up",
+    "stable-life.event.job-interview-invitation.description": "Someone read the application after all, and wants to meet the person who wrote it.",
+    "stable-life.event.job-interview-invitation.title": "Interview Invitation",
+    "stable-life.event.late-tax-filing-notice.description": "A form due last season is due again, this time with a tone.",
+    "stable-life.event.late-tax-filing-notice.title": "Late Filing Notice",
+    "stable-life.event.limited-time-sale.description": "A sign in the window insists this will never happen again. It happened last month too.",
+    "stable-life.event.limited-time-sale.title": "Limited-Time Sale",
+    "stable-life.event.mugging-attempt.description": "Someone blocks the alley shortcut and asks, not very politely, for your wallet.",
+    "stable-life.event.mugging-attempt.title": "Mugging Attempt",
+    "stable-life.event.pickpocketed.description": "A crowd, a jostle, and a lighter pocket than you started the day with.",
+    "stable-life.event.pickpocketed.title": "Pickpocketed",
+    "stable-life.event.shift-schedule-cut.description": "The schedule changes and a shift disappears from under you. The rent does not follow suit.",
+    "stable-life.event.shift-schedule-cut.title": "Shift Cut Short",
+    "stable-life.event.surprise-bonus.description": "The till balanced for once, and some of the difference lands in your pay.",
+    "stable-life.event.surprise-bonus.title": "Surprise Bonus",
+    "stable-life.event.tax-penalty-assessment.description": "The tone from two weeks ago becomes a number.",
+    "stable-life.event.tax-penalty-assessment.title": "Penalty Assessment",
+    "stable-life.event.team-morale-day.description": "Someone brought a cake. It is being treated as a major event.",
+    "stable-life.event.team-morale-day.title": "Team Morale Day",
     "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     "stable-life.goal.stable-life.label": "A Stable Life",
     "stable-life.housing.rented-room.description": "The cheapest housing tier. It is a room, and it is rented, and the description has now told you everything it has.",

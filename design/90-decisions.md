@@ -5,6 +5,9 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
+- **S16.5** — `03` §11.3's collection quantifiers (`exists`/`count`) are not expressible by the pinned engine: `kinds/simulation/conditions.ts` implements `field` and throws on `collection`. 2 of the 15 S16 events would have used one and omit it instead, named at the authoring site per CP10: `event-job-interview-invitation` (would gate on a `count` over `player.career.pendingApplications`) and `event-car-breakdown` (would gate on an `exists` over `player.inventory` for an owned vehicle). Same underlying gap as the credential completion requirement `stable-life.ts`'s file header already notes for S15's goal.
+- Discovered while implementing S16.3, not this slice's to fix (out of `Touches`): `createEngine().createGame(...)` throws for the Stable Life campaign — `kinds/simulation/initial.ts`'s `buildPlayer` indexes `backgrounds[0]!.id` unconditionally, and `stableLifeSource.backgrounds` is still empty. No game session can be created for this campaign until S22 ("a player does not start from nowhere") authors at least one background.
+
 ---
 
 ### 2026-08-30 — /kit-sync merges four AGENTS.md additions; no other kit-owned file diverged
