@@ -3,12 +3,12 @@
     {
       "name": "Parse-check PowerShell scripts",
       "status": "Passed",
-      "detail": "All *.ps1 files parsed with System.Management.Automation.Language.Parser, zero parse errors."
+      "detail": "All 73 *.ps1 files parsed with System.Management.Automation.Language.Parser, zero parse errors."
     },
     {
       "name": "Run Pester tests",
       "status": "Passed",
-      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests completed in 319.86s. Tests Passed: 350, Failed: 0, Skipped: 0, NotRun: 0."
+      "detail": "Invoke-Pester -Path tools -Output Detailed -PassThru: Tests completed in 188.62s. Tests Passed: 350, Failed: 0, Skipped: 0, NotRun: 0."
     },
     {
       "name": "Validate the core/companion split",
@@ -38,7 +38,7 @@
     {
       "name": "Test the campaign sources",
       "status": "Passed",
-      "detail": "npm test: vitest run - Test Files 4 passed (4), Tests 19 passed (19), exit 0. Includes the 5 new tests in src/check-clean.test.ts covering CP11/CP12/CP13."
+      "detail": "npm test: vitest run - Test Files 4 passed (4), Tests 29 passed (29), exit 0. Includes the 5 new S16 tests in src/campaigns/stable-life.test.ts (each verified to fail before the events/evaluator existed, for the right reason)."
     },
     {
       "name": "Re-export content and fail if the committed JSON is stale",
