@@ -534,10 +534,22 @@ into `docs/docs/games/` are the only link in either direction between a campaign
 specification it was transcribed from, and their rot after a renumbering is the full-audit
 path's to catch.
 
-**Where the pinned engine cannot express a requirement the corpus states, the source omits it
-visibly and names the omission** (CP10). Never approximate: an approximation is a silent
-divergence between the campaign and the spec it was authored from, in the one artifact whose
-entire purpose is to be evidence that the two agree.
+**Where the pinned engine cannot express a requirement the corpus states, the source omits or
+narrows it visibly and names what was left out** (CP10). Never approximate: an approximation is
+a **silent** divergence between the campaign and the spec it was authored from, in the one
+artifact whose entire purpose is to be evidence that the two agree.
+
+**Silence is what the rule turns on, and a narrower condition is not silent when it says so.**
+A condition over a real field the pinned engine resolves, named at its site as weaker than what
+the corpus asks, is compliant; `90-decisions.md` (2026-08-31, a `.length` narrowing) settled that
+and two events rest on it. The line falls where a form can become wrong without anyone editing
+it: `player.relationships.0.affinity` addresses one NPC by position and stops meaning what it
+meant the moment the array reorders, which is a divergence nothing announces, so it is forbidden
+even though it resolves. `player.relationships.length` names no item, so reordering cannot make
+it wrong — it can only ever be weaker than the corpus's own per-item gate, which is the thing the
+site must say out loud. **Omission remains the default and the narrowing is the exception**: it
+is available only where the narrower condition is a real property of the same subject, never
+where it is a different question standing in for the one the corpus asked.
 
 #### `scripts/export-content.ts`
 
@@ -987,7 +999,7 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | **CP7** | Every collection `SimulationCampaignSource` requires is present on every campaign source; an unwritten one is empty, never absent | Campaign sources | Code | `src/campaigns/stable-life.test.ts` |
 | **CP8** | No file under `content/` is hand-edited | The author | Instruction — the next export overwriting it is the only consequence, and making it an error would forbid the catalog-owns-the-directory behaviour CP6 requires | — |
 | **CP9** | No program in this repository resolves a `§` citation outside the corpus, and the spec-set checker keeps exactly one corpus root | Index, Campaign sources | Instruction — widening the root is a contract amendment, not a slice's call | — |
-| **CP10** | Where the pinned engine cannot express a requirement the corpus states, the campaign omits it visibly and names the omission, and the gap is raised in the engine repository rather than worked around here | Campaign sources | Instruction — the brief's non-goal is the enforcement available | — |
+| **CP10** | Where the pinned engine cannot express a requirement the corpus states, the campaign omits or narrows it visibly and names what was left out, and the gap is raised in the engine repository rather than worked around here | Campaign sources | Instruction — the brief's non-goal is the enforcement available | — |
 | **CP11** | The clean check compares only `content/`, and no parameter widens or relaxes the comparison | Clean check | Code | `src/check-clean.test.ts` |
 | **CP12** | The typecheck runs before the export in every composed invocation and in CI | `package.json`, workflow | Code | `src/check-clean.test.ts` |
 | **CP13** | No content-path step exits 0 for a comparison or a build it could not make | All | Code | `src/check-clean.test.ts` |
