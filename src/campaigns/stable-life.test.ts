@@ -94,10 +94,11 @@ describe("Stable Life — the authoring path", () => {
   });
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
-    // §16.1's jobs/employers/skills targets are now authored (S15), and 15 of 30 events
-    // (S16); the rest are still an honest statement that the content is unwritten.
+    // §16.1's jobs/employers/skills targets are now authored (S15), 15 of 30 events (S16),
+    // courses (S17), and 20 items (S19); the rest are still an honest statement that the
+    // content is unwritten.
     const empty = [
-      "courses", "items", "npcs", "opportunities", "achievements",
+      "npcs", "opportunities", "achievements",
       "headlines", "backgrounds", "traits",
     ] as const;
     for (const key of empty) {
@@ -374,6 +375,194 @@ describe("Stable Life — random events (S16)", () => {
   });
 
   it("builds and validates with events wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — purchasable items (S19)", () => {
+  const items = stableLifeSource.items;
+
+  // `03` §10.1's twelve item categories, kebab-cased the same way §11.1's event categories
+  // are; this campaign draws from ten of them (S19.1 requires at least eight).
+  const CORPUS_CATEGORIES = [
+    "food", "clothing", "furniture", "appliances", "electronics", "vehicles", "tools",
+    "medical-items", "entertainment", "education-materials", "business-equipment", "luxury-goods",
+  ] as const;
+
+  // Every `Modifier.target` an item's `effects` may write to — `validate.ts`'s
+  // `WRITABLE_TARGET_PREFIXES` plus its `calendar.committedTimeUnits` special case.
+  const WRITABLE_TARGET_PREFIXES = ["player.needs.", "player.attributes.", "player.skills."];
+  function isWritableTarget(target: string): boolean {
+    return target === "calendar.committedTimeUnits"
+      || WRITABLE_TARGET_PREFIXES.some((prefix) => target.startsWith(prefix));
+  }
+
+  it("has 20 entries, covering at least 8 of §10.1's twelve categories, each category one the corpus lists (S19.1)", () => {
+    expect(items).toHaveLength(20);
+    const categories = new Set(items.map((i) => i.category));
+    for (const item of items) {
+      expect(CORPUS_CATEGORIES as readonly string[], `${item.id}'s category`).toContain(item.category);
+    }
+    expect(categories.size).toBeGreaterThanOrEqual(8);
+  });
+
+  it("carries §16.4's two exact grocery lines (S19.2)", () => {
+    const basic = items.find((i) => i.id === "item-groceries-basic")!;
+    const poor = items.find((i) => i.id === "item-groceries-poor")!;
+    expect(basic.purchasePriceCents).toBe(4_500);
+    expect(poor.purchasePriceCents).toBe(2_500);
+
+    const satietyEffect = (item: typeof basic) =>
+      item.effects.find((e) => e.target === "player.needs.satiety");
+    expect(satietyEffect(basic)?.value).toBe(100);
+    expect(satietyEffect(poor)?.value).toBe(100);
+
+    const healthEffect = poor.effects.find((e) => e.target === "player.needs.health");
+    expect(healthEffect?.operation).toBe("subtract");
+    expect(healthEffect?.value).toBe(3);
+    expect(basic.effects.some((e) => e.target === "player.needs.health")).toBe(false);
+  });
+
+  it("has at least one item with a durability or maintenance rule, its fields within the corpus's 0-100 scale (S19.3)", () => {
+    const withDurability = items.filter((i) => i.durability !== undefined);
+    const withMaintenance = items.filter((i) => (i.maintenanceRules?.length ?? 0) > 0);
+    expect(withDurability.length + withMaintenance.length).toBeGreaterThan(0);
+
+    for (const item of withDurability) {
+      expect(item.durability, `${item.id}'s durability`).toBeGreaterThanOrEqual(0);
+      expect(item.durability, `${item.id}'s durability`).toBeLessThanOrEqual(100);
+    }
+    for (const item of withMaintenance) {
+      for (const rule of item.maintenanceRules!) {
+        expect(rule.intervalWeeks, `${item.id}'s intervalWeeks`).toBeGreaterThan(0);
+        expect(rule.costCents, `${item.id}'s costCents`).toBeGreaterThanOrEqual(0);
+        expect(rule.timeCost, `${item.id}'s timeCost`).toBeGreaterThanOrEqual(0);
+        expect(rule.conditionLossIfSkipped, `${item.id}'s conditionLossIfSkipped`).toBeGreaterThanOrEqual(0);
+        expect(rule.conditionLossIfSkipped, `${item.id}'s conditionLossIfSkipped`).toBeLessThanOrEqual(100);
+        expect(rule.breakageChanceAtZeroCondition, `${item.id}'s breakageChanceAtZeroCondition`).toBeGreaterThanOrEqual(0);
+        expect(rule.breakageChanceAtZeroCondition, `${item.id}'s breakageChanceAtZeroCondition`).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+
+  it("targets only a writable Modifier field in every item's effects", () => {
+    // Not itself a numbered criterion, but every other item test assumes the engine accepts
+    // these targets — this is what actually proves it, by iterating the collection rather
+    // than trusting the two items checked by id above.
+    for (const item of items) {
+      for (const effect of item.effects) {
+        expect(isWritableTarget(effect.target), `${item.id}'s effect targets ${effect.target}`).toBe(true);
+      }
+    }
+  });
+
+  it("builds and validates with items wired in", () => {
+    const result = buildStableLifeCampaign();
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    expect(registry.errors).toEqual([]);
+    expect(registry.ok).toBe(true);
+  });
+});
+
+describe("Stable Life — courses (S17)", () => {
+  const courses = stableLifeSource.courses;
+
+  // `03` §7.1's ten education types, kebab-cased verbatim from the corpus's own list.
+  // `CourseDefinition` (content.ts) has no dedicated type field — the same `tags` mechanism
+  // S16.2 used for event types carries it here.
+  const VALID_EDUCATION_TYPES = new Set([
+    "high-school-equivalency", "vocational-certificates", "university-degrees",
+    "night-classes", "professional-certifications", "online-courses",
+    "self-directed-learning", "apprenticeships", "employer-training",
+    "questionable-motivational-seminars",
+  ]);
+
+  // `03` §16.4's education-cost table, restated as literal cent/unit values rather than read
+  // from the source's own constant — the same independence S15.4's wage-table test used.
+  const EDUCATION_COST_TABLE = [
+    { tuitionCents: 34_000, durationWeeks: 8, weeklyTimeCost: 3 }, // Short certificate
+    { tuitionCents: 90_000, durationWeeks: 16, weeklyTimeCost: 4 }, // Vocational certificate
+    { tuitionCents: 160_000, durationWeeks: 24, weeklyTimeCost: 5 }, // Degree module
+  ] as const;
+
+  function educationTypeOf(course: (typeof courses)[number]): string {
+    const typeTags = course.tags.filter((t) => VALID_EDUCATION_TYPES.has(t));
+    expect(typeTags, `${course.id} should carry exactly one §7.1 type tag`).toHaveLength(1);
+    return typeTags[0]!;
+  }
+
+  it("has 6 entries, each a distinct §7.1 education type (S17.1)", () => {
+    expect(courses).toHaveLength(6);
+    const types = courses.map(educationTypeOf);
+    expect(new Set(types).size, "every course should use a different §7.1 type").toBe(6);
+    for (const type of types) {
+      expect(VALID_EDUCATION_TYPES.has(type), `"${type}" should be one of §7.1's types`).toBe(true);
+    }
+  });
+
+  it("prices tuition, duration and weekly time cost from §16.4's education-cost table exactly (S17.2)", () => {
+    for (const course of courses) {
+      const matches = EDUCATION_COST_TABLE.some(
+        (row) =>
+          row.tuitionCents === course.tuitionCents &&
+          row.durationWeeks === course.durationWeeks &&
+          row.weeklyTimeCost === course.weeklyTimeCost,
+      );
+      expect(matches, `${course.id}'s tuition/duration/weeklyTimeCost should match a §16.4 row exactly`).toBe(
+        true,
+      );
+    }
+    // All three rows are actually used, not just one stretched across all six.
+    for (const row of EDUCATION_COST_TABLE) {
+      const used = courses.some(
+        (c) =>
+          c.tuitionCents === row.tuitionCents &&
+          c.durationWeeks === row.durationWeeks &&
+          c.weeklyTimeCost === row.weeklyTimeCost,
+      );
+      expect(used, `no course prices from the $${row.tuitionCents / 100} row`).toBe(true);
+    }
+  });
+
+  it("carries §7.4's failure rules — attendance floor, study floor, retained progress — within range (S17.3)", () => {
+    for (const course of courses) {
+      const rules = course.failureRules;
+      expect(rules, `${course.id} should carry failureRules`).toBeDefined();
+      expect(rules.minimumAttendanceRatio, `${course.id}'s attendance floor`).toBeGreaterThan(0);
+      expect(rules.minimumAttendanceRatio, `${course.id}'s attendance floor`).toBeLessThanOrEqual(100);
+      expect(rules.minimumStudyUnitsPerWeek, `${course.id}'s study floor`).toBeGreaterThan(0);
+      expect(rules.progressRetainedOnFailure, `${course.id}'s retained progress`).toBeGreaterThanOrEqual(0);
+      expect(rules.progressRetainedOnFailure, `${course.id}'s retained progress`).toBeLessThanOrEqual(100);
+    }
+  });
+
+  it("names only credentials a course actually grants, checked against every job requirement (S17.4)", () => {
+    const grantedLevels = new Set(
+      courses.map((c) => c.awardsCredential).filter((level): level is NonNullable<typeof level> => level !== undefined),
+    );
+    const credentialRequirements = stableLifeSource.jobs
+      .flatMap((job) => job.requirements)
+      .filter((r) => r.type === "credential");
+    for (const requirement of credentialRequirements) {
+      if ("field" in requirement.condition) {
+        expect(
+          grantedLevels.has(
+            requirement.condition.value as NonNullable<(typeof courses)[number]["awardsCredential"]>,
+          ),
+          `a job requires credential "${requirement.condition.value}", which no course grants`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("builds and validates with courses wired in", () => {
     const result = buildStableLifeCampaign();
     expect(result.errors).toEqual([]);
     expect(result.ok).toBe(true);
