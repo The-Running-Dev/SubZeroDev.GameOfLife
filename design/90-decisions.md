@@ -5,6 +5,8 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
+- **S16.5** — `03` §11.3's collection quantifiers (`exists`/`count`) are not expressible by the pinned engine: `kinds/simulation/conditions.ts` implements `field` and throws on `collection`. 2 of the 15 S16 events would have used one and omit it instead, named at the authoring site per CP10: `event-job-interview-invitation` (would gate on a `count` over `player.career.pendingApplications`) and `event-car-breakdown` (would gate on an `exists` over `player.inventory` for an owned vehicle). Same underlying gap as the credential completion requirement `stable-life.ts`'s file header already notes for S15's goal. Tracked as issue #107, which also covers S21.5's two further instances of this gap; kept here as well because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
+
 ---
 
 ### 2026-08-31 — A `.length` narrowing on a collection field is CP10-compliant; S21.3 is fully met
