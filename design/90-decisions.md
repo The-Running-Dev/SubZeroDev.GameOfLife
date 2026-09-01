@@ -9,6 +9,32 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-01 — The exporter raises `WriteFailed` rather than letting the filesystem's error escape
+Context: `20-contract.md` § *Content path errors* gives the exporter a five-row table, and
+`scripts/export-content.ts`'s own docstring says its errors carry "the contract's own reason".
+Two rows had producers. `SurfaceChanged` and `SubmoduleAbsent` correctly had none — the contract
+says in as many words that the typecheck and module resolution raise them, before the exporter
+runs. `WriteFailed` carried no such note and no producer either: a filesystem rejection inside
+the write loop escaped as a bare errno, so the one row the contract singles out as *not* leaving
+`content/` byte-identical, and the one failure `10-design.md` calls the only partial-failure
+window in either system, was a reason no caller could ever branch on. Found by /reconcile
+against the tree at `4cfac44`.
+Chosen: Wrap the write phase and rethrow as `ExportError("WriteFailed", …)`, carrying the
+original error as `cause` so the path and the errno survive. `src/export-content.test.ts` drives
+it through a real filesystem rejection — a regular file where a directory has to be — rather than
+a stub, and asserts the reason and the cause. Verified by reverting: removing the wrap fails the
+new case on `toBeInstanceOf(ExportError)`, and leaving the wrap with the wrong reason fails it on
+the reason.
+Rejected: Annotating the contract row to say the failure surfaces as the filesystem's own error,
+the way the `SurfaceChanged` and `SubmoduleAbsent` rows already say they arise elsewhere. One
+sentence, and cheaper — rejected because that row's `Caller does` cell tells a caller what to do
+about `WriteFailed`, and a caller cannot branch on a reason the taxonomy names but nothing
+produces. Also rejected: recording it as known and retained, which leaves the exporter's own
+docstring claiming a table it satisfies two-fifths of.
+Reversibility: cheap — one `try`/`catch`, one union member, one test case.
+
+---
+
 ### 2026-08-31 — The catalog card names the unwritten collections rather than the authored ones
 Context: `stableLifeCatalog.contentNotice` enumerated what was authored — "6 courses, 15 of 30
 random events, 20 purchasable items, 8 NPCs and 3 starting backgrounds" — so every slice that

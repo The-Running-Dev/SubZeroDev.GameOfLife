@@ -162,6 +162,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-31-cp2-and-cp3-are-scoped-to-production-sources-and-the-cp3-check-is-tightened-to-match | — |
 | decision/2026-08-31-the-catalog-card-names-the-unwritten-collections-rather-than-the-authored-ones | — |
 | decision/2026-08-31-the-lifecycle-marker-vocabulary-is-reserved-to-the-derived-concept-set | — |
+| decision/2026-09-01-the-exporter-raises-writefailed-rather-than-letting-the-filesystem-s-error-escape | `unit/document/design-20-contract` |
 <!-- decision-affects:end -->
 
 ## Question affects
