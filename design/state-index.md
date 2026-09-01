@@ -177,9 +177,9 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 16 | #88 | S20 — There are other people, and they remember | S20.1, S20.2, S20.3, S20.4, S20.5, S20.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
-| 17 | #89 | S21 — The rest of the week goes wrong too: home, health, people and pure absurdity | S21.1, S21.2, S21.3, S21.4, S21.5, S21.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
-| 18 | #90 | S22 — A player does not start from nowhere | S22.1, S22.2, S22.3, S22.4, S22.5, S22.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
-| 19 | #91 | S23 — The scenario is finishable, and there is more than one thing to aim at | S23.1, S23.2, S23.3, S23.4, S23.5, S23.6 | `c6138ea66e382d6fc9c7b4fa33f67be56eee37ce` |
 | 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `c97bb3bf808924068e35788b32a352f0e7cb3d64` |
+| 107 | #107 | Four Stable Life events react to a narrower stand-in because the engine can't count or check existence across a list | — | `711185f6275d0f4a66550353b8f3cd30f3860e64` |
+| 108 | #108 | Four Stable Life items describe an effect the engine's modifier validator won't accept, and a vehicle's running costs are never charged | — | `711185f6275d0f4a66550353b8f3cd30f3860e64` |
+| 109 | #109 | Utilities and transport have no field to be charged against in the pinned engine's housing model | — | `711185f6275d0f4a66550353b8f3cd30f3860e64` |
+| 110 | #110 | An NPC can't start the game already remembering something, because NPCMemory only exists on runtime state | — | `711185f6275d0f4a66550353b8f3cd30f3860e64` |
 <!-- outstanding:end -->
