@@ -30,10 +30,8 @@ const declaredPackages = new Set([
   ...Object.keys(pkg.devDependencies ?? {}),
 ]);
 
-const PUBLISHED_ENGINE_SURFACE = new Set([
-  "@the-running-dev/game-engine",
-  "@the-running-dev/game-engine/authoring",
-]);
+const ENGINE_PACKAGE = "@the-running-dev/game-engine";
+const PUBLISHED_ENGINE_SURFACE = new Set([ENGINE_PACKAGE, `${ENGINE_PACKAGE}/authoring`]);
 
 /** Every `.ts`/`.mjs` file under `root`, walked recursively. */
 function walk(root: string): string[] {
@@ -79,8 +77,10 @@ function specifiersOf(text: string): ImportSpecifier[] {
 }
 
 /** The name a specifier would be declared under in `package.json` — the scope-qualified
- *  name for a scoped package, the first path segment otherwise. Subpaths of the engine
- *  package are handled separately, by exact match, since only two are published. */
+ *  name for a scoped package, the first path segment otherwise. This is why an engine
+ *  specifier can never be decided by the declared-packages fallback: it reduces every engine
+ *  subpath to the declared dependency name, which is present, so the fallback would allow
+ *  all of them. `isAllowedSpecifier` settles the engine before reaching it. */
 function packageNameOf(specifier: string): string {
   const segments = specifier.split("/");
   return specifier.startsWith("@") ? segments.slice(0, 2).join("/") : (segments[0] ?? specifier);
@@ -97,6 +97,14 @@ function relativePosix(file: string): string {
 
 function isAllowedSpecifier(specifier: string, fileDir: string): boolean {
   if (PUBLISHED_ENGINE_SURFACE.has(specifier)) return true;
+  // The engine is decided by PUBLISHED_ENGINE_SURFACE alone. Without this line a subpath such
+  // as `@the-running-dev/game-engine/internal` falls through to the declared-packages check,
+  // which reduces it to the declared dependency name and allows it — so the check CP1 names as
+  // its evidence would permit exactly what CP1 forbids. The engine's own `exports` map
+  // publishes only these two paths today, so such an import cannot currently resolve; that is
+  // the dependency's packaging holding a rule this repository states, and CP1 is this
+  // repository's to hold.
+  if (packageNameOf(specifier) === ENGINE_PACKAGE) return false;
   if (isBuiltin(specifier)) return true;
   if (specifier.startsWith(".")) {
     const resolved = path.resolve(fileDir, specifier);
@@ -118,6 +126,16 @@ describe("the published surface (CP1)", () => {
       }
     }
     expect(violations).toEqual([]);
+  });
+
+  it("rejects an engine specifier that is neither published one, which the declared-packages fallback would otherwise allow", () => {
+    // A validator that has never rejected anything is not known to constrain anything, and
+    // this is the half of CP1 no source exercises: the relative-import form above is the
+    // hazard the submodule creates, and this is the form the package name hides.
+    expect(isAllowedSpecifier(`${ENGINE_PACKAGE}/internal`, srcDir)).toBe(false);
+    expect(isAllowedSpecifier(`${ENGINE_PACKAGE}/dist/kinds/simulation/validate.js`, srcDir)).toBe(false);
+    expect(isAllowedSpecifier(ENGINE_PACKAGE, srcDir)).toBe(true);
+    expect(isAllowedSpecifier(`${ENGINE_PACKAGE}/authoring`, srcDir)).toBe(true);
   });
 });
 
