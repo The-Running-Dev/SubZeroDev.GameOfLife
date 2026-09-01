@@ -4,6 +4,12 @@
  * catalog no longer names, and the directory it produces holds exactly the catalog's files
  * plus `manifest.json` — nothing else.
  *
+ * Also covers the third row of § *Content path errors*' exporter table, `WriteFailed`: the
+ * only variant that does not carry CP4's byte-identical guarantee, and the only one whose
+ * cause is the filesystem rather than the engine. A taxonomy entry no code path produces is
+ * a reason a caller can never branch on, which is why it is asserted here by reason rather
+ * than left to be inferred from an errno.
+ *
  * This suite runs `exportContent` against the real `content/` directory with the real
  * `entries`, the same directory `scripts/check-clean.mjs` gates. Byte-identical is proven
  * the way `scripts/check-clean.mjs` proves it — by `git status`, never by reading a file
@@ -11,8 +17,9 @@
  * every test that reaches the write phase leaves `content/` matching what is committed.
  */
 
-import { readdir, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import * as os from "node:os";
 import * as path from "node:path";
 import type { BuiltCampaign } from "@the-running-dev/game-engine";
 import { describe, expect, it } from "vitest";
@@ -99,5 +106,29 @@ describe("a failure before the write phase (CP4)", () => {
     expect(failure).toBeInstanceOf(ExportError);
     expect((failure as ExportError).reason).toBe("ValidationRejected");
     expect(gitStatusOfContent()).toBe("");
+  });
+});
+
+describe("a failure during the write phase (WriteFailed)", () => {
+  it("reports WriteFailed with the filesystem's own error as the cause, and touches content/ not at all", async () => {
+    const scratch = await mkdtemp(path.join(os.tmpdir(), "export-write-failed-"));
+    try {
+      // A regular file where a directory has to be, so mkdir/writeFile is rejected by the
+      // filesystem on every host rather than by a stub standing in for one.
+      const blocker = path.join(scratch, "not-a-directory");
+      await writeFile(blocker, "", "utf8");
+
+      const failure = await exportContent(entries, path.join(blocker, "content")).catch(
+        (e: unknown) => e,
+      );
+
+      expect(failure).toBeInstanceOf(ExportError);
+      expect((failure as ExportError).reason).toBe("WriteFailed");
+      expect((failure as ExportError).cause).toBeInstanceOf(Error);
+      // The real published directory was never the target, so it cannot have moved.
+      expect(gitStatusOfContent()).toBe("");
+    } finally {
+      await rm(scratch, { recursive: true });
+    }
   });
 });

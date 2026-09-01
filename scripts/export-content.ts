@@ -63,10 +63,11 @@ export const outputDir = path.join(here, "..", "content");
  *  states rather than a summarised sentence. */
 export class ExportError extends Error {
   constructor(
-    readonly reason: "CampaignDidNotBuild" | "ValidationRejected",
+    readonly reason: "CampaignDidNotBuild" | "ValidationRejected" | "WriteFailed",
     message: string,
+    options?: { cause: unknown },
   ) {
-    super(message);
+    super(message, options);
     this.name = "ExportError";
   }
 }
@@ -81,7 +82,8 @@ function serialize(value: unknown): string {
  * Builds and validates every entry before writing anything (CP4), then makes `outputDir`
  * match the catalog exactly — every entry's file plus `manifest.json`, and nothing else
  * (CP6, CP15). A build or validation failure throws an `ExportError` before any write or
- * delete, so `outputDir` is left exactly as this call found it.
+ * delete, so `outputDir` is left exactly as this call found it; a failure *during* the write
+ * phase throws `WriteFailed`, the one variant that does not carry that guarantee.
  */
 export async function exportContent(
   catalogEntries: readonly Entry[],
@@ -133,17 +135,33 @@ export async function exportContent(
   };
   files.set("manifest.json", serialize(manifest));
 
-  // Remove any previously published file the catalog no longer names, so a renamed or
-  // retired campaign cannot linger in outputDir as a stale document a host still fetches.
-  await mkdir(outputDir, { recursive: true });
-  for (const existing of await readdir(outputDir)) {
-    if (existing.endsWith(".json") && !files.has(existing)) {
-      await rm(path.join(outputDir, existing));
+  // The write phase, and the one place in either system where a failure can leave outputDir
+  // partially written — everything above completes before it starts. A filesystem rejection
+  // here is reported under the contract's own `WriteFailed` rather than escaping as a bare
+  // errno, so a caller can branch on the reason the error table tells it to act on; the
+  // original error travels as `cause`, because the path and the errno are the diagnosis and
+  // summarising them away is the loss the author then has to reconstruct.
+  try {
+    // Remove any previously published file the catalog no longer names, so a renamed or
+    // retired campaign cannot linger in outputDir as a stale document a host still fetches.
+    await mkdir(outputDir, { recursive: true });
+    for (const existing of await readdir(outputDir)) {
+      if (existing.endsWith(".json") && !files.has(existing)) {
+        await rm(path.join(outputDir, existing));
+      }
     }
-  }
 
-  for (const [file, body] of files) {
-    await writeFile(path.join(outputDir, file), body, "utf8");
+    for (const [file, body] of files) {
+      await writeFile(path.join(outputDir, file), body, "utf8");
+    }
+  } catch (cause) {
+    throw new ExportError(
+      "WriteFailed",
+      `${outputDir}: the filesystem rejected a write or a delete — ${
+        cause instanceof Error ? cause.message : String(cause)
+      }`,
+      { cause },
+    );
   }
 
   return manifestEntries;

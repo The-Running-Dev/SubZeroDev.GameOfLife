@@ -53,6 +53,13 @@ only when it would have changed a decision.
   Prefer appending.
 - **Encoding** — some imported source docs arrived CP1252, not UTF-8 (mojibake em-dashes /
   arrows). Rewrite to UTF-8 when importing.
+- **Cite the issue, never `## Open`.** `## Open` in `design/90-decisions.md` is a staging
+  area whose items `/track` removes the moment it files them, so a comment in the tree
+  citing it is wrong within one `/track` run. Cost: two comments in the *published*
+  campaign source told a reader their CP10 gap was recorded in a section that no longer
+  carried it, and only a full reconciliation found them. Same shape as the `contentNotice`
+  enumeration that read "15 of 30 random events" through four merged slices — **name the
+  thing that does not move, not the thing that does.**
 
 ## Open concerns & assumptions
 

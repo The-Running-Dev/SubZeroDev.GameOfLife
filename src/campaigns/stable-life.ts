@@ -25,7 +25,7 @@
  * `NPCMemory[]` lives only on the runtime `NPCState`, populated by play, not on the content
  * an author writes. So no NPC below carries a starting memory, not because §12.3's shape is
  * unreachable through validation but because the authoring surface has nowhere to put one.
- * Named here per CP10 and recorded under `## Open` in `design/90-decisions.md`.
+ * Named here per CP10 and tracked as issue #110.
  *
  * **§12.1 states no numeric range for the four relationship dimensions, and the engine's own
  * regression suite confirms it deliberately** (`resolvers.test.ts`: "§6.11 declares no range
@@ -234,7 +234,7 @@ const locations: SimulationCampaignSource["locations"] = [
  * `cashCents`. **Utilities** and **transport** are omitted: no `HousingDefinition` field
  * carries either, and while `ItemDefinition.weeklyCostCents` exists, nothing in the engine's
  * end-of-week step reads it, so authoring transport onto an item would not charge anything
- * either. Named here per CP10 and recorded under `## Open` in `design/90-decisions.md`.
+ * either. Named here per CP10 and tracked as issue #109.
  * **Groceries** and **poor-quality groceries** are out of this slice's scope — they are
  * items, and belong to S19.
  */

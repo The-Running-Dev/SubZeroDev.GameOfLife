@@ -167,8 +167,9 @@ in the engine becomes visible to a person.
 
 #### Identity, and the one place it is ambiguous
 
-A campaign has two identities and they answer different questions. `(id, version)` is what a host
-addresses and caches by. The digest is what the content actually is. They can disagree: editing a
+A campaign has three names and they answer different questions. The file name is what a host can
+construct without reading anything. `(id, version)` is what a host addresses and caches by. The
+digest is what the content actually is. The last two can disagree: editing a
 campaign source without changing its version produces a new digest under an unchanged address, and
 the manifest's resolution digest — computed over (id, version) pairs — does not move either. A host
 that caches on the address serves the old campaign and has no way to know.
