@@ -167,6 +167,8 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-09-01-ss6-records-the-one-overlap-in-its-bucket-counts-rather-than-the-code-losing-it | `unit/document/design-20-contract` |
 | decision/2026-09-01-the-content-path-s-gates-use-a-two-value-exit-and-only-never-0-is-contracted | `unit/document/design-20-contract` |
 | decision/2026-09-01-the-exporter-raises-writefailed-rather-than-letting-the-filesystem-s-error-escape | `unit/document/design-20-contract` |
+| decision/2026-09-02-cp2-binds-the-invoked-export-and-the-exporter-s-arguments-are-the-error-table-s-test-seam | — |
+| decision/2026-09-02-s23-4-s-open-guard-is-bounded-on-the-section-separator | — |
 <!-- decision-affects:end -->
 
 ## Question affects

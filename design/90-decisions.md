@@ -9,6 +9,54 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-02 — CP2 binds the invoked export, and the exporter's arguments are the error table's test seam
+Context: CP2 read "`content/` has exactly one production writer, and it writes nowhere else", and
+§ *Public surface* added that no parameter may make the exporter write elsewhere or write a subset.
+The tree has both parameters one level below the command line: `exportContent(catalogEntries,
+outputDir)`. `src/export-content.test.ts` drives it at a temporary directory to raise `WriteFailed`,
+and at substitute catalogs to raise `CampaignDidNotBuild` and `ValidationRejected` — so the contract
+forbade the seam its own error table needs, and the 2026-09-01 `WriteFailed` entry had already
+chosen a real filesystem rejection over a stub, which cannot be aimed at the published directory
+without publishing from it. Separately, the evidence check in `src/published-surface.test.ts`
+resolves the exporter's writes to the binding spelled `outputDir`, which inside `exportContent` is
+the argument shadowing the module constant — so it proved less than its name read. Found by
+/reconcile against the tree at `9cf09d0`.
+Chosen: Scope the contract to the invoked surface — CP2's second clause, and the `--out-dir`/`--only`
+sentence — and state the seam, why it exists, and the obligation it carries: a test that leaves
+`content/` differing from the committed export has failed whatever else it asserted, which is what
+every such test already ends on. The evidence check's title and comment now say what it resolves.
+This is the 2026-08-31 CP2/CP3 production-source scoping applied one level down, to the same rows,
+for the same reason.
+Rejected: Removing the parameters so CP2 is literally true of the function. It makes the row
+self-evident and costs the `WriteFailed` fixture — with no output directory the test must mock the
+filesystem or chmod the real `content/`, which is the stub the 2026-09-01 entry rejected by name.
+Also rejected: recording the breadth as known and retained, which leaves the contract asserting an
+invariant the tree does not hold — the shape 2026-08-29 (six SS invariants) refused.
+Reversibility: cheap — one table row and two paragraphs.
+
+---
+
+### 2026-09-02 — S23.4's `## Open` guard is bounded on the section separator
+Context: `## Open`'s S16.5 bullet says the item is kept there after filing "because S23.4's test
+(`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open`". It did not. The
+test sliced from `## Open` to the next `## ` heading, and `## Open` is the last `## ` heading in the
+file, so the bound was -1 and the slice was 93,055 of the log's 93,211 bytes — the assertion searched
+the whole document. Verified by moving the bullet down among the dated entries: it still passed. The
+one transition the guard exists to catch — the item leaving the staging area `AGENTS.md` says a filed
+item leaves — was the transition it could not see, and had not seen since it landed at `79da1c8`.
+Found by /reconcile against the tree at `9cf09d0`.
+Chosen: Bound the slice on the `---` that closes `## Open`, which is the section's real end and does
+exist. Verified by reverting in both directions: the corrected guard passes as the log stands, and
+fails with the bullet relocated to either of two positions among the dated entries.
+Rejected: Weakening the bullet to claim only that the gap is named somewhere in the log. Honest, and
+it drops the retention rule the bullet exists for, leaving nothing checking the one fact
+`AGENTS.md`'s staging-area rule and issue #107 both turn on. Also rejected: deleting the assertion,
+which removes the only mechanical link between the campaign's CP10 omission and the open item that
+records it, leaving the pairing to the full-audit path.
+Reversibility: cheap — one expression.
+
+---
+
 ### 2026-09-01 — SS6 records the one overlap in its bucket counts rather than the code losing it
 Context: `Get-SpecSetBucketCounts` counts a reference as `Failed` when its status is
 `Unresolvable` and it carries a finding, and separately as `Unresolvable`. A cross-repository

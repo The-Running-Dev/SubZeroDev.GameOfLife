@@ -556,8 +556,8 @@ where it is a different question standing in for the one the corpus asked.
 Declared in [`scripts/export-content.ts`](../scripts/export-content.ts). The `entries` list is
 the publication catalog and is this file's most important surface.
 
-**It is the only production writer in either system, and `content/` is its only write target**
-(CP2).
+**It is the only production writer in either system, and `content/` is the only directory the
+invoked export writes** (CP2).
 
 **It builds every campaign and validates the whole set before writing any file** (CP4), so an
 authoring or validation failure leaves the directory byte-identical. That ordering is the
@@ -571,10 +571,24 @@ visible to a person; minifying the output would remove the second of those and b
 **It removes every `.json` under `content/` the catalog does not name** (CP6). That is what
 makes a retired or renamed campaign disappear rather than linger.
 
-**No parameter may make it write elsewhere or write a subset.** There is no `--out-dir` and no
-`--only`, and adding either defeats CP4 and CP6 at once: a partial export is indistinguishable
-from a stale one to the clean check, which is the only thing standing between a source edit and
-a silently unpublished change.
+**No command-line parameter may make it write elsewhere or write a subset.** There is no
+`--out-dir` and no `--only`, and adding either defeats CP4 and CP6 at once: a partial export is
+indistinguishable from a stale one to the clean check, which is the only thing standing between a
+source edit and a silently unpublished change.
+
+**`exportContent` takes its catalog and its output directory as arguments, and the rule above
+binds the invoked surface rather than that signature.** `main()` supplies the module's `entries`
+and `outputDir`, and nothing else calls it in production, so what is published is what the rule
+describes. The arguments are what lets the exporter's error table be exercised at all:
+`CampaignDidNotBuild` and `ValidationRejected` need a catalog that fails, and `WriteFailed` needs
+a filesystem that rejects a real write — which `90-decisions.md` (2026-09-01, `WriteFailed`) chose
+over a stub, and which cannot be aimed at the published directory without publishing from it. The
+scope carries the obligation the production-source scope on CP2 and CP3 already carries: **a test
+that leaves `content/` differing from the committed export has failed, whatever else it
+asserted**, which is why each one ends on a `git status` assertion. **What the evidence check
+proves is correspondingly narrower than its name reads**: it resolves the exporter's writes to the
+binding spelled `outputDir`, which inside `exportContent` is the argument and not the module
+constant it checks separately.
 
 #### `scripts/check-clean.mjs`
 
@@ -1011,7 +1025,7 @@ fails when the row is broken**, and an em dash means nothing enforces it yet.
 | Id | Invariant | Owner | Enforcement | Evidence |
 |---|---|---|---|---|
 | **CP1** | No source in this repository imports the engine by anything other than `@the-running-dev/game-engine` or its `/authoring` subpath, and no relative import escapes this repository's own sources | Campaign sources, Exporter | Code | `src/published-surface.test.ts` |
-| **CP2** | `content/` has exactly one production writer, and it writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
+| **CP2** | `content/` has exactly one production writer, and the invoked export writes nowhere else | Exporter | Code | `src/published-surface.test.ts` |
 | **CP3** | No production source in this repository reads a file under `content/` | All | Code | `src/published-surface.test.ts` |
 | **CP4** | Every campaign builds and the whole set validates before any file is written; a failure before the write phase leaves `content/` byte-identical | Exporter | Code | `src/export-content.test.ts` |
 | **CP5** | Two exports from the same sources and the same pin produce byte-identical files | Exporter | Code | `.github/workflows/verify.yml`, step *Re-export content and fail if the committed JSON is stale* |
