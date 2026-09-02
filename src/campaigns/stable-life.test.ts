@@ -1009,10 +1009,16 @@ describe("Stable Life — goals and victory (S23)", () => {
       new URL("../../design/90-decisions.md", import.meta.url),
       "utf8",
     );
-    const openSection = decisionsLog.slice(
-      decisionsLog.indexOf("## Open"),
-      decisionsLog.indexOf("\n## ", decisionsLog.indexOf("## Open") + 1),
-    );
+    // Bounded on the `---` that closes `## Open`, because that is the section's real end and
+    // it exists. Slicing to the next `## ` heading did not: `## Open` is the last of those in
+    // the file, so the bound was -1 and the assertion searched the whole log — the item could
+    // move down among the dated entries and still pass, which is the one transition this is
+    // here to catch.
+    const openStart = decisionsLog.indexOf("## Open");
+    const openEnd = decisionsLog.indexOf("\n---", openStart);
+    expect(openStart).toBeGreaterThanOrEqual(0);
+    expect(openEnd).toBeGreaterThan(openStart);
+    const openSection = decisionsLog.slice(openStart, openEnd);
     expect(openSection).toContain("S16.5");
     expect(openSection).toContain("credential completion requirement");
   });

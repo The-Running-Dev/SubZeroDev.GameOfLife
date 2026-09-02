@@ -229,11 +229,16 @@ describe("the single writer (CP2)", () => {
     expect(writers).toEqual(["scripts/export-content.ts"]);
   });
 
-  it("resolves every write and delete the exporter performs under content/", () => {
+  it("resolves every write and delete the exporter performs to outputDir, which main() supplies as content/", () => {
     const exporterPath = path.join(scriptsDir, "export-content.ts");
     const text = readFileSync(exporterPath, "utf8");
 
-    // outputDir must itself be declared as a path.join(..., "content").
+    // What this proves is narrower than "writes under content/", and the contract says so
+    // (`20-contract.md` § *Content path surfaces*): inside `exportContent`, `outputDir` is the
+    // argument, which a test may point elsewhere so `WriteFailed` can be raised by a real
+    // filesystem rejection. The two assertions together are the check CP2 gets — every write
+    // targets the binding spelled `outputDir`, and the module constant of that name is
+    // content/, which is what `main()` passes and nothing else in production does.
     const outputDirDeclaration = text.match(
       /const\s+outputDir\s*=\s*path\.join\([^)]*["']content["']\s*\)/,
     );

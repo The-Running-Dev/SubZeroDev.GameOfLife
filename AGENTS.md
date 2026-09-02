@@ -13,7 +13,7 @@ and its content**. The engine and the hosting layer are separate companion repos
 Fast Lane* (Sierra, 1990), the flagship `simulation`-kind game of the Narrative Engine. Two
 halves, both owned here:
 
-1. **The specs** (`docs/docs/games/`) — the detailed spec set, ~105 KB of engine document.
+1. **The specs** (`docs/docs/games/`) — the detailed spec set, ~115 KB of engine document.
 2. **The content** (`src/campaigns/` → `content/`) — the campaign sources themselves, authored
    against the engine's published authoring surface and exported as portable JSON.
 
@@ -53,7 +53,7 @@ number.
 | `docs/docs/games/01-vision.md` | Why the game exists, creative principles, non-goals, risks |
 | `docs/docs/games/02-narrative-voice.md` | The narrator, tone rules, long-arc gags. **The project's strongest asset** |
 | `docs/docs/games/03-game-design.md` | Mechanics, numbers, content targets, the map, the scenario |
-| `docs/docs/games/04-engine-specification.md` | Types, API, systems, testing, phases (~105 KB) |
+| `docs/docs/games/04-engine-specification.md` | Types, API, systems, testing, phases (~115 KB) |
 | `docs/docs/games/05-text-client.md` | The first client, and the instrument that proves the API |
 | `docs/docs/games/life-in-the-fast-lane.md` | **Game 1** — the `simulation` kind (Jones clone). Depth milestone; Bulgaria is its culture pack. Full spec is `docs/docs/games/01`–`05` |
 | `docs/docs/games/bulgaria-adventure.md` | **Game 2** — the `story-graph` kind (make-your-own-adventure). The MVP vehicle |

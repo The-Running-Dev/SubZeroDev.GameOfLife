@@ -1,7 +1,7 @@
 # Agent — Lessons Learned
 
 Retrospective notes for whoever works this **game** repo next. Standing *instructions* live
-in [`CLAUDE.md`](CLAUDE.md); durable *facts/preferences* live in the memory dir. This file
+in [`AGENTS.md`](AGENTS.md); durable *facts/preferences* live in the memory dir. This file
 is what we learned the hard way.
 
 Keep this file short — it loads into context, so length is a recurring cost. Add a lesson
@@ -20,10 +20,10 @@ only when it would have changed a decision.
    is marginal — reading the docs directly found 12 inconsistencies; graphify found ~2. The
    TypeScript in `src/campaigns/` takes the free AST path, but it is dwarfed by the specs, so
    the cost profile is unchanged. Use `--cluster-only` / `query`;
-   avoid full rebuilds. (The `--update` edge-loss trap: `CLAUDE.md`.)
+   avoid full rebuilds. (The `--update` edge-loss trap: `AGENTS.md`.)
 2. **Skill prompts inject their whole instruction file** on invocation. Only invoke a skill
    you will actually use.
-3. **Full-file reads and large specs.** `04-engine-specification.md` is ~104KB (~30K
+3. **Full-file reads and large specs.** `04-engine-specification.md` is ~115KB (~33K
    tokens/read). Prefer grep / offset-limit when you know what you need.
 4. **Start a fresh session at phase boundaries.** `CLAUDE.md` + memory + the docs re-prime a
    new session cheaply — that's why they're kept tight.
@@ -74,7 +74,7 @@ only when it would have changed a decision.
 ## Orientation in one paragraph
 
 This repo = **Life in the Fast Lane** (`docs/docs/games/`), a Jones-clone life-sim = the
-`simulation` kind — **game specs only**. The **engine** (source + specs) is the companion
+`simulation` kind — **its specs and its campaign content** (`src/campaigns/` → `content/`). The **engine** (source + specs) is the companion
 [SubZeroDev.GameEngine](https://github.com/The-Running-Dev/SubZeroDev.GameEngine); hosting
 is [SubZeroDev.Platform](https://github.com/The-Running-Dev/SubZeroDev.Platform). Bulgaria
 is *two different games* — a culture pack on Jones (simulation), and a story-graph
