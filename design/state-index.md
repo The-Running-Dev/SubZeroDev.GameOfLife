@@ -184,6 +184,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
+| 20 | #113 | A design-state decision can't name where its terms landed | — | `4cfac4468993f13e0fba91a915817f2b1708f4e9` |
 | 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `c97bb3bf808924068e35788b32a352f0e7cb3d64` |
 | 107 | #107 | Four Stable Life events react to a narrower stand-in because the engine can't count or check existence across a list | — | `711185f6275d0f4a66550353b8f3cd30f3860e64` |
 | 108 | #108 | Four Stable Life items describe an effect the engine's modifier validator won't accept, and a vehicle's running costs are never charged | — | `711185f6275d0f4a66550353b8f3cd30f3860e64` |
