@@ -949,11 +949,11 @@ means a test fails when it is broken; those are the only ones a reader may trust
 | **SS3** | No check function reads a file | Checks | Code — AST inspection finds no file cmdlet inside any check function |
 | **SS4** | No check calls another check | Checks | Code — a check receives records and returns findings; the call graph is asserted acyclic and flat |
 | **SS5** | If any check records an *unchecked* entry, the run exits 2 regardless of findings. An *unresolvable* entry never changes run status | Report | Code — a fixture producing one of each asserts both directions |
-| **SS6** | Every obligation, register row, concept, and reference is in exactly one of held, failed, unchecked, or unresolvable | Report | Code — the four counts sum to the index's totals |
+| **SS6** | Every obligation, register row, concept, and reference is counted in at least one of held, failed, unchecked, or unresolvable, and the only subject counted twice is a cross-repository reference that also carries a missing-pin finding | Report | Code — the four counts sum to the index's totals once that overlap is subtracted, asserted against the real corpus, which has none, and a fixture that has one |
 | **SS7** | An unrecognised construct stops the run; nothing partial is reported as complete | Index | Code — the grammar's fallback branch raises, and a test feeds it an unknown form |
 | **SS8** | Closure is derived from a declaration's form and can be set by nothing else | Index | Code — no marker id, parameter, or config key names closure |
 | **SS9** | A cross-repository reference is reported unresolvable, never passed, never broken, and no parameter can change that | Checks | Code — asserted alongside SS1's no-write-parameter check |
-| **SS10** | The report names the commit it ran against and whether the tree was clean | Report | Code |
+| **SS10** | The result object names the commit it ran against and whether the tree was clean | Report | Code |
 | **SS11** | A finding states that two documents disagree and never which is stale | Checks | Instruction — `SpecFinding` has no field for it, which is the enforcement available |
 | **SS12** | Every marker is an HTML comment; removing the checker leaves the corpus valid, publishable markdown | Corpus | Code — the docs build has no dependency on the checker, and a test asserts markers render nothing |
 | **SS13** | Every register row has a non-empty `Reason` and a non-empty `Settles when` cell | Checks | Code |
@@ -981,6 +981,26 @@ The exit code stops carrying that fact, so the report must.
 can tell whether a `Detail` string editorialises. Removing the field would make findings useless.
 The structural mitigation is that `SpecFinding` carries no `Culprit`, `Stale`, or `Correct` field
 for anyone to populate.
+
+**SS6 counts one subject twice, and naming the overlap is what keeps the row checkable.** A
+cross-repository reference missing its pinned sha is `Unresolvable` — its `Status` is always that,
+never `Failed`, which is what SS9 turns on — while also carrying an SS17 finding about this
+repository's own prose. The bucket counts report it in both places. The alternative considered and
+rejected was to count it once by dropping it from `Failed`, which was a change to the code rather
+than to this row; `90-decisions.md` (2026-09-01, SS6's overlap) records why the row moved instead,
+and records the objection to it as known and retained. What stops the widening from emptying the
+row is that the overlap is *closed*: exactly one shape produces it, so the sum is still an equality
+once that shape is subtracted, and both sides of it are asserted — the real corpus, which has no
+such reference, and a fixture that has one. A second overlap is a contract amendment, not a
+counting detail.
+
+**SS10 names the result object, not the printed line, and the two are different surfaces.** The
+line `Write-SpecSetReport` emits carries the state, the document and declaration counts, the
+obligation count (SS16) and the unresolvable count (SS18); it does not carry the commit or the
+tree state, and it is not meant to. `-Quiet` suppresses that line and can never suppress the
+object, so the object is the one surface always present — which is why it is where SS10's fact
+belongs and where `S1.6` asserts it. This row once read "the report", the same word SS16 and SS18
+use for the printed line, which made one word do two jobs.
 
 ### Content path invariants
 

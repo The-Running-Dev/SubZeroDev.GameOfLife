@@ -122,8 +122,16 @@ Describe 'S4.3: cross-repository references never appear as passed or broken' {
     }
 }
 
-Describe 'S4.6: held, failed, unchecked and unresolvable sum to the index totals' {
-    It 'sums to the totals for obligations, register rows, concepts and references against the real corpus' {
+Describe 'S4.6 / SS6: every subject is counted, and the documented overlap is the only one' {
+    BeforeAll {
+        $script:ss6RegisterTable = @'
+| Area | Call made | Reason | Settles when |
+|---|---|---|---|
+| Test area | A call | A reason | A condition |
+'@
+    }
+
+    It 'sums to the totals for obligations, register rows, concepts and references against the real corpus, which carries no overlap' {
         $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -Quiet
         foreach ($category in @('MirrorObligations', 'ProvisionalEntries', 'Concepts', 'References')) {
             $bucket = $result.Buckets.$category
@@ -131,6 +139,35 @@ Describe 'S4.6: held, failed, unchecked and unresolvable sum to the index totals
         }
         $result.Buckets.MirrorObligations.Total | Should -Be $result.Counts.MirrorObligations
         $result.Buckets.References.Total | Should -Be $result.Counts.References
+    }
+
+    It 'counts an unpinned cross-repository reference in both Failed and Unresolvable, and the sum equals the total once that one overlap is subtracted' {
+        # SS6's overlap is closed at exactly this shape, and the real corpus cannot exercise it:
+        # every cross-repository reference there is pinned, so the equality above holds without
+        # ever reaching the case the row now names. Asserted here so the row is not an equality
+        # no fixture tests - the failure S4.3 already builds, measured as counts rather than as
+        # findings.
+        $corpus = Join-Path $TestDrive 'ss6-overlap'; New-Item -ItemType Directory -Path $corpus | Out-Null
+        $content = "# Fixture`n`n<!-- provisional-register:declared:start -->`n$script:ss6RegisterTable`n<!-- provisional-register:declared:end -->`n`nSite: <!-- provisional-site-test-area:declared:start -->x<!-- provisional-site-test-area:declared:end -->`n`nSee ``engine/01-vision.md`` § 1."
+        Set-Content -LiteralPath (Join-Path $corpus '01-fixture.md') -Value $content -NoNewline
+
+        $result = & (Join-Path $PSScriptRoot 'Test-SpecSet.ps1') -CorpusPath $corpus -Quiet
+        $index = Read-SpecSetIndex -CorpusPath $corpus
+        $overlap = @(Get-ReferenceResolutions -Index $index | Where-Object { $_.Status -eq 'Unresolvable' -and $_.Finding }).Count
+        $overlap | Should -Be 1
+
+        $bucket = $result.Buckets.References
+        $bucket.Total | Should -Be 1
+        $bucket.Failed | Should -Be 1
+        $bucket.Unresolvable | Should -Be 1
+        ($bucket.Held + $bucket.Failed + $bucket.Unchecked + $bucket.Unresolvable) | Should -Be ($bucket.Total + $overlap)
+        ($bucket.Held + $bucket.Failed + $bucket.Unchecked + $bucket.Unresolvable - $overlap) | Should -Be $bucket.Total
+
+        # And nothing but a reference ever overlaps.
+        foreach ($category in @('MirrorObligations', 'ProvisionalEntries', 'Concepts')) {
+            $b = $result.Buckets.$category
+            ($b.Held + $b.Failed + $b.Unchecked + $b.Unresolvable) | Should -Be $b.Total
+        }
     }
 }
 

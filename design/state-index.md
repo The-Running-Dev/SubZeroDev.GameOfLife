@@ -162,6 +162,10 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-08-31-cp2-and-cp3-are-scoped-to-production-sources-and-the-cp3-check-is-tightened-to-match | — |
 | decision/2026-08-31-the-catalog-card-names-the-unwritten-collections-rather-than-the-authored-ones | — |
 | decision/2026-08-31-the-lifecycle-marker-vocabulary-is-reserved-to-the-derived-concept-set | — |
+| decision/2026-09-01-cp1-s-check-decides-the-engine-before-the-declared-packages-fallback | `unit/document/design-20-contract` |
+| decision/2026-09-01-ss10-names-the-result-object-not-the-printed-report-line | `unit/document/design-20-contract` |
+| decision/2026-09-01-ss6-records-the-one-overlap-in-its-bucket-counts-rather-than-the-code-losing-it | `unit/document/design-20-contract` |
+| decision/2026-09-01-the-content-path-s-gates-use-a-two-value-exit-and-only-never-0-is-contracted | `unit/document/design-20-contract` |
 | decision/2026-09-01-the-exporter-raises-writefailed-rather-than-letting-the-filesystem-s-error-escape | `unit/document/design-20-contract` |
 <!-- decision-affects:end -->
 

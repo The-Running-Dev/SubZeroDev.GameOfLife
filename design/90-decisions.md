@@ -9,6 +9,96 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-01 — SS6 records the one overlap in its bucket counts rather than the code losing it
+Context: `Get-SpecSetBucketCounts` counts a reference as `Failed` when its status is
+`Unresolvable` and it carries a finding, and separately as `Unresolvable`. A cross-repository
+reference missing its pinned sha satisfies both, so it is counted twice: measured on a fixture,
+`Held=0 Failed=1 Unchecked=0 Unresolvable=1 Total=1`, a sum of 2. SS6 said every subject was in
+"exactly one" bucket and claimed `Code` enforcement, but `S4.6` ran only against the real corpus,
+where all eight cross-repository references are pinned and the case cannot arise — so all 45
+spec-set tests passed while the row was false. Found by /reconcile against the tree at `63fe38b`.
+Chosen: Widen SS6 to say every subject is counted in at least one bucket and that the only
+subject counted twice is a cross-repository reference also carrying a missing-pin finding, and
+keep the enforcement an equality by subtracting that one closed overlap. `S4.6` gains a fixture
+that produces it, asserting the overlap is exactly 1, that the four counts sum to `Total` plus
+the overlap, and that no other category ever overlaps. Verified by reverting: narrowing the
+`Failed` predicate to `Status -eq 'Failed'` fails the new case on `Expected 1, but got 0`.
+Rejected: Narrowing the code so the reference is counted once, which was the recommendation and
+is recorded here as known and retained — it would have restored a clean partition and read better
+against SS9, at the cost of changing behaviour to satisfy a sentence when the sentence was the
+thing that was wrong about the tree. Also rejected: weakening the enforcement to an inequality,
+which would have made the row unfalsifiable; and reclassifying the reference as `Failed` only,
+which contradicts SS9's "never broken" and breaks `S4.3`'s assertion that every cross-repository
+resolution has status `Unresolvable`.
+Reversibility: cheap — one row, one paragraph, one test case.
+
+---
+
+### 2026-09-01 — CP1's check decides the engine before the declared-packages fallback
+Context: `isAllowedSpecifier` in `src/published-surface.test.ts` fell through to
+`declaredPackages.has(packageNameOf(specifier))`, and `packageNameOf` reduces every engine
+subpath to `@the-running-dev/game-engine`, which is a declared dependency — so
+`@the-running-dev/game-engine/internal` was allowed by the very test CP1's `Evidence` cell names,
+and `10-design.md` § *Alternatives considered* 7 makes the same claim. Confirmed by running the
+predicate directly. Exposure was nil: the engine's `exports` map publishes exactly `.` and
+`./authoring` with no wildcard, so the import could not resolve — but that is the dependency's
+packaging holding a rule this repository states.
+Chosen: Settle the engine before the fallback — an engine-scoped specifier is decided by
+`PUBLISHED_ENGINE_SURFACE` alone and returns `false` otherwise — with a negative case asserting
+both subpath forms are rejected and both published ones accepted. Verified by reverting: removing
+the guard fails the new case on `expected true to be false`. The `packageNameOf` doc comment,
+which claimed engine subpaths were "handled separately, by exact match", now says why the
+fallback cannot be allowed to see them.
+Rejected: Narrowing CP1 and §7 to claim only the relative-import half the test already covered.
+Honest and free, but it downgrades a claim to match the tree, which is the direction
+`90-decisions.md` (2026-08-29, six SS invariants gain the tests their Enforcement column already
+claimed) refused, and it leaves a local invariant depending on a dependency's packaging. Also
+rejected: recording it as known and retained, which leaves `Evidence` naming a test that does not
+enforce the row.
+Reversibility: cheap — one line and one test case, the price §7 already quoted.
+
+---
+
+### 2026-09-01 — SS10 names the result object, not the printed report line
+Context: SS16 and SS18 are asserted against the line `Write-SpecSetReport` emits; SS10 was
+asserted against the result object, by `S1.6`, while the printed line carries neither the commit
+nor the tree state. One word — "the report" — was doing two jobs in one table, and a later reader
+comparing SS10 against the printed line would find a gap that is not there.
+Chosen: SS10 reads "the result object", matching what `Get-SpecSetGitInfo` populates and what
+`S1.6` asserts, with a paragraph stating that the line and the object are different surfaces and
+that `-Quiet` suppresses the line but can never suppress the object — which is why the object is
+where the fact belongs. No code and no test changed, because neither was wrong.
+Rejected: Adding the commit and tree state to the printed line so both readings hold. Marginally
+better for someone skimming a CI log, and rejected because the object is already emitted on every
+run and the change would buy a second copy of the fact to keep in step. Also rejected: leaving the
+ambiguity, which costs a later reader exactly once and costs nothing to remove now.
+Reversibility: cheap — one row and one paragraph.
+
+---
+
+### 2026-09-01 — The content path's gates use a two-value exit, and only "never 0" is contracted
+Context: `scripts/check-clean.mjs` exits 1 for `GitUnavailable`, the same code it uses for
+`ExportStale` — a gate that could not run reported identically to a gate that found a defect.
+Every PowerShell tool here reserves 2 for *could not evaluate*, SS5's whole split exists to stop
+those two collapsing, and I19/I20 hold the same line for the design-state checker. Nothing
+recorded why the content path does not follow it, so the next reader meets it as an apparent
+oversight. Noticed by /reconcile against the tree at `63fe38b`.
+Chosen: Record it. CP13 contracts exactly one thing — that no content-path step exits 0 for a
+comparison or a build it could not make — and the two-value exit satisfies it. Nothing consumes
+the distinction: CI chains the steps with `&&`, `package.json`'s composed `check` chains them the
+same way, and `/verify` reports a discovered gate by its step name and its pass/fail, not by which
+non-zero code it returned. The distinction SS5 protects is between *statuses a reader acts on*,
+and on this path both non-zero cases have the same action — read the message, which names
+`ExportStale` or `GitUnavailable` in as many words.
+Rejected: Adopting 0/1/2 across the content path. More consistent on its face, and rejected
+because it is a behaviour change plus a test update in service of a distinction no consumer reads,
+and it would pull `package.json`'s composed `check` and the CI step into the same question for no
+gain. Also rejected: leaving it unrecorded, which is what this section exists to prevent — the
+silent assumption being that a red content gate always means "found something".
+Reversibility: cheap — the entry is a record, and adopting 0/1/2 later is one `process.exit`.
+
+---
+
 ### 2026-09-01 — The exporter raises `WriteFailed` rather than letting the filesystem's error escape
 Context: `20-contract.md` § *Content path errors* gives the exporter a five-row table, and
 `scripts/export-content.ts`'s own docstring says its errors carry "the contract's own reason".
