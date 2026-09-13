@@ -111,6 +111,7 @@ import type {
   BuiltCampaign,
   Campaign,
   CommandResult,
+  EventChainDefinition,
 } from "@the-running-dev/game-engine";
 
 export const STABLE_LIFE_CAMPAIGN_ID = "life-in-the-fast-lane-stable-life";
@@ -2627,6 +2628,11 @@ export const stableLifeSource: SimulationCampaignSource = {
   goals,
   scenarios,
   difficulties,
+  // Engine W101 made both required. Life in the Fast Lane authors no projects or
+  // businesses yet, so both are empty — the same declaration the engine's own
+  // simulation campaigns make.
+  projects: [],
+  businesses: [],
   opportunities: [],
   achievements: [],
   headlines: [],
@@ -2679,6 +2685,24 @@ export const stableLifeCatalog = {
   hidden: true,
 } as const;
 
+/**
+ * The two event chains this campaign's events name through `chainId`. Engine W102 made every
+ * `chainId` resolve to a declared chain (Tier 1 `dangling_reference`), and the declaration is
+ * where a chain's scope is authored.
+ *
+ * Both are `"game"`: a tax penalty and a storm-damaged roof belong to this life and cannot follow
+ * the player into the next one — the eviction-ladder case in `04-engine-specification.md` §5.3.2,
+ * not the goose. It is also exactly how they already behaved: the engine treats an undeclared
+ * chain as `"game"`-scoped at runtime, so declaring them changes validation and nothing else.
+ *
+ * Attached to the built content rather than to `stableLifeSource`, because
+ * `SimulationCampaignSource` has no `eventChains` field — only `SimulationCampaign` does.
+ */
+const STABLE_LIFE_EVENT_CHAINS: readonly EventChainDefinition[] = [
+  { id: "tax-filing-chain", scope: "game" },
+  { id: "storm-damage-chain", scope: "game" },
+];
+
 export function buildStableLifeCampaign(): CommandResult<BuiltCampaign> {
   const { content, authoredText } = buildSimulationCampaign(stableLifeSource);
   const campaign: Campaign = {
@@ -2686,7 +2710,7 @@ export function buildStableLifeCampaign(): CommandResult<BuiltCampaign> {
     kindId: "simulation",
     version: STABLE_LIFE_CAMPAIGN_VERSION,
     titleKey: CAMPAIGN_TITLE.key,
-    content,
+    content: { ...content, eventChains: STABLE_LIFE_EVENT_CHAINS },
   };
   return buildCampaign(campaign, [CAMPAIGN_TITLE, ...authoredText]);
 }

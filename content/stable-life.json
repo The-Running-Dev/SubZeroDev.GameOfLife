@@ -2992,6 +2992,8 @@
           "nameKey": "stable-life.skill.programming.name"
         }
       ],
+      "projects": [],
+      "businesses": [],
       "scenarioId": "scenario-stable-life",
       "goalFailurePrecedence": "goals_win",
       "sceneTemplateKey": "stable-life.scene",
@@ -3000,7 +3002,17 @@
         "planRemove": "stable-life.action.plan-remove",
         "planClear": "stable-life.action.plan-clear",
         "endWeek": "stable-life.action.end-week"
-      }
+      },
+      "eventChains": [
+        {
+          "id": "tax-filing-chain",
+          "scope": "game"
+        },
+        {
+          "id": "storm-damage-chain",
+          "scope": "game"
+        }
+      ]
     }
   },
   "strings": {
