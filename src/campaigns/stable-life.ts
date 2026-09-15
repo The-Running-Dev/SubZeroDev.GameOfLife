@@ -44,20 +44,22 @@
  * the background. Not a CP10 omission: the corpus itself places starting inventory outside a
  * background (§8.10, S23.3), so there is nothing here to approximate or name as missing.
  *
- * **§10.2 names four item effects, and none is authored below; since engine W109 they no
- * longer share one cause.** `validateModifiers` (`validate.ts`) restricts every
- * `Modifier.target` to `player.needs.*`, `player.attributes.*`, `player.skills.*`,
- * `player.reputation.*` and `calendar.committedTimeUnits`. Clothing's "improves employability
- * or prestige" is now writable as a `player.reputation.*` modifier and is content still owed
- * (#108). A computer's "unlocks remote jobs and online education" takes no engine change: the
- * engine's decision of 2026-09-15 on #108 places it in job and course requirements. A
- * vehicle's "reduces travel time" and tools' "improve maintenance checks" were deferred by
- * that same decision and have no writable field; they stay omitted rather than approximated,
- * per CP10. A vehicle's fuel, insurance and repair expenses are omitted for a distinct reason:
- * `ItemDefinition.weeklyCostCents` exists on the type but only `HousingState.weeklyCostCents`
- * is levied by `endOfWeek.ts` (found authoring S18; engine W113 is pending) — authoring a
- * nonzero value there would silently charge nothing, which is the CP10 approximation this
- * omits instead.
+ * **§10.2 names four item effects; since engine W109 they no longer share one cause, and one
+ * pair is now authored.** `validateModifiers` (`validate.ts`) restricts every `Modifier.target`
+ * to `player.needs.*`, `player.attributes.*`, `player.skills.*`, `player.reputation.*` and
+ * `calendar.committedTimeUnits`. Clothing's "improves employability or prestige" is writable
+ * as a `player.reputation.*` modifier since W105.1 and is now authored on `item-work-uniform`
+ * and `item-secondhand-coat` (#108). A computer's "unlocks remote jobs and online education"
+ * takes no engine change: the engine's decision of 2026-09-15 on #108 places it in job and
+ * course requirements, via the `player.inventory` `exists` collection W111 already wired —
+ * recorded as this item's resolution, still omitted below because no remote job or course
+ * exists yet to carry the requirement. A vehicle's "reduces travel time" and tools' "improve
+ * maintenance checks" were deferred by that same decision and have no writable field; they
+ * stay omitted rather than approximated, per CP10. A vehicle's fuel, insurance and repair
+ * expenses are omitted for a distinct reason: `ItemDefinition.weeklyCostCents` exists on the
+ * type but only `HousingState.weeklyCostCents` is levied by `endOfWeek.ts` (found authoring
+ * S18; engine W113 is pending) — authoring a nonzero value there would silently charge
+ * nothing, which is the CP10 approximation this omits instead.
  *
  * **§16.3's "Education: certificate or better" is still not expressible.** It needs a
  * condition over `player.education.credentials`, a collection. Engine W111 implemented
@@ -318,9 +320,10 @@ const housing: SimulationCampaignSource["housing"] = [
 
 /**
  * §16.1/§10 — the twenty purchasable items, covering 10 of §10.1's twelve categories. Every
- * `effects` entry targets `player.needs.*` or `calendar.committedTimeUnits` — the only
- * writable `Modifier` targets `validate.ts` allows — per §10.2; what §10.2 names that no such
- * target reaches is omitted per CP10 and recorded in the file header above.
+ * `effects` entry targets `player.needs.*`, `player.reputation.*` (#108) or
+ * `calendar.committedTimeUnits` — the only writable `Modifier` targets `validate.ts` allows —
+ * per §10.2; what §10.2 names that no such target reaches is omitted per CP10 and recorded in
+ * the file header above.
  *
  * §16.4's two grocery lines are authored exactly: basic at $45 restoring satiety to full,
  * poor at $25 restoring satiety to full and costing 3 health. "Restores ... for a week" has
@@ -364,18 +367,22 @@ const items: SimulationCampaignSource["items"] = [
     tags: ["food", "consumable"],
   },
 
-  // --- Clothing (§10.1) — effects omitted, see file header --------------------------------
+  // --- Clothing (§10.1) — §10.2's employability/prestige boost, via `player.reputation.*`
+  // (engine W105.1, #108) -------------------------------------------------------------------
   {
     id: "item-work-uniform",
     name: { key: "stable-life.item.work-uniform.name", text: "Work Uniform" },
     description: {
       key: "stable-life.item.work-uniform.description",
-      text: "§10.2's employability boost has nothing to write to. It still looks the part.",
+      text: "Looks the part, and now that's worth something.",
     },
     category: "clothing",
     purchasePriceCents: DOLLARS(60),
     baseResaleValueCents: DOLLARS(10),
-    effects: [],
+    effects: [
+      { target: "player.reputation.employability", operation: "add", value: 5, sourceId: "item-work-uniform" },
+      { target: "player.reputation.prestige", operation: "add", value: 3, sourceId: "item-work-uniform" },
+    ],
     stacking: "refresh",
     requirements: [],
     tags: ["clothing"],
@@ -385,12 +392,15 @@ const items: SimulationCampaignSource["items"] = [
     name: { key: "stable-life.item.secondhand-coat.name", text: "Secondhand Coat" },
     description: {
       key: "stable-life.item.secondhand-coat.description",
-      text: "Someone else's winter, worn a second time.",
+      text: "Someone else's winter, worn a second time — and still presentable.",
     },
     category: "clothing",
     purchasePriceCents: DOLLARS(22),
     baseResaleValueCents: DOLLARS(5),
-    effects: [],
+    effects: [
+      { target: "player.reputation.employability", operation: "add", value: 5, sourceId: "item-secondhand-coat" },
+      { target: "player.reputation.prestige", operation: "add", value: 3, sourceId: "item-secondhand-coat" },
+    ],
     stacking: "refresh",
     requirements: [],
     tags: ["clothing", "secondhand"],
@@ -477,13 +487,17 @@ const items: SimulationCampaignSource["items"] = [
     tags: ["appliance"],
   },
 
-  // --- Electronics (§10.1) -----------------------------------------------------------------
+  // --- Electronics (§10.1) — §10.2's remote-jobs-and-online-education unlock: no engine
+  // change needed (engine decision, 2026-09-15, #108) — `player.inventory` is a `Requirement`
+  // `exists` collection since W111, so a remote job or course can gate on owning this item.
+  // No remote job or course exists in this campaign yet to carry that requirement; recorded
+  // here as this item's resolution, per CP10, until one is authored. -----------------------
   {
     id: "item-basic-computer",
     name: { key: "stable-life.item.basic-computer.name", text: "Basic Computer" },
     description: {
       key: "stable-life.item.basic-computer.description",
-      text: "§10.2's remote-jobs-and-online-education unlock has nothing to write to.",
+      text: "Unlocks remote work and online courses — once one exists to require it.",
     },
     category: "electronics",
     purchasePriceCents: DOLLARS(300),
@@ -509,7 +523,9 @@ const items: SimulationCampaignSource["items"] = [
     tags: ["electronics"],
   },
 
-  // --- Vehicles (§10.1) — durability and §10.3 maintenance (S19.3) -------------------------
+  // --- Vehicles (§10.1) — durability and §10.3 maintenance (S19.3). §10.2's travel-time
+  // reduction is deferred, not amended — engine decision W105.1 (2026-09-07): no stored field
+  // varies per-actor travel time, and one was deliberately not added on spec. ----------------
   {
     id: "item-used-bicycle",
     name: { key: "stable-life.item.used-bicycle.name", text: "Used Bicycle" },
@@ -536,7 +552,10 @@ const items: SimulationCampaignSource["items"] = [
     tags: ["vehicle", "maintained"],
   },
 
-  // --- Tools (§10.1) — §10.2's maintenance-check improvement has nothing to write to --------
+  // --- Tools (§10.1) — §10.2's maintenance-check improvement is deferred, not amended —
+  // engine decision (2026-09-15, #108): `MaintenanceRule.skillCheck`/`CheckModifier` source
+  // "item" are declared but no code evaluates a `CheckDefinition` yet, so maintenance cannot
+  // currently be made easier because it cannot currently be hard. --------------------------
   {
     id: "item-basic-toolkit",
     name: { key: "stable-life.item.basic-toolkit.name", text: "Basic Toolkit" },
