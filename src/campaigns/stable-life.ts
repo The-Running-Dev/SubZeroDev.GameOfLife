@@ -66,29 +66,26 @@
  * of them. The goal below carries the five requirements that are scalar comparisons and omits
  * that one, named per CP10; `design/90-decisions.md`'s `## Open` S16.5 item tracks it.
  *
- * **Six event conditions predate W111 and still narrow or omit a gate W111 now makes
- * expressible.** §11.3 names collection quantifiers for events — "owns any item tagged
- * formal_clothing", "any NPC with resentment above 50". `event-job-interview-invitation`
- * would gate on a `count` over `player.career.pendingApplications`, `event-car-breakdown` on
- * an `exists` over `player.inventory` for an owned vehicle (S16.5), and
- * `event-landlord-inspection` and `event-neighbor-borrows-again` on an `exists` over
- * `player.relationships` (S21.5). `event-friend-needs-a-favor` and
- * `event-tutor-offers-extra-session` carry an aggregate `.length` gate that the 2026-08-31
- * decision accepted because no per-item gate could then be written; that premise lapsed at
- * engine pin `b017f06`. All six are re-authored together under issue #107 rather than here,
- * and each site names its current narrowing per CP10. §7.1's natural-key path —
+ * **Six event conditions predated W111 and have been re-authored under issue #107.** §11.3
+ * names collection quantifiers for events — "owns any item tagged formal_clothing", "any NPC
+ * with resentment above 50". `event-job-interview-invitation` now gates on a `count` over
+ * `player.career.pendingApplications`, `event-car-breakdown` on an `exists` over
+ * `player.inventory` for the catalog's one vehicle item, and `event-landlord-inspection` and
+ * `event-neighbor-borrows-again` on an `exists` over `player.relationships` for any NPC with
+ * resentment above 50. `event-friend-needs-a-favor` now gates on an `exists` over
+ * `player.relationships` for the asking NPC's own affinity, and
+ * `event-tutor-offers-extra-session` on a `count` over `player.education.enrollments`
+ * filtered on `status: "active"` — both had carried an aggregate `.length` gate that the
+ * 2026-08-31 decision accepted because no per-item gate could then be written; that premise
+ * lapsed at engine pin `b017f06`. §7.1's natural-key path —
  * `player.relationships.<npcId>.affinity` — still throws, because `resolveField`'s generic
- * per-segment walk cannot key an array by an id, so a per-NPC gate is an `exists` with a
- * `where` on `npcId`, never that path.
+ * per-segment walk cannot key an array by an id, so each per-NPC gate above is an `exists`
+ * with a `where` on `npcId`, never that path.
  *
- * `event-landlord-inspection` tests NPC *identity* (`player.housing.landlordNpcId`, a
- * scalar), not a relationship dimension, and `event-credential-recognized` tests a
- * *completed* course (`player.education.completedCourseIds`, a `string[]` that `contains`
- * resolves against), not one in progress — neither is a substitute for what §11.3 asks.
- * `player.relationships.0.affinity` resolves and is never used: §7.1 rejects that form
- * because it names a specific NPC by position, which silently changes identity on
- * reordering. A `.length` gate names no NPC at all, so reordering cannot make it wrong — only
- * ever weaker than the corpus's own per-item gate.
+ * `event-credential-recognized` tests a *completed* course
+ * (`player.education.completedCourseIds`, a `string[]` that `contains` resolves against), not
+ * one in progress — it is unrelated to `event-tutor-offers-extra-session`'s gate and is left
+ * unchanged.
  */
 
 import {
@@ -1398,12 +1395,14 @@ const events: SimulationCampaignSource["events"] = [
       text: "Someone read the application after all, and wants to meet the person who wrote it.",
     },
     weight: 10,
-    // S16.5 — `03` §11.3 would gate this on a `count` over `player.career.pendingApplications`
-    // (has the player actually applied anywhere?). Authored before engine W111 made that
-    // quantifier expressible, so the condition still narrows to "currently unemployed" only,
-    // a strictly weaker gate than the corpus intends; re-authoring is issue #107. Named here
-    // per CP10.
-    conditions: { field: "player.career.currentEmployment", operator: "equals", value: undefined },
+    // Re-authored under issue #107 (S16.5): a `count` over `player.career.pendingApplications`
+    // — has the player actually applied anywhere? — now that engine W111 makes the quantifier
+    // expressible, replacing the "currently unemployed" stand-in this predates.
+    conditions: {
+      count: { collection: "player.career.pendingApplications", where: { all: [] } },
+      operator: "greater_than",
+      value: 0,
+    },
     choices: [
       {
         id: "attend-interview",
@@ -1741,14 +1740,13 @@ const events: SimulationCampaignSource["events"] = [
       text: "Something under the hood decides today is the day.",
     },
     weight: 3,
-    // S16.5 — `03` §11.3 would gate this on an `exists` over `player.inventory` for an
-    // owned vehicle ("owns any item tagged formal_clothing" is the corpus's own worked
-    // example of exactly this shape). Authored before engine W111 made `exists` expressible
-    // and before S19 authored `items`, so the ownership check is still omitted entirely
-    // rather than approximated; the event fires as ambient background instead. A `where`
-    // over an inventory item sees its `definitionId`, not its category or tags. Re-authoring
-    // is issue #107. Named here per CP10.
-    conditions: { all: [] },
+    // Re-authored under issue #107 (S16.5): an `exists` over `player.inventory` for an owned
+    // vehicle, now that engine W111 makes the quantifier expressible. A `where` over an
+    // inventory item sees its `definitionId`, not a category or tag, so this names the
+    // catalog's one vehicle item directly rather than a category it does not carry.
+    conditions: {
+      exists: { collection: "player.inventory", where: { field: "definitionId", operator: "equals", value: "item-used-bicycle" } },
+    },
     automaticOutcome: {
       effects: [{ target: "player.needs.stress", operation: "add", value: 7, sourceId: "event-car-breakdown" }],
       rewards: [{ type: "money", target: "player.finances.cashCents", value: -DOLLARS(60) }],
@@ -1845,20 +1843,11 @@ const events: SimulationCampaignSource["events"] = [
     },
     weight: 7,
     cooldownWeeks: 6,
-    // S21.5 — `03` §11.3's own worked example is "any NPC with resentment above 50", which
-    // needs an `exists` over `player.relationships`. Engine W111 made that expressible after
-    // this was authored; re-authoring is issue #107. The natural-key form §7.1 documents —
-    // `player.relationships.<npcId>.affinity` — still throws, because `relationships` is an
-    // array and the generic per-segment walk cannot key into it. The condition narrows to
-    // NPC *identity*: does this player's landlord happen to be this NPC. That is strictly
-    // weaker than the corpus intends and is not a relationship condition. Named here rather
-    // than approximated with `player.relationships.0.affinity`, which resolves but addresses
-    // by index — the exact form §7.1 rejects, since it targets a different NPC after any
-    // reordering. Per CP10.
+    // Re-authored under issue #107 (S21.5): `03` §11.3's own worked example, "any NPC with
+    // resentment above 50", as an `exists` over `player.relationships`, now that engine W111
+    // makes the quantifier expressible. Replaces the NPC-identity stand-in this predates.
     conditions: {
-      field: "player.housing.landlordNpcId",
-      operator: "equals",
-      value: "npc-landlord-rented-room",
+      exists: { collection: "player.relationships", where: { field: "resentment", operator: "greater_than", value: 50 } },
     },
     automaticOutcome: {
       effects: [
@@ -1981,21 +1970,21 @@ const events: SimulationCampaignSource["events"] = [
       text: "Priya asks for a Saturday. She has never asked for a Saturday before.",
     },
     weight: 9,
-    // S21.3/S21.5 — §11.3 would gate this on the asking NPC's own affinity toward the
-    // player, which needs an `exists` over the collection with a `where` on `npcId` — the
-    // `player.relationships.<npcId>` natural key (§7.1) throws, because `resolveField`'s
-    // generic per-segment walk cannot key an array by an id. When this was authored,
-    // `collection` was unimplemented too, so it narrowed to `player.relationships.length` —
-    // "has met at least one NPC" — a real array property that never throws. Engine W111 has
-    // since made the `exists` expressible; re-authoring is issue #107. The `.length` form is
-    // a different, categorically safer form than the
-    // `player.relationships.0.affinity` index address this file's header rejects: that form
-    // names a specific NPC by position, which silently changes identity on reordering; an
-    // aggregate `.length` names no NPC at all, so reordering cannot make it wrong, only
-    // ever weaker than the corpus's own per-NPC gate. The same narrow-and-name pattern
-    // S16.5 already uses (`event-job-interview-invitation`'s "currently unemployed" for "a
-    // pending application"). Named here per CP10.
-    conditions: { field: "player.relationships.length", operator: "greater_than", value: 0 },
+    // Re-authored under issue #107 (S21.3/S21.5): the asking NPC's own affinity toward the
+    // player, as an `exists` over `player.relationships` with a `where` on `npcId` and
+    // `affinity`, now that engine W111 makes the quantifier expressible. Replaces the
+    // aggregate `player.relationships.length` stand-in this predates.
+    conditions: {
+      exists: {
+        collection: "player.relationships",
+        where: {
+          all: [
+            { field: "npcId", operator: "equals", value: "npc-old-friend" },
+            { field: "affinity", operator: "greater_than", value: 0 },
+          ],
+        },
+      },
+    },
     choices: [
       {
         id: "help-out",
@@ -2061,10 +2050,12 @@ const events: SimulationCampaignSource["events"] = [
     },
     weight: 8,
     cooldownWeeks: 4,
-    // S21.5 — §11.3's literal example ("any NPC with resentment above 50") is an `exists`
-    // over `player.relationships`, unauthorable when this was written and expressible since
-    // engine W111; still omitted, and re-authored under issue #107. Named here per CP10.
-    conditions: { all: [] },
+    // Re-authored under issue #107 (S21.5): §11.3's literal example, "any NPC with
+    // resentment above 50", as an `exists` over `player.relationships`, now that engine
+    // W111 makes the quantifier expressible. Replaces the omitted gate this predates.
+    conditions: {
+      exists: { collection: "player.relationships", where: { field: "resentment", operator: "greater_than", value: 50 } },
+    },
     automaticOutcome: {
       effects: [
         {
@@ -2095,19 +2086,19 @@ const events: SimulationCampaignSource["events"] = [
       text: "Mr. Alavi has a free hour and a strong opinion about how you should spend it.",
     },
     weight: 7,
-    // S21.3/S21.5 — §11.3 would gate this on a course currently in progress, which is a
-    // `count` over `player.education.enrollments` filtered on `status: "active"`.
-    // `enrollments` is an array on `EducationState` (`actor.ts`); when this was authored
-    // neither the quantifier nor the natural-key walk resolved, so it narrowed to
-    // `player.education.enrollments.length` — "has at least one enrollment record" — a real
-    // array property that never throws. Engine W111 has since made the filtered `count`
-    // expressible; re-authoring is issue #107. The `.length` gate asks a different question
-    // than "currently active" does (a completed or failed enrollment stays in the array;
-    // only `withdraw_course` removes an entry), the same honest gap
-    // between the narrowed gate and the corpus's own intent that S16.5's own precedent
-    // already accepts (`event-job-interview-invitation`'s "currently unemployed" is not "has
-    // a pending application" either). Named here per CP10.
-    conditions: { field: "player.education.enrollments.length", operator: "greater_than", value: 0 },
+    // Re-authored under issue #107 (S21.3/S21.5): a course currently in progress, as a
+    // `count` over `player.education.enrollments` filtered on `status: "active"`, now that
+    // engine W111 makes the filtered quantifier expressible. Replaces the aggregate
+    // `player.education.enrollments.length` stand-in this predates, which matched a
+    // completed or failed enrollment too (only `withdraw_course` removes an entry).
+    conditions: {
+      count: {
+        collection: "player.education.enrollments",
+        where: { field: "status", operator: "equals", value: "active" },
+      },
+      operator: "greater_than",
+      value: 0,
+    },
     automaticOutcome: {
       effects: [
         {

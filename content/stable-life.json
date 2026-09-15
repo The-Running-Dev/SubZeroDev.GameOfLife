@@ -1101,8 +1101,14 @@
           "category": "employment",
           "weight": 10,
           "conditions": {
-            "field": "player.career.currentEmployment",
-            "operator": "equals"
+            "count": {
+              "collection": "player.career.pendingApplications",
+              "where": {
+                "all": []
+              }
+            },
+            "operator": "greater_than",
+            "value": 0
           },
           "choices": [
             {
@@ -1566,7 +1572,14 @@
           "category": "transportation",
           "weight": 3,
           "conditions": {
-            "all": []
+            "exists": {
+              "collection": "player.inventory",
+              "where": {
+                "field": "definitionId",
+                "operator": "equals",
+                "value": "item-used-bicycle"
+              }
+            }
           },
           "automaticOutcome": {
             "effects": [
@@ -1719,9 +1732,14 @@
           "weight": 7,
           "cooldownWeeks": 6,
           "conditions": {
-            "field": "player.housing.landlordNpcId",
-            "operator": "equals",
-            "value": "npc-landlord-rented-room"
+            "exists": {
+              "collection": "player.relationships",
+              "where": {
+                "field": "resentment",
+                "operator": "greater_than",
+                "value": 50
+              }
+            }
           },
           "automaticOutcome": {
             "effects": [
@@ -1918,9 +1936,23 @@
           "category": "relationships",
           "weight": 9,
           "conditions": {
-            "field": "player.relationships.length",
-            "operator": "greater_than",
-            "value": 0
+            "exists": {
+              "collection": "player.relationships",
+              "where": {
+                "all": [
+                  {
+                    "field": "npcId",
+                    "operator": "equals",
+                    "value": "npc-old-friend"
+                  },
+                  {
+                    "field": "affinity",
+                    "operator": "greater_than",
+                    "value": 0
+                  }
+                ]
+              }
+            }
           },
           "choices": [
             {
@@ -2007,7 +2039,14 @@
           "weight": 8,
           "cooldownWeeks": 4,
           "conditions": {
-            "all": []
+            "exists": {
+              "collection": "player.relationships",
+              "where": {
+                "field": "resentment",
+                "operator": "greater_than",
+                "value": 50
+              }
+            }
           },
           "automaticOutcome": {
             "effects": [
@@ -2049,7 +2088,14 @@
           "category": "education",
           "weight": 7,
           "conditions": {
-            "field": "player.education.enrollments.length",
+            "count": {
+              "collection": "player.education.enrollments",
+              "where": {
+                "field": "status",
+                "operator": "equals",
+                "value": "active"
+              }
+            },
             "operator": "greater_than",
             "value": 0
           },

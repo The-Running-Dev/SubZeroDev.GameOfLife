@@ -287,17 +287,30 @@ describe("Stable Life — random events (S16)", () => {
   });
 
   /** A minimal mirror of the engine's own `evaluateCondition`/`compare` (`core/condition/
-   *  evaluate.ts`) — reimplemented here, not imported, because CP1 forbids reaching past the
-   *  published surface even from a test. Scoped to exactly the operators this campaign's own
-   *  conditions use; no condition authors `exists`/`count` yet (the six sites issue #107
-   *  re-authors), so they throw if ever authored, and a future quantifier is caught here
-   *  rather than silently mishandled. */
-  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
-    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
-    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
-    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
-    if ("exists" in condition || "count" in condition) {
-      throw new Error("this campaign's conditions never use a collection quantifier (S16.5)");
+   *  evaluate.ts`) plus `kinds/simulation/conditions.ts`'s `resolveCollection` — reimplemented
+   *  here, not imported, because CP1 forbids reaching past the published surface even from a
+   *  test. Scoped to exactly the operators and collections this campaign's own conditions use;
+   *  a `where` clause is evaluated against the item, and a nested `exists`/`count` inside one
+   *  still resolves its `collection` against the root state, never the enclosing item, mirroring
+   *  the engine's own fixed choice (S16.5, issue #107). */
+  function evaluateTestCondition(
+    condition: Condition,
+    resolveField: (path: string) => unknown,
+    resolveCollection: (name: string) => readonly Record<string, unknown>[],
+  ): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField, resolveCollection));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField, resolveCollection));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField, resolveCollection);
+    if ("exists" in condition) {
+      const items = resolveCollection(condition.exists.collection);
+      return items.some((item) => evaluateTestCondition(condition.exists.where, (p) => fieldOf(item, p), resolveCollection));
+    }
+    if ("count" in condition) {
+      const items = resolveCollection(condition.count.collection);
+      const matched = items.filter((item) =>
+        evaluateTestCondition(condition.count.where, (p) => fieldOf(item, p), resolveCollection),
+      ).length;
+      return compareTestCount(condition.operator, matched, condition.value);
     }
     const actual = resolveField(condition.field);
     switch (condition.operator) {
@@ -310,11 +323,33 @@ describe("Stable Life — random events (S16)", () => {
     }
   }
 
+  function compareTestCount(operator: string, matched: number, value: unknown): boolean {
+    switch (operator) {
+      case "equals": return matched === value;
+      case "not_equals": return matched !== value;
+      case "less_than": return matched < (value as number);
+      case "greater_than": return matched > (value as number);
+      default:
+        throw new Error(`test evaluator: extend for count operator "${operator}"`);
+    }
+  }
+
   function fieldOf(state: Record<string, unknown>, path: string): unknown {
     return path.split(".").reduce<unknown>((current, segment) => {
       if (current === null || typeof current !== "object") return undefined;
       return (current as Record<string, unknown>)[segment];
     }, state);
+  }
+
+  /** Mirrors `kinds/simulation/conditions.ts`'s `COLLECTION_ACCESSORS` for the two paths this
+   *  block's events actually gate on — not the full seven-path table, since CP1 keeps this a
+   *  test-local mirror rather than a copy of engine internals. */
+  function resolveTestCollection(state: Record<string, unknown>, name: string): readonly Record<string, unknown>[] {
+    const value = fieldOf(state, name);
+    if (!Array.isArray(value)) {
+      throw new Error(`test evaluator: unknown collection "${name}"`);
+    }
+    return value as readonly Record<string, unknown>[];
   }
 
   /**
@@ -328,7 +363,12 @@ describe("Stable Life — random events (S16)", () => {
    * (discovered while implementing S16.3, resolved as a side effect of S22 rather than
    * exercised here).
    */
-  function fixturePlayerState(overrides: { cashCents?: number; employed?: boolean }): Record<string, unknown> {
+  function fixturePlayerState(overrides: {
+    cashCents?: number;
+    employed?: boolean;
+    pendingApplications?: readonly Record<string, unknown>[];
+    inventory?: readonly Record<string, unknown>[];
+  }): Record<string, unknown> {
     const scenario = stableLifeSource.scenarios.find((s) => s.id === STABLE_LIFE_SCENARIO_ID)!;
     const job = stableLifeSource.jobs.find((j) => j.id === "job-dishwasher")!;
     return {
@@ -346,10 +386,12 @@ describe("Stable Life — random events (S16)", () => {
                 weeksAtCurrentPay: 0,
               }
             : undefined,
+          pendingApplications: overrides.pendingApplications ?? [],
         },
         finances: {
           cashCents: overrides.cashCents ?? scenario.startingCashCents,
         },
+        inventory: overrides.inventory ?? [],
       },
     };
   }
@@ -360,20 +402,80 @@ describe("Stable Life — random events (S16)", () => {
     const jobHeld = stableLifeSource.events.find((e) => e.id === "event-shift-schedule-cut")!;
     const unemployed = fixturePlayerState({});
     expect(fieldOf(unemployed, "player.career.currentEmployment")).toBeUndefined();
-    expect(evaluateTestCondition(jobHeld.conditions, (p) => fieldOf(unemployed, p))).toBe(false);
+    expect(
+      evaluateTestCondition(jobHeld.conditions, (p) => fieldOf(unemployed, p), (c) => resolveTestCollection(unemployed, c)),
+    ).toBe(false);
 
     const employed = fixturePlayerState({ employed: true });
-    expect(evaluateTestCondition(jobHeld.conditions, (p) => fieldOf(employed, p))).toBe(true);
+    expect(
+      evaluateTestCondition(jobHeld.conditions, (p) => fieldOf(employed, p), (c) => resolveTestCollection(employed, c)),
+    ).toBe(true);
 
     // The scenario starts at $200 (§16.3) — above the hardship-relief threshold of $50, so
     // false at the real starting state, and true once cash is mutated below it.
     const cashConditional = stableLifeSource.events.find((e) => e.id === "event-hardship-relief-payment")!;
     const atStartingCash = fixturePlayerState({});
     expect(fieldOf(atStartingCash, "player.finances.cashCents")).toBe(20_000);
-    expect(evaluateTestCondition(cashConditional.conditions, (p) => fieldOf(atStartingCash, p))).toBe(false);
+    expect(
+      evaluateTestCondition(cashConditional.conditions, (p) => fieldOf(atStartingCash, p), (c) => resolveTestCollection(atStartingCash, c)),
+    ).toBe(false);
 
     const poor = fixturePlayerState({ cashCents: 1_000 });
-    expect(evaluateTestCondition(cashConditional.conditions, (p) => fieldOf(poor, p))).toBe(true);
+    expect(
+      evaluateTestCondition(cashConditional.conditions, (p) => fieldOf(poor, p), (c) => resolveTestCollection(poor, c)),
+    ).toBe(true);
+  });
+
+  it("evaluates a count over pendingApplications and an exists over inventory (S16.5)", () => {
+    // event-job-interview-invitation: `count` over `player.career.pendingApplications`,
+    // false with none, true once one exists — no application ever submitted at the real
+    // starting state.
+    const jobInterview = stableLifeSource.events.find((e) => e.id === "event-job-interview-invitation")!;
+    const noApplications = fixturePlayerState({});
+    expect(
+      evaluateTestCondition(
+        jobInterview.conditions,
+        (p) => fieldOf(noApplications, p),
+        (c) => resolveTestCollection(noApplications, c),
+      ),
+    ).toBe(false);
+
+    const oneApplication = fixturePlayerState({
+      pendingApplications: [{ jobId: "job-dishwasher", submittedWeek: 1, resolvesWeek: 2, contested: false }],
+    });
+    expect(
+      evaluateTestCondition(
+        jobInterview.conditions,
+        (p) => fieldOf(oneApplication, p),
+        (c) => resolveTestCollection(oneApplication, c),
+      ),
+    ).toBe(true);
+
+    // event-car-breakdown: `exists` over `player.inventory` for `item-used-bicycle`, false
+    // with an empty inventory, true once that item is owned.
+    const carBreakdown = stableLifeSource.events.find((e) => e.id === "event-car-breakdown")!;
+    const noVehicle = fixturePlayerState({});
+    expect(
+      evaluateTestCondition(carBreakdown.conditions, (p) => fieldOf(noVehicle, p), (c) => resolveTestCollection(noVehicle, c)),
+    ).toBe(false);
+
+    const withVehicle = fixturePlayerState({
+      inventory: [
+        {
+          instanceId: "inv-1",
+          definitionId: "item-used-bicycle",
+          quantity: 1,
+          acquiredWeek: 1,
+          purchasePriceCents: 5_000,
+          condition: 80,
+          weeksSinceMaintenance: 0,
+          broken: false,
+        },
+      ],
+    });
+    expect(
+      evaluateTestCondition(carBreakdown.conditions, (p) => fieldOf(withVehicle, p), (c) => resolveTestCollection(withVehicle, c)),
+    ).toBe(true);
   });
 
   it("names only event ids that exist, in every generatedEvents/scheduledEvents reference (S16.4)", () => {
@@ -804,15 +906,28 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
   });
 
   /** The same minimal mirror of the engine's `evaluateCondition`/`compare` the S16 block
-   *  uses, extended with the two operators S21's own conditions reach for. Reimplemented
-   *  rather than imported, because CP1 forbids reaching past the published surface even
-   *  from a test. */
-  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
-    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
-    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
-    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
-    if ("exists" in condition || "count" in condition) {
-      throw new Error("this campaign's conditions never use a collection quantifier (S21.5)");
+   *  uses, extended with the two operators S21's own conditions reach for, plus `exists`/
+   *  `count` over a collection now that S21.5's own events carry real quantifier conditions.
+   *  Reimplemented rather than imported, because CP1 forbids reaching past the published
+   *  surface even from a test. */
+  function evaluateTestCondition(
+    condition: Condition,
+    resolveField: (path: string) => unknown,
+    resolveCollection: (name: string) => readonly Record<string, unknown>[],
+  ): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField, resolveCollection));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField, resolveCollection));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField, resolveCollection);
+    if ("exists" in condition) {
+      const items = resolveCollection(condition.exists.collection);
+      return items.some((item) => evaluateTestCondition(condition.exists.where, (p) => fieldOf(item, p), resolveCollection));
+    }
+    if ("count" in condition) {
+      const items = resolveCollection(condition.count.collection);
+      const matched = items.filter((item) =>
+        evaluateTestCondition(condition.count.where, (p) => fieldOf(item, p), resolveCollection),
+      ).length;
+      return compareTestCount(condition.operator, matched, condition.value);
     }
     const actual = resolveField(condition.field);
     switch (condition.operator) {
@@ -826,6 +941,17 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
     }
   }
 
+  function compareTestCount(operator: string, matched: number, value: unknown): boolean {
+    switch (operator) {
+      case "equals": return matched === value;
+      case "not_equals": return matched !== value;
+      case "less_than": return matched < (value as number);
+      case "greater_than": return matched > (value as number);
+      default:
+        throw new Error(`test evaluator: extend for count operator "${operator}"`);
+    }
+  }
+
   function fieldOf(state: Record<string, unknown>, path: string): unknown {
     return path.split(".").reduce<unknown>((current, segment) => {
       if (current === null || typeof current !== "object") return undefined;
@@ -833,21 +959,30 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
     }, state);
   }
 
+  /** Mirrors `kinds/simulation/conditions.ts`'s `COLLECTION_ACCESSORS` for the two paths
+   *  this block's events gate on. */
+  function resolveTestCollection(state: Record<string, unknown>, name: string): readonly Record<string, unknown>[] {
+    const value = fieldOf(state, name);
+    if (!Array.isArray(value)) {
+      throw new Error(`test evaluator: unknown collection "${name}"`);
+    }
+    return value as readonly Record<string, unknown>[];
+  }
+
   /**
-   * A housing/education state fixture, seeded from the campaign's own authored ids rather
-   * than invented ones — the scenario's real starting housing tier, and a real course id.
-   * `damage` and `completedCourseIds` are the two fields `HousingState`/`EducationState`
-   * expose as directly addressable (`actor.ts`); `relationships`/`enrollments` are the two
-   * collection-shaped siblings the fix below reaches through `.length` rather than a
-   * per-item quantifier — the remaining S21.5 omissions are elsewhere (see the source's
-   * file header).
+   * A housing/relationships/education state fixture, seeded from the campaign's own
+   * authored ids rather than invented ones — the scenario's real starting housing tier, and
+   * a real course id. `damage` and `completedCourseIds` are the two fields
+   * `HousingState`/`EducationState` expose as directly addressable (`actor.ts`);
+   * `relationships`/`enrollments` are now populated with per-item shape (`npcId`/
+   * `affinity`/`resentment`, `courseId`/`status`) so the re-authored `exists`/`count`
+   * conditions (issue #107) can be exercised per item, not just by array length.
    */
   function fixtureState(overrides: {
     damage?: number;
-    landlordNpcId?: string;
     completedCourseIds?: string[];
-    relationshipCount?: number;
-    enrollmentCount?: number;
+    relationships?: readonly Record<string, unknown>[];
+    enrollments?: readonly Record<string, unknown>[];
   }): Record<string, unknown> {
     const room = stableLifeSource.housing.find((h) => h.id === "housing-rented-room")!;
     return {
@@ -855,20 +990,18 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
         housing: {
           definitionId: room.id,
           damage: overrides.damage ?? 0,
-          landlordNpcId: overrides.landlordNpcId,
         },
-        relationships: Array.from({ length: overrides.relationshipCount ?? 0 }, (_, i) => ({
-          npcId: `npc-fixture-${i}`,
-        })),
+        relationships: overrides.relationships ?? [],
         education: {
           completedCourseIds: overrides.completedCourseIds ?? [],
-          enrollments: Array.from({ length: overrides.enrollmentCount ?? 0 }, (_, i) => ({
-            courseId: `course-fixture-${i}`,
-            status: "active",
-          })),
+          enrollments: overrides.enrollments ?? [],
         },
       },
     };
+  }
+
+  function evaluateFixture(condition: Condition, state: Record<string, unknown>): boolean {
+    return evaluateTestCondition(condition, (p) => fieldOf(state, p), (c) => resolveTestCollection(state, c));
   }
 
   it("evaluates a housing-condition event against a built campaign's real state (S21.3)", () => {
@@ -876,49 +1009,68 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
     // player has just moved into carries no damage, so the boiler event is false at the
     // real starting state and true once disrepair passes its threshold.
     const boiler = events.find((e) => e.id === "event-boiler-gives-up")!;
-    expect(evaluateTestCondition(boiler.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
-    expect(evaluateTestCondition(boiler.conditions, (p) => fieldOf(fixtureState({ damage: 60 }), p))).toBe(true);
+    expect(evaluateFixture(boiler.conditions, fixtureState({}))).toBe(false);
+    expect(evaluateFixture(boiler.conditions, fixtureState({ damage: 60 }))).toBe(true);
   });
 
-  it("evaluates the NPC-relationship and course-in-progress conditions against a built campaign's real state (S21.3)", () => {
-    // Both narrow to their array's own `.length` rather than a per-item quantifier — see the
-    // source's file header for why that is a real, resolvable field rather than the rejected
-    // index-address form. Verified here the same way the housing condition above is: false
-    // at zero, true once the fixture carries at least one entry.
+  it("evaluates the NPC-affinity and course-in-progress quantifier conditions against a built campaign's real state (S21.3/S21.5)", () => {
+    // event-friend-needs-a-favor: an `exists` over `player.relationships`, scoped to the
+    // asking NPC's own affinity — false with no relationship entry, false with the wrong
+    // NPC or non-positive affinity, true once `npc-old-friend` has positive affinity.
     const favor = events.find((e) => e.id === "event-friend-needs-a-favor")!;
-    expect(evaluateTestCondition(favor.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(evaluateFixture(favor.conditions, fixtureState({}))).toBe(false);
     expect(
-      evaluateTestCondition(favor.conditions, (p) => fieldOf(fixtureState({ relationshipCount: 1 }), p)),
+      evaluateFixture(
+        favor.conditions,
+        fixtureState({ relationships: [{ npcId: "npc-old-friend", affinity: 0 }] }),
+      ),
+    ).toBe(false);
+    expect(
+      evaluateFixture(
+        favor.conditions,
+        fixtureState({ relationships: [{ npcId: "npc-old-friend", affinity: 5 }] }),
+      ),
     ).toBe(true);
 
+    // event-tutor-offers-extra-session: a `count` over `player.education.enrollments`
+    // filtered on `status: "active"` — false with none, false with only a completed
+    // enrollment, true once an active one exists.
     const tutor = events.find((e) => e.id === "event-tutor-offers-extra-session")!;
-    expect(evaluateTestCondition(tutor.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(evaluateFixture(tutor.conditions, fixtureState({}))).toBe(false);
     expect(
-      evaluateTestCondition(tutor.conditions, (p) => fieldOf(fixtureState({ enrollmentCount: 1 }), p)),
+      evaluateFixture(tutor.conditions, fixtureState({ enrollments: [{ courseId: "course-fixture", status: "completed" }] })),
+    ).toBe(false);
+    expect(
+      evaluateFixture(tutor.conditions, fixtureState({ enrollments: [{ courseId: "course-fixture", status: "active" }] })),
     ).toBe(true);
   });
 
-  it("evaluates the two conditions that stand in for a relationship dimension and an in-progress course (S21.5)", () => {
-    // Neither of these is the condition §11.3 itself asks for — see the source's file
-    // header. The landlord event tests an NPC *identity*, not a relationship dimension; the
-    // credential event tests a *completed* course, not one in progress. Both were the
-    // strongest form the engine could express when authored; engine W111 has since added
-    // collection support, and both are asserted here as sites issue #107 revisits alongside
-    // `event-neighbor-borrows-again`, which carries no gate at all.
+  it("evaluates the two conditions naming §11.3's relationship-resentment example, and the unrelated credential condition (S21.5)", () => {
+    // event-landlord-inspection and event-neighbor-borrows-again both now use §11.3's own
+    // worked example verbatim: an `exists` over `player.relationships` for any NPC with
+    // resentment above 50 — false with no qualifying NPC, true once one exists, regardless
+    // of which NPC it is (the reward target is a separate, unchanged concern).
     const inspection = events.find((e) => e.id === "event-landlord-inspection")!;
-    expect(evaluateTestCondition(inspection.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    expect(evaluateFixture(inspection.conditions, fixtureState({}))).toBe(false);
     expect(
-      evaluateTestCondition(inspection.conditions, (p) =>
-        fieldOf(fixtureState({ landlordNpcId: "npc-landlord-rented-room" }), p),
-      ),
+      evaluateFixture(inspection.conditions, fixtureState({ relationships: [{ npcId: "npc-someone", resentment: 30 }] })),
+    ).toBe(false);
+    expect(
+      evaluateFixture(inspection.conditions, fixtureState({ relationships: [{ npcId: "npc-someone", resentment: 51 }] })),
     ).toBe(true);
 
-    const credential = events.find((e) => e.id === "event-credential-recognized")!;
-    expect(evaluateTestCondition(credential.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
+    const neighbor = events.find((e) => e.id === "event-neighbor-borrows-again")!;
+    expect(evaluateFixture(neighbor.conditions, fixtureState({}))).toBe(false);
     expect(
-      evaluateTestCondition(credential.conditions, (p) =>
-        fieldOf(fixtureState({ completedCourseIds: ["course-high-school-equivalency"] }), p),
-      ),
+      evaluateFixture(neighbor.conditions, fixtureState({ relationships: [{ npcId: "npc-someone", resentment: 51 }] })),
+    ).toBe(true);
+
+    // event-credential-recognized is unrelated (see the source's file header): it tests a
+    // *completed* course via `contains` on `completedCourseIds`, not an in-progress one.
+    const credential = events.find((e) => e.id === "event-credential-recognized")!;
+    expect(evaluateFixture(credential.conditions, fixtureState({}))).toBe(false);
+    expect(
+      evaluateFixture(credential.conditions, fixtureState({ completedCourseIds: ["course-high-school-equivalency"] })),
     ).toBe(true);
   });
 
