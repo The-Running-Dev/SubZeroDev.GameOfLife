@@ -5,7 +5,7 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
-- **S16.5** — `03` §16.3's credential completion requirement ("Education: certificate or better") is not expressible by the pinned engine: engine W111 made `exists`/`count` resolve over exactly §8.2's seven collections (`kinds/simulation/conditions.ts`), and `player.education.credentials` is not one of them, so S15's goal omits it, named per CP10. Not yet raised upstream — `/track` files it against the engine. The event quantifiers this item used to carry became expressible at pin `b017f06` and are re-authored under issue #107 (2026-09-15 entry below). Kept here because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
+- **S16.5** — `03` §16.3's credential completion requirement ("Education: certificate or better") is not expressible by the pinned engine: engine W111 made `exists`/`count` resolve over exactly §8.2's seven collections (`kinds/simulation/conditions.ts`), and `player.education.credentials` is not one of them, so S15's goal omits it, named per CP10. Raised upstream as `SubZeroDev.GameEngine#494`. The event quantifiers this item used to carry became expressible at pin `b017f06` and are re-authored under issue #107 (2026-09-15 entry below). Kept here because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
 
 ---
 
