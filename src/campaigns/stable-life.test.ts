@@ -779,6 +779,21 @@ describe("Stable Life — NPCs (S20)", () => {
     expect(registry.errors).toEqual([]);
     expect(registry.ok).toBe(true);
   });
+
+  it("seeds §12.3 starting memories for Deb and Priya, each with a resolving descriptionKey (issue #110)", () => {
+    const deb = npcs.find((n) => n.id === "npc-diner-manager");
+    const priya = npcs.find((n) => n.id === "npc-old-friend");
+    expect(deb?.startingMemories, "npc-diner-manager").toHaveLength(1);
+    expect(priya?.startingMemories, "npc-old-friend").toHaveLength(1);
+
+    const { strings } = built();
+    for (const npc of [deb!, priya!]) {
+      for (const memory of npc.startingMemories!) {
+        expect(memory.aboutActorId, memory.id).toBe("player");
+        expect(strings.has(memory.descriptionKey), memory.descriptionKey).toBe(true);
+      }
+    }
+  });
 });
 
 describe("Stable Life — backgrounds and traits (S22)", () => {

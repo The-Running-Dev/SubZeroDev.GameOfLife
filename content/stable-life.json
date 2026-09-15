@@ -2484,6 +2484,16 @@
               "locationId": "workplace"
             }
           ],
+          "startingMemories": [
+            {
+              "id": "memory-diner-manager-double-shift",
+              "aboutActorId": "player",
+              "week": 0,
+              "category": "loyalty",
+              "magnitude": 15,
+              "descriptionKey": "stable-life.npc.diner-manager.memory.double-shift"
+            }
+          ],
           "tags": [],
           "nameKey": "stable-life.npc.diner-manager.name",
           "descriptionKey": "stable-life.npc.diner-manager.description"
@@ -2556,6 +2566,16 @@
           "availability": [
             {
               "locationId": "recreation-area"
+            }
+          ],
+          "startingMemories": [
+            {
+              "id": "memory-old-friend-known-before",
+              "aboutActorId": "player",
+              "week": 0,
+              "category": "history",
+              "magnitude": 20,
+              "descriptionKey": "stable-life.npc.old-friend.memory.known-before"
             }
           ],
           "tags": [],
@@ -3279,6 +3299,7 @@
     "stable-life.npc.community-college-teacher.description": "Teaches whichever course is short a room. Grades on attendance more than he admits.",
     "stable-life.npc.community-college-teacher.name": "Mr. Alavi",
     "stable-life.npc.diner-manager.description": "Runs the floor at the Greasy Spoon. Remembers who showed up for the double shift.",
+    "stable-life.npc.diner-manager.memory.double-shift": "Showed up for the double shift when the schedule fell apart.",
     "stable-life.npc.diner-manager.name": "Deb",
     "stable-life.npc.forms-clerk.description": "Stamps the forms at the Department of Forms. Has seen every version of this form fail before.",
     "stable-life.npc.forms-clerk.name": "Ms. Dinh",
@@ -3287,6 +3308,7 @@
     "stable-life.npc.next-door-neighbor.description": "Lives one door down. Borrows things and, to be fair, returns most of them.",
     "stable-life.npc.next-door-neighbor.name": "Tomasz",
     "stable-life.npc.old-friend.description": "Known since before any of this started. Still shows up at the recreation area on a bad week.",
+    "stable-life.npc.old-friend.memory.known-before": "Knew you before any of this started.",
     "stable-life.npc.old-friend.name": "Priya",
     "stable-life.scenario.description": "Two hundred dollars, no job, basic education, a rented room, one week of food, and fifty-two weeks.",
     "stable-life.scenario.name": "Stable Life",
