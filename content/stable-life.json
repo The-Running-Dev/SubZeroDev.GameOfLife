@@ -667,7 +667,20 @@
           "category": "clothing",
           "purchasePriceCents": 6000,
           "baseResaleValueCents": 1000,
-          "effects": [],
+          "effects": [
+            {
+              "target": "player.reputation.employability",
+              "operation": "add",
+              "value": 5,
+              "sourceId": "item-work-uniform"
+            },
+            {
+              "target": "player.reputation.prestige",
+              "operation": "add",
+              "value": 3,
+              "sourceId": "item-work-uniform"
+            }
+          ],
           "stacking": "refresh",
           "requirements": [],
           "tags": [
@@ -681,7 +694,20 @@
           "category": "clothing",
           "purchasePriceCents": 2200,
           "baseResaleValueCents": 500,
-          "effects": [],
+          "effects": [
+            {
+              "target": "player.reputation.employability",
+              "operation": "add",
+              "value": 5,
+              "sourceId": "item-secondhand-coat"
+            },
+            {
+              "target": "player.reputation.prestige",
+              "operation": "add",
+              "value": 3,
+              "sourceId": "item-secondhand-coat"
+            }
+          ],
           "stacking": "refresh",
           "requirements": [],
           "tags": [
@@ -3166,7 +3192,7 @@
     "stable-life.housing.house.name": "House",
     "stable-life.housing.rented-room.description": "The cheapest housing tier. It is a room, and it is rented, and the description has now told you everything it has.",
     "stable-life.housing.rented-room.name": "Rented Room",
-    "stable-life.item.basic-computer.description": "§10.2's remote-jobs-and-online-education unlock has nothing to write to.",
+    "stable-life.item.basic-computer.description": "Unlocks remote work and online courses — once one exists to require it.",
     "stable-life.item.basic-computer.name": "Basic Computer",
     "stable-life.item.basic-toolkit.description": "A wrench, a screwdriver, and the confidence that comes from owning them.",
     "stable-life.item.basic-toolkit.name": "Basic Toolkit",
@@ -3190,7 +3216,7 @@
     "stable-life.item.paperback-novel.name": "Paperback Novel",
     "stable-life.item.prepaid-phone.description": "Reachable, and one fewer thing to worry about forgetting.",
     "stable-life.item.prepaid-phone.name": "Prepaid Phone",
-    "stable-life.item.secondhand-coat.description": "Someone else's winter, worn a second time.",
+    "stable-life.item.secondhand-coat.description": "Someone else's winter, worn a second time — and still presentable.",
     "stable-life.item.secondhand-coat.name": "Secondhand Coat",
     "stable-life.item.secondhand-guitar.description": "Three chords in, the neighbours already have opinions.",
     "stable-life.item.secondhand-guitar.name": "Secondhand Acoustic Guitar",
@@ -3204,7 +3230,7 @@
     "stable-life.item.used-bicycle.name": "Used Bicycle",
     "stable-life.item.washing-machine.description": "The laundromat, but it stays home.",
     "stable-life.item.washing-machine.name": "Washing Machine",
-    "stable-life.item.work-uniform.description": "§10.2's employability boost has nothing to write to. It still looks the part.",
+    "stable-life.item.work-uniform.description": "Looks the part, and now that's worth something.",
     "stable-life.item.work-uniform.name": "Work Uniform",
     "stable-life.job.data-entry-clerk.description": "Entry tier. No credential required, per §6.1.",
     "stable-life.job.data-entry-clerk.title": "Data Entry Clerk",
