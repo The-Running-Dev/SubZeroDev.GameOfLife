@@ -228,6 +228,16 @@ describe("Stable Life — housing (S18)", () => {
     }
   });
 
+  it("charges §16.4's $18 utilities and $15 transport on the rented room, utilities rising with tier (#109)", () => {
+    expect(housing[0]?.utilitiesCents).toBe(1_800);
+    expect(housing[0]?.transportCents).toBe(1_500);
+    for (let i = 0; i + 1 < housing.length; i++) {
+      const [current, next] = [housing[i]!, housing[i + 1]!];
+      expect(next.utilitiesCents!, `${current.id} -> ${next.id}`).toBeGreaterThan(current.utilitiesCents!);
+      expect(next.transportCents, `${next.id}.transportCents`).toBe(1_500);
+    }
+  });
+
   it("carries comfort, safety and a damage-facing maintenanceRisk, and never writes quality (S18.3)", () => {
     for (const entry of housing) {
       expect(typeof entry.comfort, `${entry.id}.comfort`).toBe("number");
