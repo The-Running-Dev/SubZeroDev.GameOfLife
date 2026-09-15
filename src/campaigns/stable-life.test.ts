@@ -97,10 +97,10 @@ describe("Stable Life — the authoring path", () => {
 
   it("names every collection the source requires, so an unwritten one is visibly empty", () => {
     // §16.1's jobs/employers/skills targets are authored (S15), all 30 events (S16, S21),
-    // courses (S17), 20 items (S19), 8 NPCs (S20), and backgrounds/traits (S22); the three
+    // courses (S17), 20 items (S19), 8 NPCs (S20), and backgrounds/traits (S22); the ones
     // below are still an honest statement that the content is unwritten.
     const empty = [
-      "opportunities", "achievements", "headlines",
+      "opportunities", "achievements", "headlines", "projects", "businesses",
     ] as const;
     for (const key of empty) {
       expect(stableLifeSource[key], `${key} should still be unwritten`).toEqual([]);
@@ -115,9 +115,9 @@ describe("Stable Life — the authoring path", () => {
     const COLLECTIONS = [
       "jobs", "courses", "housing", "items", "events", "npcs", "goals", "scenarios",
       "difficulties", "opportunities", "achievements", "headlines", "employers",
-      "locations", "backgrounds", "traits", "skills",
+      "locations", "backgrounds", "traits", "skills", "projects", "businesses",
     ] as const;
-    expect(COLLECTIONS).toHaveLength(17);
+    expect(COLLECTIONS).toHaveLength(19);
 
     const notice = stableLifeCatalog.contentNotice.toLowerCase();
     for (const key of COLLECTIONS) {
@@ -289,8 +289,9 @@ describe("Stable Life — random events (S16)", () => {
   /** A minimal mirror of the engine's own `evaluateCondition`/`compare` (`core/condition/
    *  evaluate.ts`) — reimplemented here, not imported, because CP1 forbids reaching past the
    *  published surface even from a test. Scoped to exactly the operators this campaign's own
-   *  conditions use; `exists`/`count` are unreachable by construction (S16.5) and throw if
-   *  ever authored, so a future quantifier is caught here rather than silently mishandled. */
+   *  conditions use; no condition authors `exists`/`count` yet (the six sites issue #107
+   *  re-authors), so they throw if ever authored, and a future quantifier is caught here
+   *  rather than silently mishandled. */
   function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
     if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
     if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
@@ -419,7 +420,7 @@ describe("Stable Life — purchasable items (S19)", () => {
 
   // Every `Modifier.target` an item's `effects` may write to — `validate.ts`'s
   // `WRITABLE_TARGET_PREFIXES` plus its `calendar.committedTimeUnits` special case.
-  const WRITABLE_TARGET_PREFIXES = ["player.needs.", "player.attributes.", "player.skills."];
+  const WRITABLE_TARGET_PREFIXES = ["player.needs.", "player.attributes.", "player.skills.", "player.reputation."];
   function isWritableTarget(target: string): boolean {
     return target === "calendar.committedTimeUnits"
       || WRITABLE_TARGET_PREFIXES.some((prefix) => target.startsWith(prefix));
@@ -900,10 +901,10 @@ describe("Stable Life — the rest of the week's events (S21)", () => {
   it("evaluates the two conditions that stand in for a relationship dimension and an in-progress course (S21.5)", () => {
     // Neither of these is the condition §11.3 itself asks for — see the source's file
     // header. The landlord event tests an NPC *identity*, not a relationship dimension; the
-    // credential event tests a *completed* course, not one in progress. Both are the
-    // strongest form this pinned engine can express for what they gate, and both are
-    // asserted here so that the day the engine grows collection support, these are sites to
-    // revisit alongside `event-neighbor-borrows-again`, which carries no gate at all.
+    // credential event tests a *completed* course, not one in progress. Both were the
+    // strongest form the engine could express when authored; engine W111 has since added
+    // collection support, and both are asserted here as sites issue #107 revisits alongside
+    // `event-neighbor-borrows-again`, which carries no gate at all.
     const inspection = events.find((e) => e.id === "event-landlord-inspection")!;
     expect(evaluateTestCondition(inspection.conditions, (p) => fieldOf(fixtureState({}), p))).toBe(false);
     expect(
@@ -995,12 +996,11 @@ describe("Stable Life — goals and victory (S23)", () => {
   });
 
   it("still omits §16.3's credential completion requirement, the open decision-log entry still open (S23.4)", () => {
-    // `player.education.credentials` is a collection (`Credential[]`, `actor.ts`); the
-    // pinned engine's `exists`/`count` quantifiers throw on `collection` (file header,
-    // and S16.5/S21.5's identical finding). Not expressible as a scalar comparison either
-    // — there is no `highestCredentialLevel` field. Still omitted; the decision-log entry
-    // this slice was asked to confirm is `## Open`'s S16.5, which names this same gap and
-    // has not been converted to an issue or closed.
+    // `player.education.credentials` is a collection (`Credential[]`, `actor.ts`), and not
+    // one of the seven engine W111 made quantifiable (`conditions.ts`, §8.2). Not expressible
+    // as a scalar comparison either — there is no `highestCredentialLevel` field. Still
+    // omitted; the decision-log entry this slice was asked to confirm is `## Open`'s S16.5,
+    // which names this same gap and has not been closed.
     const stableLifeGoal = goals.find((g) => g.id === "goal-stable-life")!;
     const conditionText = JSON.stringify(stableLifeGoal.conditions);
     expect(conditionText).not.toContain("credential");

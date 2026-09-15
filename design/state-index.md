@@ -169,6 +169,11 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-09-01-the-exporter-raises-writefailed-rather-than-letting-the-filesystem-s-error-escape | `unit/document/design-20-contract` |
 | decision/2026-09-02-cp2-binds-the-invoked-export-and-the-exporter-s-arguments-are-the-error-table-s-test-seam | — |
 | decision/2026-09-02-s23-4-s-open-guard-is-bounded-on-the-section-separator | — |
+| decision/2026-09-15-event-chains-attach-to-the-built-campaign-until-engine-472-lets-the-source-declare-them | — |
+| decision/2026-09-15-item-effect-and-npc-memory-comments-follow-the-pinned-surface-and-the-content-stays-owed-to-108-and-110 | — |
+| decision/2026-09-15-s16-5-s-open-item-narrows-to-the-credential-requirement-once-w111-makes-event-quantifiers-expressible | — |
+| decision/2026-09-15-the-catalog-notice-names-projects-and-businesses-the-two-collections-w101-made-required | — |
+| decision/2026-09-15-the-length-event-gates-are-re-authored-under-107-since-w111-lapsed-the-2026-08-31-premise | — |
 <!-- decision-affects:end -->
 
 ## Question affects

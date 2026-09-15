@@ -180,8 +180,8 @@ make on its own. See *Open questions* 1.
 
 #### What the seed carries, and what makes it a seed
 
-`src/campaigns/` holds one campaign today and it is deliberately not the game: fourteen of its
-seventeen collections are authored and three are present and empty. Empty rather than absent
+`src/campaigns/` holds one campaign today and it is deliberately not the game: some of its
+collections are present and empty (`stable-life.test.ts` names which). Empty rather than absent
 is a data-model decision worth keeping — an empty collection is an honest statement that the
 content is unwritten, where an absent one would be indistinguishable from a source that got the
 shape wrong. The catalog card says the same thing to a player, and hides the campaign while it is

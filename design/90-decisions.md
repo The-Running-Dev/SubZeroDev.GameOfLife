@@ -5,7 +5,105 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 ## Open
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
-- **S16.5** — `03` §11.3's collection quantifiers (`exists`/`count`) are not expressible by the pinned engine: `kinds/simulation/conditions.ts` implements `field` and throws on `collection`. 2 of the 15 S16 events would have used one and omit it instead, named at the authoring site per CP10: `event-job-interview-invitation` (would gate on a `count` over `player.career.pendingApplications`) and `event-car-breakdown` (would gate on an `exists` over `player.inventory` for an owned vehicle). Same underlying gap as the credential completion requirement `stable-life.ts`'s file header already notes for S15's goal. Tracked as issue #107, which also covers S21.5's two further instances of this gap; kept here as well because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
+- **S16.5** — `03` §16.3's credential completion requirement ("Education: certificate or better") is not expressible by the pinned engine: engine W111 made `exists`/`count` resolve over exactly §8.2's seven collections (`kinds/simulation/conditions.ts`), and `player.education.credentials` is not one of them, so S15's goal omits it, named per CP10. Not yet raised upstream — `/track` files it against the engine. The event quantifiers this item used to carry became expressible at pin `b017f06` and are re-authored under issue #107 (2026-09-15 entry below). Kept here because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
+
+---
+
+### 2026-09-15 — Event chains attach to the built campaign until engine #472 lets the source declare them
+Context: Engine W102 made every `chainId` resolve to a declared `EventChainDefinition` (Tier 1
+`dangling_reference`), but only `SimulationCampaign` carries `eventChains` —
+`SimulationCampaignSource` does not, so `buildSimulationCampaign` cannot lift a declaration an
+author writes. `stable-life.ts` spreads `STABLE_LIFE_EVENT_CHAINS` into the built content in
+`buildStableLifeCampaign`, a choice recorded nowhere. The gap is engine issue #472, open. Found by
+/reconcile against the tree at `5c26382`.
+Chosen: Keep the build-time spread, record it here, and cite #472 at the site. When a pin carries
+the #472 fix, `STABLE_LIFE_EVENT_CHAINS` moves onto `stableLifeSource` and the spread goes. No
+contract change: the content still leaves through the published builder, and CP1's surface is
+unchanged.
+Rejected: Dropping `chainId` from the two chained events — it loses the chain scoping the events
+rely on, and a chained event without it is a different event. Hand-editing the export to add the
+declaration — `scripts/check-clean.mjs` fails any `content/` that differs from what the sources
+produce, and `AGENTS.md` forbids hand edits there.
+Reversibility: cheap — one constant moves and one spread is deleted.
+
+---
+
+### 2026-09-15 — Item-effect and NPC-memory comments follow the pinned surface, and the content stays owed to #108 and #110
+Context: Pin `b017f06` brought engine W109 (`player.reputation.*` is a writable `Modifier` target)
+and W110 (`NPCDefinition.startingMemories`, authorable through `NPCDefinitionSource`), and the
+engine's 2026-09-15 decision on #108 settled the rest of §10.2: clothing uses reputation, a
+computer's unlock belongs in job and course requirements with no engine change, and toolkit,
+sewing kit and bicycle effects are deferred. `stable-life.ts`'s header still said no NPC memory
+field exists and that every §10.2 item effect lacks a target, and the events note listed the old
+target set. Found by /reconcile against the tree at `5c26382`.
+Chosen: Correct the comments to the pinned surface — memories authorable and unauthored, uniform
+effects writable and unauthored, the computer routed to requirements, the three deferred effects
+omitted, vehicle weekly cost awaiting engine W113 — and comment on #108 and #110 that the engine
+side landed. No content is authored in this pass, so the item descriptions that still tell a
+player an effect "has nothing to write to" stand until #108 lands.
+Rejected: Authoring the uniform's reputation modifier and the NPC memories now — that is content
+slice work against §10.2 and §12.3, not a reconciliation, and doing it here would make this pass
+generative. Leaving the comments — CP10 names an omission's cause at the site, and a stated cause
+the engine has since removed tells the next author the work is blocked when it is not.
+Reversibility: cheap — comments only.
+
+---
+
+### 2026-09-15 — The `.length` event gates are re-authored under #107, since W111 lapsed the 2026-08-31 premise
+Context: The 2026-08-31 entry accepted `event-friend-needs-a-favor`'s and
+`event-tutor-offers-extra-session`'s `.length` gates as CP10-compliant because no per-item gate
+could be written: the pinned engine threw on `collection`. Engine W111 now resolves `exists`/`count`
+over `player.relationships` and `player.education.enrollments`, with `where` reading
+`RelationshipState.npcId` and `CourseEnrollment.status`, so `.length` is no longer the strongest
+expressible condition. Issue #107 explicitly excluded these two events. Found by /reconcile against
+the tree at `5c26382`.
+Chosen: Bring both events into #107's scope with the four quantifier sites, correct their comments
+to say the gate was the strongest available when authored and is re-authored there, and change no
+condition in this pass. The 2026-08-31 entry is not reopened: its reading of CP10 (a named narrower
+condition satisfies it) stands; only its premise that nothing stronger exists is overtaken.
+Rejected: Keeping `.length` permanently as intended design — it leaves the events weaker than
+§11.3 while the engine can express the corpus's gate, which CP10 permits only where the engine
+cannot. A separate issue for the pair — two issues tracking one cause (content authored before
+W111) and a second staging item in `## Open`.
+Reversibility: cheap — an issue scope and comments.
+
+---
+
+### 2026-09-15 — S16.5's open item narrows to the credential requirement once W111 makes event quantifiers expressible
+Context: `## Open`'s S16.5 item said `exists`/`count` are not expressible because
+`conditions.ts` throws on `collection`. Pin `b017f06` brought engine W111, which resolves both over
+exactly §8.2's seven collections, so every event quantifier the item named — and S21.5's two —
+became expressible, while `player.education.credentials`, which §16.3's credential completion
+requirement needs, is not among the seven. The file header, five event-site comments and two test
+comments still stated the throw. S23.4's test asserts the item stays in `## Open` by the tokens
+`S16.5` and `credential completion requirement`. Found by /reconcile against the tree at `5c26382`.
+Chosen: Rewrite the item to what is true — the credential gap alone, still to be raised upstream by
+`/track` — keeping both tokens so S23.4 still guards it; correct the header, site and test comments
+to say W111 exists and the events stay narrowed pending #107; comment on #107 that the engine side
+landed. The natural-key claims (`player.relationships.<npcId>.affinity` throws) stay, since they
+remain true. No event is re-authored here.
+Rejected: Closing the item outright — the credential half is still an engine gap and S23.4 exists to
+keep it visible. Re-authoring the events in this pass — condition changes are slice work with their
+own evidence, owned by #107. Leaving the text — a false open item briefs every later session that
+the events are blocked.
+Reversibility: cheap — one bullet and comments.
+
+---
+
+### 2026-09-15 — The catalog notice names projects and businesses, the two collections W101 made required
+Context: Engine W101 made `projects` and `businesses` required on `SimulationCampaignSource`, and
+`stable-life.ts` declares both empty. CP7 says an unwritten required collection is present and
+empty, and the 2026-08-31 catalog-card decision says `contentNotice` names exactly the unwritten ones —
+but the notice named three, and `stable-life.test.ts`'s empty-collection and catalog tests listed
+seventeen collections, so the check that ties the notice to the empty set could not see the two.
+Found by /reconcile against the tree at `5c26382`.
+Chosen: Code follows the docs — the notice names all five unwritten collections, both tests list
+all nineteen, the export is regenerated, and the header and catalog comments stop counting. The
+count in `10-design.md` and `20-contract.md` was descriptive drift and now points at the test.
+Rejected: Excluding W101's collections from the notice as engine-side scaffolding — a player-facing
+card that omits empty collections is the enumeration staleness the 2026-08-31 decision removed, and
+CP7 draws no line between old and new required collections.
+Reversibility: cheap — one string, two test lists, and a regenerated export.
 
 ---
 

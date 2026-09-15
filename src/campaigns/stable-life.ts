@@ -9,23 +9,18 @@
  * nothing is copied from the engine's own `stable-life` regression fixture, which is
  * engine-owned and unpublished.
  *
- * What it deliberately does not yet carry: opportunities, achievements and headlines
- * (jobs, employers and skills were added by S15; 15 of §16.1's 30 events were added by S16,
- * the other 15 are S21; courses were added by S17; 20 purchasable items were added by S19;
- * 8 NPCs were added by S20; backgrounds and traits were added by S22). Each remaining
- * collection is its own authoring slice against §16.1's content targets. They are present
- * and empty rather than absent, because `SimulationCampaignSource` requires all seventeen
- * and an empty one is an honest statement that the content is unwritten.
+ * What it deliberately does not yet carry: opportunities, achievements, headlines, projects
+ * and businesses (jobs, employers and skills were added by S15; 15 of §16.1's 30 events were
+ * added by S16, the other 15 are S21; courses were added by S17; 20 purchasable items were
+ * added by S19; 8 NPCs were added by S20; backgrounds and traits were added by S22). Each
+ * remaining collection is its own authoring slice against §16.1's content targets. They are
+ * present and empty rather than absent, because `SimulationCampaignSource` requires every one
+ * of them and an empty one is an honest statement that the content is unwritten.
  *
- * **§12.3's NPC memories cannot be authored here at all, for a reason distinct from every
- * other CP10 gap above.** Those gaps are a restricted validator rejecting a value; this one
- * is a missing field. `NPCDefinitionSource` (`kinds/simulation/source.ts`) mirrors
- * `NPCDefinition` exactly — `id`, `defaultRole`, `initialRelationship`, `availability`,
- * `tags` plus the name/description text — and carries no memory field at all.
- * `NPCMemory[]` lives only on the runtime `NPCState`, populated by play, not on the content
- * an author writes. So no NPC below carries a starting memory, not because §12.3's shape is
- * unreachable through validation but because the authoring surface has nowhere to put one.
- * Named here per CP10 and tracked as issue #110.
+ * **§12.3's NPC memories are authorable since engine W110 and are not yet authored.**
+ * `NPCDefinition.startingMemories` (`content.ts`) is copied into `NPCState.memories` once, at
+ * creation (`initial.ts`), and `NPCDefinitionSource` carries it. No NPC below sets it yet —
+ * content still owed, not an engine gap. Tracked as issue #110.
  *
  * **§12.1 states no numeric range for the four relationship dimensions, and the engine's own
  * regression suite confirms it deliberately** (`resolvers.test.ts`: "§6.11 declares no range
@@ -49,57 +44,51 @@
  * the background. Not a CP10 omission: the corpus itself places starting inventory outside a
  * background (§8.10, S23.3), so there is nothing here to approximate or name as missing.
  *
- * **§10.2 names four item effects this pinned engine cannot express, for the same reason as
- * the goal and event gaps above.** `validateModifiers` (`validate.ts`) restricts every
- * `Modifier.target` to `player.needs.*`, `player.attributes.*`, `player.skills.*` and
- * `calendar.committedTimeUnits` — there is no employability, prestige, job-unlock or
- * travel-time field a `Modifier` can write to. Clothing's "improves employability or
- * prestige", a computer's "unlocks remote jobs and online education", a vehicle's "reduces
- * travel time", and tools' "improve maintenance checks" are each omitted rather than
- * approximated, named at the authoring site per CP10, and reproduced here as a group because
- * the gap is one cause repeated across `items`, not four different ones. A vehicle's fuel,
- * insurance and repair expenses are omitted for a related but distinct reason: `ItemDefinition
- * .weeklyCostCents` exists on the type but only `HousingState.weeklyCostCents` is levied by
- * `endOfWeek.ts` (found authoring S18) — authoring a nonzero value there would silently charge
- * nothing, which is the CP10 approximation this omits instead.
+ * **§10.2 names four item effects, and none is authored below; since engine W109 they no
+ * longer share one cause.** `validateModifiers` (`validate.ts`) restricts every
+ * `Modifier.target` to `player.needs.*`, `player.attributes.*`, `player.skills.*`,
+ * `player.reputation.*` and `calendar.committedTimeUnits`. Clothing's "improves employability
+ * or prestige" is now writable as a `player.reputation.*` modifier and is content still owed
+ * (#108). A computer's "unlocks remote jobs and online education" takes no engine change: the
+ * engine's decision of 2026-09-15 on #108 places it in job and course requirements. A
+ * vehicle's "reduces travel time" and tools' "improve maintenance checks" were deferred by
+ * that same decision and have no writable field; they stay omitted rather than approximated,
+ * per CP10. A vehicle's fuel, insurance and repair expenses are omitted for a distinct reason:
+ * `ItemDefinition.weeklyCostCents` exists on the type but only `HousingState.weeklyCostCents`
+ * is levied by `endOfWeek.ts` (found authoring S18; engine W113 is pending) — authoring a
+ * nonzero value there would silently charge nothing, which is the CP10 approximation this
+ * omits instead.
  *
- * **Two completion/condition requirements are not expressible today, for the same reason.**
- * §16.3's "Education: certificate or better" needs a condition over
- * `player.education.credentials`, a collection; `kinds/simulation/conditions.ts` implements
- * `field` and throws on `collection` (the engine's `ConditionResolver.collection`, and
- * therefore every `exists`/`count` quantifier in `Condition`), documenting the gap as "not
- * yet" rather than "never". The goal below carries the five requirements that are scalar
- * comparisons and omits that one. §11.3 names the same quantifiers for events —
- * "owns any item tagged formal_clothing", "any NPC with resentment above 50" — and two of
- * the first 15 events below would have used one (S16.5): `event-job-interview-invitation`
- * would gate on a `count` over `player.career.pendingApplications`, and
- * `event-car-breakdown` would gate on an `exists` over `player.inventory` for an owned
- * vehicle. Both omit that condition and name the omission at the site, per CP10. Recorded
- * as an open item rather than worked around — a condition that silently drops a stated
- * requirement would be worse than one that visibly does not carry it.
+ * **§16.3's "Education: certificate or better" is still not expressible.** It needs a
+ * condition over `player.education.credentials`, a collection. Engine W111 implemented
+ * `ConditionResolver.collection` — and so `exists`/`count` — for exactly §8.2's seven
+ * collections (`kinds/simulation/conditions.ts`), and `player.education.credentials` is not one
+ * of them. The goal below carries the five requirements that are scalar comparisons and omits
+ * that one, named per CP10; `design/90-decisions.md`'s `## Open` S16.5 item tracks it.
  *
- * **S21 adds two more of the same kind, for a running total of four across S16 and S21.**
- * `event-landlord-inspection` and `event-neighbor-borrows-again` each want a condition over
- * `player.relationships` — an array on the actor (`actor.ts`), reached by neither addressing
- * form: the `exists`/`count` quantifiers throw on `collection`, and §7.1's natural-key path
- * — `player.relationships.<npcId>.affinity` — throws too, because `resolveField`'s generic
- * per-segment walk cannot key an array by an id.
+ * **Six event conditions predate W111 and still narrow or omit a gate W111 now makes
+ * expressible.** §11.3 names collection quantifiers for events — "owns any item tagged
+ * formal_clothing", "any NPC with resentment above 50". `event-job-interview-invitation`
+ * would gate on a `count` over `player.career.pendingApplications`, `event-car-breakdown` on
+ * an `exists` over `player.inventory` for an owned vehicle (S16.5), and
+ * `event-landlord-inspection` and `event-neighbor-borrows-again` on an `exists` over
+ * `player.relationships` (S21.5). `event-friend-needs-a-favor` and
+ * `event-tutor-offers-extra-session` carry an aggregate `.length` gate that the 2026-08-31
+ * decision accepted because no per-item gate could then be written; that premise lapsed at
+ * engine pin `b017f06`. All six are re-authored together under issue #107 rather than here,
+ * and each site names its current narrowing per CP10. §7.1's natural-key path —
+ * `player.relationships.<npcId>.affinity` — still throws, because `resolveField`'s generic
+ * per-segment walk cannot key an array by an id, so a per-NPC gate is an `exists` with a
+ * `where` on `npcId`, never that path.
  *
- * Three events carry the strongest thing that *is* expressible for what §11.3 asks of them.
  * `event-landlord-inspection` tests NPC *identity* (`player.housing.landlordNpcId`, a
  * scalar), not a relationship dimension, and `event-credential-recognized` tests a
  * *completed* course (`player.education.completedCourseIds`, a `string[]` that `contains`
- * resolves against), not one in progress — neither is a substitute for what was omitted.
- * `event-friend-needs-a-favor` and `event-tutor-offers-extra-session`, by contrast, *are*
- * satisfied: both now condition on their array's own `.length` — "has met at least one NPC,"
- * "has at least one enrollment record" — a real property that never throws, verified against
- * the pinned engine directly rather than inferred. `player.relationships.0.affinity` also
- * resolves and is still never used: §7.1 rejects that form because it names a specific NPC
- * by position, which silently changes identity on reordering. `.length` names no NPC at all,
- * so reordering cannot make it wrong — only ever weaker than the corpus's own per-item gate,
- * the same narrow-and-name pattern S16.5 already established for
- * `event-job-interview-invitation`. Each site names the narrowing per CP10; `design/90-
- * decisions.md`'s S21.5 entry carries the running total.
+ * resolves against), not one in progress — neither is a substitute for what §11.3 asks.
+ * `player.relationships.0.affinity` resolves and is never used: §7.1 rejects that form
+ * because it names a specific NPC by position, which silently changes identity on
+ * reordering. A `.length` gate names no NPC at all, so reordering cannot make it wrong — only
+ * ever weaker than the corpus's own per-item gate.
  */
 
 import {
@@ -1346,8 +1335,9 @@ const npcs: SimulationCampaignSource["npcs"] = [
  * one type tag, kebab-cased from §11.2 (S16.2).
  *
  * `Modifier.target` is restricted at validation time to `player.needs.*`,
- * `player.attributes.*`, `player.skills.*`, and `calendar.committedTimeUnits`
- * (`validate.ts`'s `WRITABLE_TARGET_PREFIXES`) — every cash effect below is therefore a
+ * `player.attributes.*`, `player.skills.*`, `player.reputation.*`, and
+ * `calendar.committedTimeUnits` (`validate.ts`'s `WRITABLE_TARGET_PREFIXES`) — every cash
+ * effect below is therefore a
  * `Reward` of type `"money"`, never a `Modifier`, since `player.finances.cashCents` is not a
  * writable Modifier target.
  */
@@ -1409,10 +1399,10 @@ const events: SimulationCampaignSource["events"] = [
     },
     weight: 10,
     // S16.5 — `03` §11.3 would gate this on a `count` over `player.career.pendingApplications`
-    // (has the player actually applied anywhere?). `count`/`exists` throw in this pinned
-    // engine (`conditions.ts`'s `unresolvableCollection`), so that quantifier is omitted;
-    // the condition narrows to "currently unemployed" only, which is a strictly weaker gate
-    // than the corpus intends. Named here rather than worked around, per CP10.
+    // (has the player actually applied anywhere?). Authored before engine W111 made that
+    // quantifier expressible, so the condition still narrows to "currently unemployed" only,
+    // a strictly weaker gate than the corpus intends; re-authoring is issue #107. Named here
+    // per CP10.
     conditions: { field: "player.career.currentEmployment", operator: "equals", value: undefined },
     choices: [
       {
@@ -1753,10 +1743,11 @@ const events: SimulationCampaignSource["events"] = [
     weight: 3,
     // S16.5 — `03` §11.3 would gate this on an `exists` over `player.inventory` for an
     // owned vehicle ("owns any item tagged formal_clothing" is the corpus's own worked
-    // example of exactly this shape). `exists`/`count` throw in this pinned engine, and
-    // `items` is unauthored this slice regardless, so the ownership check is omitted
-    // entirely rather than approximated; the event fires as ambient background instead.
-    // Named here per CP10.
+    // example of exactly this shape). Authored before engine W111 made `exists` expressible
+    // and before S19 authored `items`, so the ownership check is still omitted entirely
+    // rather than approximated; the event fires as ambient background instead. A `where`
+    // over an inventory item sees its `definitionId`, not its category or tags. Re-authoring
+    // is issue #107. Named here per CP10.
     conditions: { all: [] },
     automaticOutcome: {
       effects: [{ target: "player.needs.stress", operation: "add", value: 7, sourceId: "event-car-breakdown" }],
@@ -1855,9 +1846,9 @@ const events: SimulationCampaignSource["events"] = [
     weight: 7,
     cooldownWeeks: 6,
     // S21.5 — `03` §11.3's own worked example is "any NPC with resentment above 50", which
-    // needs an `exists` over `player.relationships`; that throws in this pinned engine
-    // (`conditions.ts`'s `unresolvableCollection`), and the natural-key form §7.1 documents
-    // — `player.relationships.<npcId>.affinity` — throws too, because `relationships` is an
+    // needs an `exists` over `player.relationships`. Engine W111 made that expressible after
+    // this was authored; re-authoring is issue #107. The natural-key form §7.1 documents —
+    // `player.relationships.<npcId>.affinity` — still throws, because `relationships` is an
     // array and the generic per-segment walk cannot key into it. The condition narrows to
     // NPC *identity*: does this player's landlord happen to be this NPC. That is strictly
     // weaker than the corpus intends and is not a relationship condition. Named here rather
@@ -1991,12 +1982,13 @@ const events: SimulationCampaignSource["events"] = [
     },
     weight: 9,
     // S21.3/S21.5 — §11.3 would gate this on the asking NPC's own affinity toward the
-    // player, which needs either the `player.relationships.<npcId>` natural key (§7.1) or
-    // an `exists` over the collection; both throw (`resolveField`'s generic per-segment
-    // walk cannot key an array by an id, and `collection` is unimplemented). Narrowed
-    // instead to `player.relationships.length` — "has met at least one NPC" — a real array
-    // property that never throws, verified against the pinned engine directly (not
-    // inferred). This is a different, categorically safer form than the
+    // player, which needs an `exists` over the collection with a `where` on `npcId` — the
+    // `player.relationships.<npcId>` natural key (§7.1) throws, because `resolveField`'s
+    // generic per-segment walk cannot key an array by an id. When this was authored,
+    // `collection` was unimplemented too, so it narrowed to `player.relationships.length` —
+    // "has met at least one NPC" — a real array property that never throws. Engine W111 has
+    // since made the `exists` expressible; re-authoring is issue #107. The `.length` form is
+    // a different, categorically safer form than the
     // `player.relationships.0.affinity` index address this file's header rejects: that form
     // names a specific NPC by position, which silently changes identity on reordering; an
     // aggregate `.length` names no NPC at all, so reordering cannot make it wrong, only
@@ -2069,8 +2061,9 @@ const events: SimulationCampaignSource["events"] = [
     },
     weight: 8,
     cooldownWeeks: 4,
-    // S21.5 — the same omission as `event-friend-needs-a-favor`: §11.3's literal example
-    // ("any NPC with resentment above 50") is unauthorable here.
+    // S21.5 — §11.3's literal example ("any NPC with resentment above 50") is an `exists`
+    // over `player.relationships`, unauthorable when this was written and expressible since
+    // engine W111; still omitted, and re-authored under issue #107. Named here per CP10.
     conditions: { all: [] },
     automaticOutcome: {
       effects: [
@@ -2104,12 +2097,13 @@ const events: SimulationCampaignSource["events"] = [
     weight: 7,
     // S21.3/S21.5 — §11.3 would gate this on a course currently in progress, which is a
     // `count` over `player.education.enrollments` filtered on `status: "active"`.
-    // `enrollments` is an array on `EducationState` (`actor.ts`), so neither the quantifier
-    // nor the natural-key walk resolves. Narrowed instead to
+    // `enrollments` is an array on `EducationState` (`actor.ts`); when this was authored
+    // neither the quantifier nor the natural-key walk resolved, so it narrowed to
     // `player.education.enrollments.length` — "has at least one enrollment record" — a real
-    // array property that never throws, verified against the pinned engine directly. This
-    // asks a different question than "currently active" does (a completed or failed
-    // enrollment stays in the array; only `withdraw_course` removes an entry), the same honest gap
+    // array property that never throws. Engine W111 has since made the filtered `count`
+    // expressible; re-authoring is issue #107. The `.length` gate asks a different question
+    // than "currently active" does (a completed or failed enrollment stays in the array;
+    // only `withdraw_course` removes an entry), the same honest gap
     // between the narrowed gate and the corpus's own intent that S16.5's own precedent
     // already accepts (`event-job-interview-invitation`'s "currently unemployed" is not "has
     // a pending application" either). Named here per CP10.
@@ -2665,7 +2659,7 @@ const CAMPAIGN_TITLE = {
 /**
  * The catalog card that travels with the published campaign. `contentNotice` says plainly
  * that this is a seed — a player reaching it from a catalog should not be told it is the
- * game while any of its seventeen content collections is empty.
+ * game while any of its required content collections is empty.
  *
  * It names what is *missing* rather than enumerating what is authored, and that is a
  * staleness decision rather than a style one. An enumeration has to be revised by every
@@ -2680,7 +2674,7 @@ export const stableLifeCatalog = {
     "Fifty-two weeks to turn two hundred dollars and a rented room into something that survives a bad month.",
   duration: "52 weeks",
   contentNotice:
-    "Seed content. Opportunities, achievements and headlines are not yet written; the rest of the scenario is authored.",
+    "Seed content. Opportunities, achievements, headlines, projects and businesses are not yet written; the rest of the scenario is authored.",
   featured: false,
   hidden: true,
 } as const;
@@ -2696,7 +2690,9 @@ export const stableLifeCatalog = {
  * chain as `"game"`-scoped at runtime, so declaring them changes validation and nothing else.
  *
  * Attached to the built content rather than to `stableLifeSource`, because
- * `SimulationCampaignSource` has no `eventChains` field — only `SimulationCampaign` does.
+ * `SimulationCampaignSource` has no `eventChains` field — only `SimulationCampaign` does. That
+ * gap is engine issue #472 (https://github.com/The-Running-Dev/SubZeroDev.GameEngine/issues/472);
+ * once a pin carries its fix, this list moves onto the source and the spread below goes.
  */
 const STABLE_LIFE_EVENT_CHAINS: readonly EventChainDefinition[] = [
   { id: "tax-filing-chain", scope: "game" },
