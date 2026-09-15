@@ -1085,9 +1085,9 @@ corpus's type claims fail a build and leaves its numeric claims exactly where th
 full-audit path.** That is the honest bound on the brief's claim that authoring makes the spec
 set checkable, and it sits beside SS16's bound rather than under it.
 
-**The value of this path as evidence is proportional to the content authored.** Three of the
-seed campaign's seventeen collections are empty, and every empty one is a region of the corpus
-no compiler has yet been asked about. Nothing in this table changes as they fill; what changes
+**The value of this path as evidence is proportional to the content authored.** Some of the
+seed campaign's collections are empty (`stable-life.test.ts` names which), and every empty one
+is a region of the corpus no compiler has yet been asked about. Nothing in this table changes as they fill; what changes
 is how much the table is worth.
 
 ## Unresolved
