@@ -56,10 +56,9 @@
  * exists yet to carry the requirement. A vehicle's "reduces travel time" and tools' "improve
  * maintenance checks" were deferred by that same decision and have no writable field; they
  * stay omitted rather than approximated, per CP10. A vehicle's fuel, insurance and repair
- * expenses are omitted for a distinct reason: `ItemDefinition.weeklyCostCents` exists on the
- * type but only `HousingState.weeklyCostCents` is levied by `endOfWeek.ts` (found authoring
- * S18; engine W113 is pending) — authoring a nonzero value there would silently charge
- * nothing, which is the CP10 approximation this omits instead.
+ * expenses are levied since engine W112 (`endOfWeek.ts` charges `ItemDefinition.weeklyCostCents`
+ * for every owned item with condition above zero) and are content still owed — no item below
+ * sets a nonzero `weeklyCostCents` yet.
  *
  * **§16.3's "Education: certificate or better" is still not expressible.** It needs a
  * condition over `player.education.credentials`, a collection. Engine W111 implemented
@@ -218,12 +217,15 @@ const locations: SimulationCampaignSource["locations"] = [
  * against current damage, and `HousingDefinition` (the engine's `content.ts`) carries no such
  * field to set.
  *
- * §16.4's five recurring weekly costs, by where each lands: **rent** is `weeklyCostCents`
- * below — the only one of the five `endOfWeek.ts`'s `housing()` step actually levies against
- * `cashCents`. **Utilities** and **transport** are omitted: no `HousingDefinition` field
- * carries either, and while `ItemDefinition.weeklyCostCents` exists, nothing in the engine's
- * end-of-week step reads it, so authoring transport onto an item would not charge anything
- * either. Named here per CP10 and tracked as issue #109.
+ * §16.4's five recurring weekly costs, by where each lands: **rent** is `weeklyCostCents`,
+ * **utilities** `utilitiesCents` and **transport** `transportCents` below — engine W113 levies
+ * all three as one combined charge in `endOfWeek.ts`'s `housing()` step, and waives transport
+ * for any week the player owns an unbroken `"vehicle"`-tagged item, which is §16.4's own
+ * "waived if the player owns a vehicle". Utilities are §16.4's $18 on the rented room; §16.4
+ * says only that they scale with housing tier, so each higher tier carries $18 scaled by its
+ * rent relative to the room's $95, rounded to the dollar — this file's convention, not a
+ * figure the corpus states. Transport is a flat $15: no tier sets a `commuteModifier`, so
+ * nothing here gives one tier a different commute.
  * **Groceries** and **poor-quality groceries** are out of this slice's scope — they are
  * items, and belong to S19.
  */
@@ -237,6 +239,8 @@ const housing: SimulationCampaignSource["housing"] = [
     },
     upfrontCostCents: 0,
     weeklyCostCents: DOLLARS(95),
+    utilitiesCents: DOLLARS(18),
+    transportCents: DOLLARS(15),
     capacity: 1,
     comfort: 30,
     safety: 45,
@@ -259,6 +263,8 @@ const housing: SimulationCampaignSource["housing"] = [
     },
     upfrontCostCents: DOLLARS(100),
     weeklyCostCents: DOLLARS(150),
+    utilitiesCents: DOLLARS(28),
+    transportCents: DOLLARS(15),
     capacity: 1,
     comfort: 45,
     safety: 55,
@@ -281,6 +287,8 @@ const housing: SimulationCampaignSource["housing"] = [
     },
     upfrontCostCents: DOLLARS(400),
     weeklyCostCents: DOLLARS(260),
+    utilitiesCents: DOLLARS(49),
+    transportCents: DOLLARS(15),
     capacity: 2,
     comfort: 60,
     safety: 70,
@@ -303,6 +311,8 @@ const housing: SimulationCampaignSource["housing"] = [
     },
     upfrontCostCents: DOLLARS(800),
     weeklyCostCents: DOLLARS(420),
+    utilitiesCents: DOLLARS(80),
+    transportCents: DOLLARS(15),
     capacity: 4,
     comfort: 75,
     safety: 80,
