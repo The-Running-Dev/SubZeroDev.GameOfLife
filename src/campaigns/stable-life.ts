@@ -17,10 +17,16 @@
  * present and empty rather than absent, because `SimulationCampaignSource` requires every one
  * of them and an empty one is an honest statement that the content is unwritten.
  *
- * **§12.3's NPC memories are authorable since engine W110 and are not yet authored.**
+ * **§12.3's NPC memories, authored for two of the eight (issue #110).**
  * `NPCDefinition.startingMemories` (`content.ts`) is copied into `NPCState.memories` once, at
- * creation (`initial.ts`), and `NPCDefinitionSource` carries it. No NPC below sets it yet —
- * content still owed, not an engine gap. Tracked as issue #110.
+ * creation (`initial.ts`), and `NPCDefinitionSource` carries it unchanged. `npc-diner-manager`
+ * and `npc-old-friend` each carry one, chosen because their §12.2 description above already
+ * names a specific remembered incident or history rather than a generic role; the other six
+ * carry none, which is an authoring choice for a future pass, not an omission this file needs
+ * to name under CP10. `NPCMemory.descriptionKey` is a plain `LocKey`, not `AuthoredText` (`03`
+ * §12.3 gives no per-NPC guidance either way — `source.ts`'s header explains why this and a
+ * few other deeply-nested fields stay plain), so its text is registered by hand alongside
+ * `CAMPAIGN_TITLE` rather than collected automatically the way `name`/`description` are.
  *
  * **§12.1 states no numeric range for the four relationship dimensions, and the engine's own
  * regression suite confirms it deliberately** (`resolvers.test.ts`: "§6.11 declares no range
@@ -1233,6 +1239,23 @@ const employers: SimulationCampaignSource["employers"] = [
 ];
 
 /**
+ * §12.3 starting memories (issue #110) — two NPCs, chosen because their §12.2 description
+ * below already names a specific remembered incident or history rather than a generic role.
+ * `NPCMemory.descriptionKey` is one of `source.ts`'s deeply-nested plain-`LocKey` fields (the
+ * file header's "§12.3's NPC memories" note explains why `take()` never sees it), so unlike
+ * `name`/`description` above it registers no text on its own — these two constants are added
+ * to `buildStableLifeCampaign`'s `buildCampaign` call by hand, the same way `CAMPAIGN_TITLE` is.
+ */
+const DEB_DOUBLE_SHIFT_MEMORY = {
+  key: "stable-life.npc.diner-manager.memory.double-shift",
+  text: "Showed up for the double shift when the schedule fell apart.",
+};
+const PRIYA_KNOWN_BEFORE_MEMORY = {
+  key: "stable-life.npc.old-friend.memory.known-before",
+  text: "Knew you before any of this started.",
+};
+
+/**
  * §12/§16.1 — the eight NPCs, covering 7 of §12.2's fourteen roles (manager, coworker,
  * landlord, teacher, friend, lender, government employee — one over S20.1's target of 6).
  * Every `initialRelationship` is authored within `0`–`100`; the file header above explains
@@ -1252,6 +1275,16 @@ const npcs: SimulationCampaignSource["npcs"] = [
     defaultRole: "manager",
     initialRelationship: { affinity: 40, trust: 35, respect: 30, resentment: 10 },
     availability: [{ locationId: "workplace" }],
+    startingMemories: [
+      {
+        id: "memory-diner-manager-double-shift",
+        aboutActorId: "player",
+        week: 0,
+        category: "loyalty",
+        magnitude: 15,
+        descriptionKey: DEB_DOUBLE_SHIFT_MEMORY.key,
+      },
+    ],
     tags: [],
   },
   // §12.2 "Coworkers" — attached to employer-civic-data-office via its npcIds above.
@@ -1305,6 +1338,16 @@ const npcs: SimulationCampaignSource["npcs"] = [
     defaultRole: "friend",
     initialRelationship: { affinity: 70, trust: 65, respect: 55, resentment: 0 },
     availability: [{ locationId: "recreation-area" }],
+    startingMemories: [
+      {
+        id: "memory-old-friend-known-before",
+        aboutActorId: "player",
+        week: 0,
+        category: "history",
+        magnitude: 20,
+        descriptionKey: PRIYA_KNOWN_BEFORE_MEMORY.key,
+      },
+    ],
     tags: [],
   },
   // §12.2 "Lenders".
@@ -2728,5 +2771,8 @@ export function buildStableLifeCampaign(): CommandResult<BuiltCampaign> {
     titleKey: CAMPAIGN_TITLE.key,
     content: { ...content, eventChains: STABLE_LIFE_EVENT_CHAINS },
   };
-  return buildCampaign(campaign, [CAMPAIGN_TITLE, ...authoredText]);
+  return buildCampaign(
+    campaign,
+    [CAMPAIGN_TITLE, DEB_DOUBLE_SHIFT_MEMORY, PRIYA_KNOWN_BEFORE_MEMORY, ...authoredText],
+  );
 }
