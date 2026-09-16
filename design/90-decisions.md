@@ -6,6 +6,42 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 <A staging area, not a home. Things noticed mid-slice that were deliberately not acted on. `/track` turns each into a GitHub issue and removes it from here. An item that is a *decision* rather than a *todo* belongs below as an entry, not in an issue.>
 
 - **S16.5** — `03` §16.3's credential completion requirement ("Education: certificate or better") is not expressible by the pinned engine: engine W111 made `exists`/`count` resolve over exactly §8.2's seven collections (`kinds/simulation/conditions.ts`), and `player.education.credentials` is not one of them, so S15's goal omits it, named per CP10. Raised upstream as `SubZeroDev.GameEngine#494`. The event quantifiers this item used to carry became expressible at pin `b017f06` and are re-authored under issue #107 (2026-09-15 entry below). Kept here because S23.4's test (`src/campaigns/stable-life.test.ts`) asserts this exact entry stays in `## Open` until the gap itself is closed, not merely filed.
+- **Vehicle running cost** — `03` §10.2's "a vehicle … creates fuel, insurance, and repair expenses" is levied by engine W112 (`endOfWeek.ts` charges `ItemDefinition.weeklyCostCents` for every unbroken owned item) at pin `aadb482`, but `item-used-bicycle` sets no `weeklyCostCents`. Issue #108 named this in its title and criteria and closed with it unauthored, so the debt survives only as a comment in `stable-life.ts`'s header. Content work: the figure is not in `03` §16.4 and has to be chosen and justified at its site (2026-09-16 entry below).
+
+---
+
+### 2026-09-16 — The vehicle running cost #108 closed without is staged in `## Open`, not tracked by reopening #108
+Context: Engine W112 levies `ItemDefinition.weeklyCostCents`, and #108's title and second and third
+criteria covered a vehicle's weekly running cost. #108 closed after the uniform and coat effects
+landed, with no item setting a nonzero `weeklyCostCents`; the only record of the owed content is the
+`stable-life.ts` header's "content still owed". Found by /reconcile against the tree at `3b75b3e`.
+Chosen: A `## Open` item for `/track` to file as its own issue. #108 stays closed and unedited. No
+content is authored and no cost figure is chosen in this pass.
+Rejected: Reopening #108 — it also carries the bicycle, toolkit and sewing-kit effects the engine's
+2026-09-15 decision deferred, so it could not close again until an engine change nobody has
+scheduled. Recording that the bicycle stays without a running cost — it leaves a §10.2 expense the
+pinned engine can express unauthored and untracked, which is the silent debt the comment already
+was. Authoring the cost here — content slice work, and the figure is not one the corpus states.
+Reversibility: cheap — one staging bullet.
+
+---
+
+### 2026-09-16 — `event-car-breakdown`'s id-named vehicle gate is pinned to the catalog's vehicles by a test
+Context: #107 re-authored `event-car-breakdown` as an `exists` over `player.inventory` with
+`definitionId equals "item-used-bicycle"`, because a `where` reads only the inventory item, never its
+definition's tags or category (engine W111.5; the definition join is an engine-side open item). The
+site names the narrowing, so CP10's visibility holds — but CP10's own line forbids a form that can
+become wrong without anyone editing it, and a second `vehicle`-tagged item would leave the gate
+narrower than its site says while engine W113's transport waiver counts it. Found by /reconcile
+against the tree at `3b75b3e`.
+Chosen: `stable-life.test.ts` asserts the ids the gate names equal the catalog's vehicles (tag
+`vehicle` or category `vehicles`), and the site cites the test. Checked by tagging
+`item-basic-toolkit` as a vehicle: the test failed, and passed again once reverted. The test goes
+when a pin lets a `where` join to the item's definition and the gate is re-authored on the tag.
+Rejected: Staging it in `## Open` — the hazard stays unguarded until the issue is picked up. Recording
+the id-named form as compliant on the strength of the site comment — CP10's paragraph already says
+a narrowing that can drift without an edit is the forbidden kind, and a comment is not a check.
+Reversibility: cheap — one test and one comment.
 
 ---
 

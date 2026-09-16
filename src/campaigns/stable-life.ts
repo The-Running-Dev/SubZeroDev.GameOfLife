@@ -1816,6 +1816,8 @@ const events: SimulationCampaignSource["events"] = [
     // vehicle, now that engine W111 makes the quantifier expressible. A `where` over an
     // inventory item sees its `definitionId`, not a category or tag, so this names the
     // catalog's one vehicle item directly rather than a category it does not carry.
+    // `stable-life.test.ts` pins this id list to every vehicle in the catalog, so a second
+    // vehicle cannot fall outside the gate without failing the build (CP10).
     conditions: {
       exists: { collection: "player.inventory", where: { field: "definitionId", operator: "equals", value: "item-used-bicycle" } },
     },
