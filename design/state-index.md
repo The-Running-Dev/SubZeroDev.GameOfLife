@@ -174,6 +174,8 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-09-15-s16-5-s-open-item-narrows-to-the-credential-requirement-once-w111-makes-event-quantifiers-expressible | — |
 | decision/2026-09-15-the-catalog-notice-names-projects-and-businesses-the-two-collections-w101-made-required | — |
 | decision/2026-09-15-the-length-event-gates-are-re-authored-under-107-since-w111-lapsed-the-2026-08-31-premise | — |
+| decision/2026-09-16-event-car-breakdown-s-id-named-vehicle-gate-is-pinned-to-the-catalog-s-vehicles-by-a-test | — |
+| decision/2026-09-16-the-vehicle-running-cost-108-closed-without-is-staged-in-open-not-tracked-by-reopening-108 | — |
 <!-- decision-affects:end -->
 
 ## Question affects

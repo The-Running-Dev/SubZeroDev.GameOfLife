@@ -541,8 +541,8 @@ artifact whose entire purpose is to be evidence that the two agree.
 
 **Silence is what the rule turns on, and a narrower condition is not silent when it says so.**
 A condition over a real field the pinned engine resolves, named at its site as weaker than what
-the corpus asks, is compliant; `90-decisions.md` (2026-08-31, a `.length` narrowing) settled that
-and two events rest on it. The line falls where a form can become wrong without anyone editing
+the corpus asks, is compliant; `90-decisions.md` (2026-08-31, a `.length` narrowing) settled that.
+The line falls where a form can become wrong without anyone editing
 it: `player.relationships.0.affinity` addresses one NPC by position and stops meaning what it
 meant the moment the array reorders, which is a divergence nothing announces, so it is forbidden
 even though it resolves. `player.relationships.length` names no item, so reordering cannot make

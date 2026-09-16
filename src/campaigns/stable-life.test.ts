@@ -488,6 +488,35 @@ describe("Stable Life — random events (S16)", () => {
     ).toBe(true);
   });
 
+  it("names every vehicle in event-car-breakdown's gate, so a new vehicle cannot fall outside it silently (CP10)", () => {
+    // A `where` over `player.inventory` reads an item's `definitionId`, never its definition's
+    // tags or category (engine W111.5), so the gate names vehicles by id. This pins that list
+    // to the catalog's vehicles — the `"vehicle"` tag engine W113's transport waiver reads, or
+    // the `vehicles` category — so adding one without widening the gate fails here rather than
+    // leaving the event narrower than its site says.
+    const carBreakdown = events.find((e) => e.id === "event-car-breakdown")!;
+    const named = new Set<string>();
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) {
+        node.forEach(walk);
+        return;
+      }
+      if (node === null || typeof node !== "object") return;
+      const record = node as Record<string, unknown>;
+      if (record.field === "definitionId") {
+        for (const value of [record.value].flat()) if (typeof value === "string") named.add(value);
+      }
+      Object.values(record).forEach(walk);
+    };
+    walk(carBreakdown.conditions);
+
+    const vehicles = stableLifeSource.items
+      .filter((i) => i.tags.includes("vehicle") || i.category === "vehicles")
+      .map((i) => i.id);
+    expect(vehicles.length).toBeGreaterThan(0);
+    expect([...named].sort()).toEqual([...vehicles].sort());
+  });
+
   it("names only event ids that exist, in every generatedEvents/scheduledEvents reference (S16.4)", () => {
     const ids = new Set(events.map((e) => e.id));
     for (const event of events) {
