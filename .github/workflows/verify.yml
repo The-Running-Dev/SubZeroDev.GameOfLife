@@ -31,6 +31,44 @@ jobs:
             exit 1
           }
 
+      # Kit-owned tools live in the home-installed AgentKit checkout, not this repository.
+      # Pin the latest stable runtime so CI has the same immutable boundary as a home install.
+      - name: Checkout AgentKit runtime
+        uses: actions/checkout@v4
+        with:
+          repository: The-Running-Dev/SubZeroDev.AgentKit
+          ref: fcde2c1a38086518e0d9f2d37a41de6dd857b665
+          path: .agent-kit
+
+      # This repository deliberately held its design-state checker before S19 while the
+      # closure-budget migration was incomplete (design/90-decisions.md, 2026-08-30). Its
+      # retained repository-specific tests therefore run against the recorded synced commit.
+      - name: Checkout compatible design-state runtime
+        uses: actions/checkout@v4
+        with:
+          repository: The-Running-Dev/SubZeroDev.AgentKit
+          ref: 5095a55c262bad431632e2c9a4d7418b833b3a16
+          path: .agent-kit-design-state
+
+      # The current design-state records still declare the kit-owned paths removed by #130.
+      # Recreate exactly that deleted set from the compatible runtime for this job only, so
+      # the checker validates the same tree contract without putting copied tools back in git.
+      - name: Materialize the compatible design-state tree
+        shell: pwsh
+        env:
+          DESIGN_STATE_KIT_ROOT: ${{ github.workspace }}/.agent-kit-design-state
+        run: |
+          $removedPaths = git diff-tree --no-commit-id --name-only --diff-filter=D -r d6ab5330473bd0894090dd8cb514fa5944cd4810
+          foreach ($path in $removedPaths) {
+            $source = Join-Path $env:DESIGN_STATE_KIT_ROOT $path
+            if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+              throw "Compatible AgentKit runtime does not contain '$path'."
+            }
+            $destination = Join-Path $PWD $path
+            New-Item -ItemType Directory -Path (Split-Path $destination -Parent) -Force | Out-Null
+            Copy-Item -LiteralPath $source -Destination $destination
+          }
+
       # verification: true
       - name: Run Pester tests
         shell: pwsh
@@ -41,7 +79,9 @@ jobs:
       # verification: true
       - name: Validate the core/companion split
         shell: pwsh
-        run: ./tools/Test-Companion.ps1
+        env:
+          AGENTKIT_HOME: ${{ github.workspace }}/.agent-kit
+        run: '& (Join-Path $env:AGENTKIT_HOME ''tools/Test-Companion.ps1'') -TargetRepo .'
 
       # verification: true
       - name: Check the design state against the tree
