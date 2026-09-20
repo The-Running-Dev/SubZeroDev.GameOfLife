@@ -52,6 +52,19 @@ describe("Stable Life — the authoring path", () => {
     expect(registry.ok).toBe(true);
   });
 
+  it("declares every event chain on the source", () => {
+    const referenced = [...new Set(
+      stableLifeSource.events.flatMap((event) => event.chainId === undefined ? [] : [event.chainId]),
+    )].sort();
+    expect(referenced).toEqual(["storm-damage-chain", "tax-filing-chain"]);
+    const eventChains = stableLifeSource.eventChains;
+    expect(eventChains).toEqual([
+      { id: "tax-filing-chain", scope: "game" },
+      { id: "storm-damage-chain", scope: "game" },
+    ]);
+    expect(new Set(eventChains?.map((chain) => chain.id))).toEqual(new Set(referenced));
+  });
+
   it("lifts every authored string into the string table", () => {
     // Every LocKey the campaign references must resolve, or the player reads bare keys.
     // `buildCampaign` is what pairs them; this asserts the pairing is not empty and that
