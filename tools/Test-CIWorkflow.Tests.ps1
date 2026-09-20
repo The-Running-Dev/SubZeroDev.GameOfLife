@@ -85,8 +85,10 @@ Describe 'CI workflow: design-state pin ancestry is evaluable' {
 Describe 'CI workflow: kit-owned gates resolve from pinned AgentKit runtimes (#133)' {
 
     BeforeAll {
-        $script:WorkflowPath = Join-Path (Split-Path $PSScriptRoot -Parent) '.github/workflows/verify.yml'
+        $script:RepositoryRoot = Split-Path $PSScriptRoot -Parent
+        $script:WorkflowPath = Join-Path $script:RepositoryRoot '.github/workflows/verify.yml'
         $script:WorkflowText = Get-Content -LiteralPath $script:WorkflowPath -Raw
+        $script:KitMetadata = Get-Content -LiteralPath (Join-Path $script:RepositoryRoot '.claude/kit.json') -Raw | ConvertFrom-Json
     }
 
     It 'checks out the stable home-install runtime and invokes Test-Companion from AGENTKIT_HOME' {
@@ -100,5 +102,11 @@ Describe 'CI workflow: kit-owned gates resolve from pinned AgentKit runtimes (#1
         $script:WorkflowText | Should -Match '(?ms)- name: Materialize the compatible design-state tree.*?DESIGN_STATE_KIT_ROOT: .*?/\.agent-kit-design-state.*?git diff-tree .*?--diff-filter=D .*?d6ab5330473bd0894090dd8cb514fa5944cd4810.*?Copy-Item -LiteralPath \$source -Destination \$destination'
         $script:WorkflowText | Should -Match '(?ms)- name: Run Pester tests.*?Invoke-Pester -Path tools'
         $script:WorkflowText | Should -Match '(?ms)- name: Check the design state against the tree.*?run: \./tools/Test-DesignState\.ps1'
+    }
+
+    It 'overlays the upstream S21 reader without advancing the deliberately held checker' {
+        $script:KitMetadata.syncedCommit | Should -Be '6b32e7d142fabbb9cfc184e19edc9b5345695b39'
+        $script:WorkflowText | Should -Match '(?ms)- name: Checkout Decision\.StatedIn schema runtime\s+uses: actions/checkout@v4\s+with:\s+repository: The-Running-Dev/SubZeroDev\.AgentKit\s+ref: 6b32e7d142fabbb9cfc184e19edc9b5345695b39\s+path: \.agent-kit-stated-in(?:\s|$)'
+        $script:WorkflowText | Should -Match '(?ms)- name: Materialize the compatible design-state tree.*?STATED_IN_KIT_ROOT: .*?/\.agent-kit-stated-in.*?Copy-Item -LiteralPath \(Join-Path \$env:STATED_IN_KIT_ROOT ''tools/Read-DesignState\.ps1''\) -Destination ''tools/Read-DesignState\.ps1'''
     }
 }

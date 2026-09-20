@@ -1113,6 +1113,17 @@ Describe 'Test-DesignState against this repository''s own tree' -Skip:$script:Sk
         $script:RealResult.LargestClosure.LargestContributor | Should -Not -BeNullOrEmpty
     }
 
+    It '#113: the upstream S21 reader parses the CP10 decision StatedIn site' {
+        $decisionId = 'decision/2026-08-31-a-length-narrowing-on-a-collection-field-is-cp10-compliant-s21-3-is-fully-met'
+        $decisionPath = 'design/state/decisions/2026-08-31-a-length-narrowing-on-a-collection-field-is-cp10-compliant-s21-3-is-fully-met.md'
+        $graph = Read-DesignStateGraph -Path $script:RepoRoot
+        $graph.Failures | Where-Object { $_.Path -eq $decisionPath } | Should -BeNullOrEmpty
+        $decision = $graph.Records | Where-Object { $_.Id -eq $decisionId }
+        $decision.Lists['StatedIn'] | Should -Be @(
+            'unit/document/design-20-contract § A campaign source — `src/campaigns/<slug>.ts`'
+        )
+    }
+
     It 'S5.12: neither S4.6 closure (unit/command/track, unit/document/agents-md) exceeds the 16,384-byte ceiling' {
         $graph = Read-DesignStateGraph -Path $script:RepoRoot
         $byId = @{}

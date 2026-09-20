@@ -2,6 +2,7 @@
 Date: 2026-08-31
 Anchor: 2026-08-31 — A `.length` narrowing on a collection field is CP10-compliant; S21.3 is fully met
 Status: accepted
+StatedIn: unit/document/design-20-contract § A campaign source — `src/campaigns/<slug>.ts`
 
 ## Claim
 A condition narrowed to a collection field's own `.length` (an aggregate cardinality check that
