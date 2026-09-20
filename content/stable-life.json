@@ -3094,15 +3094,6 @@
       ],
       "projects": [],
       "businesses": [],
-      "scenarioId": "scenario-stable-life",
-      "goalFailurePrecedence": "goals_win",
-      "sceneTemplateKey": "stable-life.scene",
-      "actionLabelKeys": {
-        "planAdd": "stable-life.action.plan-add",
-        "planRemove": "stable-life.action.plan-remove",
-        "planClear": "stable-life.action.plan-clear",
-        "endWeek": "stable-life.action.end-week"
-      },
       "eventChains": [
         {
           "id": "tax-filing-chain",
@@ -3112,7 +3103,16 @@
           "id": "storm-damage-chain",
           "scope": "game"
         }
-      ]
+      ],
+      "scenarioId": "scenario-stable-life",
+      "goalFailurePrecedence": "goals_win",
+      "sceneTemplateKey": "stable-life.scene",
+      "actionLabelKeys": {
+        "planAdd": "stable-life.action.plan-add",
+        "planRemove": "stable-life.action.plan-remove",
+        "planClear": "stable-life.action.plan-clear",
+        "endWeek": "stable-life.action.end-week"
+      }
     }
   },
   "strings": {

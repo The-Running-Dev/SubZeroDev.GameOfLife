@@ -81,3 +81,24 @@ Describe 'CI workflow: design-state pin ancestry is evaluable' {
         $script:WorkflowText | Should -Match '(?ms)- uses: actions/checkout@v4\s+with:\s+fetch-depth:\s*0(?:\s|$)'
     }
 }
+
+Describe 'CI workflow: kit-owned gates resolve from pinned AgentKit runtimes (#133)' {
+
+    BeforeAll {
+        $script:WorkflowPath = Join-Path (Split-Path $PSScriptRoot -Parent) '.github/workflows/verify.yml'
+        $script:WorkflowText = Get-Content -LiteralPath $script:WorkflowPath -Raw
+    }
+
+    It 'checks out the stable home-install runtime and invokes Test-Companion from AGENTKIT_HOME' {
+        $script:WorkflowText | Should -Match '(?ms)- name: Checkout AgentKit runtime\s+uses: actions/checkout@v4\s+with:\s+repository: The-Running-Dev/SubZeroDev\.AgentKit\s+ref: [0-9a-f]{40}\s+path: \.agent-kit(?:\s|$)'
+        $script:WorkflowText | Should -Match '(?ms)- name: Validate the core/companion split\s+shell: pwsh\s+env:\s+AGENTKIT_HOME: .*?/\.agent-kit\s+run: .*?\$env:AGENTKIT_HOME.*?tools/Test-Companion\.ps1'
+        $script:WorkflowText | Should -Not -Match '(?m)^\s*run:\s*\./tools/Test-Companion\.ps1\s*$'
+    }
+
+    It 'materializes exactly the #130 deletion set from the recorded design-state runtime' {
+        $script:WorkflowText | Should -Match '(?ms)- name: Checkout compatible design-state runtime\s+uses: actions/checkout@v4\s+with:\s+repository: The-Running-Dev/SubZeroDev\.AgentKit\s+ref: 5095a55c262bad431632e2c9a4d7418b833b3a16\s+path: \.agent-kit-design-state(?:\s|$)'
+        $script:WorkflowText | Should -Match '(?ms)- name: Materialize the compatible design-state tree.*?DESIGN_STATE_KIT_ROOT: .*?/\.agent-kit-design-state.*?git diff-tree .*?--diff-filter=D .*?d6ab5330473bd0894090dd8cb514fa5944cd4810.*?Copy-Item -LiteralPath \$source -Destination \$destination'
+        $script:WorkflowText | Should -Match '(?ms)- name: Run Pester tests.*?Invoke-Pester -Path tools'
+        $script:WorkflowText | Should -Match '(?ms)- name: Check the design state against the tree.*?run: \./tools/Test-DesignState\.ps1'
+    }
+}
