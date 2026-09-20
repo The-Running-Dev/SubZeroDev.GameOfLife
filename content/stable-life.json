@@ -2668,6 +2668,21 @@
                 ]
               },
               {
+                "exists": {
+                  "collection": "player.education.credentials",
+                  "where": {
+                    "field": "level",
+                    "operator": "in",
+                    "value": [
+                      "certificate",
+                      "diploma",
+                      "degree",
+                      "postgraduate"
+                    ]
+                  }
+                }
+              },
+              {
                 "field": "player.needs.happiness",
                 "operator": "greater_or_equal",
                 "value": 60
@@ -3210,7 +3225,7 @@
     "stable-life.goal.certified-professional.label": "Certified Professional",
     "stable-life.goal.financial-cushion.description": "Five hundred dollars in hand, and keep it there for eight straight weeks.",
     "stable-life.goal.financial-cushion.label": "A Financial Cushion",
-    "stable-life.goal.stable-life.description": "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
+    "stable-life.goal.stable-life.description": "Two thousand dollars, a certificate, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     "stable-life.goal.stable-life.label": "A Stable Life",
     "stable-life.housing.cheap-studio.description": "One room, but it is the whole apartment, and nobody else's name is on the lease.",
     "stable-life.housing.cheap-studio.name": "Cheap Studio",
