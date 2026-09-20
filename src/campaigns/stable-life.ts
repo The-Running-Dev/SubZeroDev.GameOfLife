@@ -66,12 +66,10 @@
  * for every owned item with condition above zero) and are content still owed — no item below
  * sets a nonzero `weeklyCostCents` yet.
  *
- * **§16.3's "Education: certificate or better" is still not expressible.** It needs a
- * condition over `player.education.credentials`, a collection. Engine W111 implemented
- * `ConditionResolver.collection` — and so `exists`/`count` — for exactly §8.2's seven
- * collections (`kinds/simulation/conditions.ts`), and `player.education.credentials` is not one
- * of them. The goal below carries the five requirements that are scalar comparisons and omits
- * that one, named per CP10; `design/90-decisions.md`'s `## Open` S16.5 item tracks it.
+ * **§16.3's "Education: certificate or better" is now a scenario requirement.** Engine #500
+ * closed #494 by adding `player.education.credentials` to `exists`/`count` collection resolution.
+ * `goal-stable-life` below accepts certificate, diploma, degree, or postgraduate credentials;
+ * `stable-life.test.ts` proves that an empty or school-only credential list cannot satisfy it.
  *
  * **Six event conditions predated W111 and have been re-authored under issue #107.** §11.3
  * names collection quantifiers for events — "owns any item tagged formal_clothing", "any NPC
@@ -2423,10 +2421,11 @@ const events: SimulationCampaignSource["events"] = [
 ];
 
 /**
- * §16.3's completion requirements, minus the credential one the condition language cannot
- * express yet (see the file header). `highestTierAchieved` is a string, so "skilled or
- * better" is authored as the explicit set rather than an ordering comparison — the tier
- * union has no numeric rank the evaluator could compare against.
+ * §16.3's completion requirements. `highestTierAchieved` is a string, so "skilled or better"
+ * is authored as the explicit set rather than an ordering comparison — the tier union has no
+ * numeric rank the evaluator could compare against. Credentials have the same non-numeric
+ * representation, so "certificate or better" is likewise the explicit set Engine #500 made
+ * queryable.
  *
  * §13's goal category list is a prose enumeration, not a code-level enum — `category` is a
  * free `string` on `GoalDefinition` (`content.ts`). §16.1 targets four goal categories; the
@@ -2444,9 +2443,9 @@ const events: SimulationCampaignSource["events"] = [
  *
  * `goal-career-advancement` and `goal-certified-professional` are stretch goals against
  * S15/S17 content already authored — a tier above the scenario goal's "skilled or better",
- * and a specific course completion rather than the scenario's omitted credential-level
- * check. Both are ordinary `player.career.*`/`player.education.completedCourseIds` field
- * reads, the same forms the scenario goal and `event-credential-recognized` already use.
+ * and a specific course completion rather than the scenario's credential-level check. Both are
+ * ordinary `player.career.*`/`player.education.completedCourseIds` field reads, the same forms
+ * `event-credential-recognized` already uses.
  */
 const goals: SimulationCampaignSource["goals"] = [
   {
@@ -2454,7 +2453,7 @@ const goals: SimulationCampaignSource["goals"] = [
     label: { key: "stable-life.goal.stable-life.label", text: "A Stable Life" },
     description: {
       key: "stable-life.goal.stable-life.description",
-      text: "Two thousand dollars, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
+      text: "Two thousand dollars, a certificate, skilled work, sixty happiness, sixty health, and nothing overdue. Twelve months.",
     },
     category: "scenario",
     conditions: {
@@ -2466,6 +2465,16 @@ const goals: SimulationCampaignSource["goals"] = [
             { field: "player.career.highestTierAchieved", operator: "equals", value: "professional" },
             { field: "player.career.highestTierAchieved", operator: "equals", value: "senior" },
           ],
+        },
+        {
+          exists: {
+            collection: "player.education.credentials",
+            where: {
+              field: "level",
+              operator: "in",
+              value: ["certificate", "diploma", "degree", "postgraduate"],
+            },
+          },
         },
         { field: "player.needs.happiness", operator: "greater_or_equal", value: 60 },
         { field: "player.needs.health", operator: "greater_or_equal", value: 60 },

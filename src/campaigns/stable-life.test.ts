@@ -7,8 +7,6 @@
  * would leave the scaffold looking finished and producing nothing.
  */
 
-import { readFileSync } from "node:fs";
-
 import { describe, expect, it } from "vitest";
 import {
   buildValidatedContentRegistry,
@@ -1214,50 +1212,69 @@ describe("Stable Life — goals and victory (S23)", () => {
     }
   });
 
-  it("still omits §16.3's credential completion requirement, the open decision-log entry still open (S23.4)", () => {
-    // `player.education.credentials` is a collection (`Credential[]`, `actor.ts`), and not
-    // one of the seven engine W111 made quantifiable (`conditions.ts`, §8.2). Not expressible
-    // as a scalar comparison either — there is no `highestCredentialLevel` field. Still
-    // omitted; the decision-log entry this slice was asked to confirm is `## Open`'s S16.5,
-    // which names this same gap and has not been closed.
+  it("requires §16.3's certificate-or-better credential completion requirement (#135)", () => {
+    // Engine #500 closed #494 by allowing `exists`/`count` over earned credentials. The
+    // collection contains a level string rather than a comparable numeric rank, so the source
+    // names the four qualifying levels explicitly.
     const stableLifeGoal = goals.find((g) => g.id === "goal-stable-life")!;
-    const conditionText = JSON.stringify(stableLifeGoal.conditions);
-    expect(conditionText).not.toContain("credential");
-
-    const decisionsLog = readFileSync(
-      new URL("../../design/90-decisions.md", import.meta.url),
-      "utf8",
+    const stateWithCredentials = (credentials: readonly Record<string, unknown>[]) => ({
+      player: {
+        finances: { cashCents: 200_000, overdueBalanceCents: 0 },
+        career: { highestTierAchieved: "skilled" },
+        education: { credentials },
+        needs: { happiness: 60, health: 60 },
+      },
+    });
+    const credential = (level: string) => ({ level });
+    const evaluate = (state: Record<string, unknown>) => evaluateTestCondition(
+      stableLifeGoal.conditions,
+      (path) => fieldOf(state, path),
+      (collection) => collection === "player.education.credentials"
+        ? (fieldOf(state, collection) as readonly Record<string, unknown>[] ?? [])
+        : [],
     );
-    // Bounded on the `---` that closes `## Open`, because that is the section's real end and
-    // it exists. Slicing to the next `## ` heading did not: `## Open` is the last of those in
-    // the file, so the bound was -1 and the assertion searched the whole log — the item could
-    // move down among the dated entries and still pass, which is the one transition this is
-    // here to catch.
-    const openStart = decisionsLog.indexOf("## Open");
-    const openEnd = decisionsLog.indexOf("\n---", openStart);
-    expect(openStart).toBeGreaterThanOrEqual(0);
-    expect(openEnd).toBeGreaterThan(openStart);
-    const openSection = decisionsLog.slice(openStart, openEnd);
-    expect(openSection).toContain("S16.5");
-    expect(openSection).toContain("credential completion requirement");
+
+    expect(evaluate(stateWithCredentials([]))).toBe(false);
+    expect(evaluate(stateWithCredentials([credential("school")]))).toBe(false);
+    expect(evaluate(stateWithCredentials([credential("certificate")]))).toBe(true);
+    expect(evaluate(stateWithCredentials([credential("degree")]))).toBe(true);
   });
 
-  function evaluateTestCondition(condition: Condition, resolveField: (path: string) => unknown): boolean {
-    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField));
-    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField));
-    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField);
-    if ("exists" in condition || "count" in condition) {
-      throw new Error("this campaign's goal conditions never use a collection quantifier (S23.4)");
+  function evaluateTestCondition(
+    condition: Condition,
+    resolveField: (path: string) => unknown,
+    resolveCollection: (path: string) => readonly Record<string, unknown>[],
+  ): boolean {
+    if ("all" in condition) return condition.all.every((c) => evaluateTestCondition(c, resolveField, resolveCollection));
+    if ("any" in condition) return condition.any.some((c) => evaluateTestCondition(c, resolveField, resolveCollection));
+    if ("not" in condition) return !evaluateTestCondition(condition.not, resolveField, resolveCollection);
+    if ("exists" in condition) {
+      return resolveCollection(condition.exists.collection).some((item) =>
+        evaluateTestCondition(condition.exists.where, (path) => fieldOf(item, path), resolveCollection));
+    }
+    if ("count" in condition) {
+      const actual = resolveCollection(condition.count.collection).filter((item) =>
+        evaluateTestCondition(condition.count.where, (path) => fieldOf(item, path), resolveCollection)).length;
+      switch (condition.operator) {
+        case "equals": return actual === condition.value;
+        case "not_equals": return actual !== condition.value;
+        case "less_than": return actual < condition.value;
+        case "less_or_equal": return actual <= condition.value;
+        case "greater_than": return actual > condition.value;
+        case "greater_or_equal": return actual >= condition.value;
+      }
     }
     const actual = resolveField(condition.field);
     switch (condition.operator) {
       case "equals": return actual === condition.value;
       case "not_equals": return actual !== condition.value;
-      case "greater_or_equal": return (actual as number) >= (condition.value as number);
+      case "less_than": return (actual as number) < (condition.value as number);
       case "less_or_equal": return (actual as number) <= (condition.value as number);
+      case "greater_than": return (actual as number) > (condition.value as number);
+      case "greater_or_equal": return (actual as number) >= (condition.value as number);
       case "contains": return Array.isArray(actual) && actual.includes(condition.value);
-      default:
-        throw new Error(`test evaluator: extend for operator "${condition.operator}"`);
+      case "in": return Array.isArray(condition.value) && condition.value.includes(actual);
+      default: throw new Error(`test evaluator: extend for operator "${condition.operator}"`);
     }
   }
 
@@ -1276,6 +1293,7 @@ describe("Stable Life — goals and victory (S23)", () => {
     careerTier?: string;
     happiness?: number;
     health?: number;
+    credentials?: readonly Record<string, unknown>[];
     completedCourseIds?: string[];
   }): Record<string, unknown> {
     return {
@@ -1286,47 +1304,59 @@ describe("Stable Life — goals and victory (S23)", () => {
         },
         career: { highestTierAchieved: overrides.careerTier },
         needs: { happiness: overrides.happiness ?? 50, health: overrides.health ?? 50 },
-        education: { completedCourseIds: overrides.completedCourseIds ?? [] },
+        education: {
+          credentials: overrides.credentials ?? [],
+          completedCourseIds: overrides.completedCourseIds ?? [],
+        },
       },
     };
+  }
+
+  function evaluateGoal(condition: Condition, state: Record<string, unknown>): boolean {
+    return evaluateTestCondition(
+      condition,
+      (path) => fieldOf(state, path),
+      (collection) => (fieldOf(state, collection) as readonly Record<string, unknown>[] | undefined) ?? [],
+    );
   }
 
   it("evaluates every goal's conditions against a built campaign, both false and true (S23.5)", () => {
     built(); // proves the campaign actually builds before conditions are evaluated against it
 
     for (const goal of goals) {
-      const atStart = evaluateTestCondition(goal.conditions, (p) => fieldOf(fixtureState({}), p));
+      const atStart = evaluateGoal(goal.conditions, fixtureState({}));
       expect(atStart, `${goal.id} should not already be met at the scenario's starting state`).toBe(false);
     }
 
     const stableLifeGoal = goals.find((g) => g.id === "goal-stable-life")!;
     expect(
-      evaluateTestCondition(
+      evaluateGoal(
         stableLifeGoal.conditions,
-        (p) =>
-          fieldOf(
-            fixtureState({ cashCents: 2000_00, careerTier: "skilled", happiness: 60, health: 60 }),
-            p,
-          ),
+        fixtureState({
+          cashCents: 2000_00,
+          careerTier: "skilled",
+          happiness: 60,
+          health: 60,
+          credentials: [{ level: "certificate" }],
+        }),
       ),
     ).toBe(true);
 
     const cushion = goals.find((g) => g.id === "goal-financial-cushion")!;
     expect(
-      evaluateTestCondition(cushion.conditions, (p) => fieldOf(fixtureState({ cashCents: 500_00 }), p)),
+      evaluateGoal(cushion.conditions, fixtureState({ cashCents: 500_00 })),
     ).toBe(true);
 
     const advancement = goals.find((g) => g.id === "goal-career-advancement")!;
     expect(
-      evaluateTestCondition(advancement.conditions, (p) => fieldOf(fixtureState({ careerTier: "senior" }), p)),
+      evaluateGoal(advancement.conditions, fixtureState({ careerTier: "senior" })),
     ).toBe(true);
 
     const certified = goals.find((g) => g.id === "goal-certified-professional")!;
     expect(
-      evaluateTestCondition(
+      evaluateGoal(
         certified.conditions,
-        (p) =>
-          fieldOf(fixtureState({ completedCourseIds: ["course-professional-certification-it"] }), p),
+        fixtureState({ completedCourseIds: ["course-professional-certification-it"] }),
       ),
     ).toBe(true);
   });
