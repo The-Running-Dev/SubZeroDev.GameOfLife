@@ -88,7 +88,6 @@ Describe 'CI workflow: kit-owned gates resolve from pinned AgentKit runtimes (#1
         $script:RepositoryRoot = Split-Path $PSScriptRoot -Parent
         $script:WorkflowPath = Join-Path $script:RepositoryRoot '.github/workflows/verify.yml'
         $script:WorkflowText = Get-Content -LiteralPath $script:WorkflowPath -Raw
-        $script:KitMetadata = Get-Content -LiteralPath (Join-Path $script:RepositoryRoot '.claude/kit.json') -Raw | ConvertFrom-Json
     }
 
     It 'checks out the stable home-install runtime and invokes Test-Companion from AGENTKIT_HOME' {
@@ -105,7 +104,11 @@ Describe 'CI workflow: kit-owned gates resolve from pinned AgentKit runtimes (#1
     }
 
     It 'overlays the upstream S21 reader without advancing the deliberately held checker' {
-        $script:KitMetadata.syncedCommit | Should -Be '6b32e7d142fabbb9cfc184e19edc9b5345695b39'
+        # The held checker is expressed by the workflow's own ref pins (below), materialized
+        # per CI job since #130 removed the copy-based tooling this repo used to fork locally.
+        # kit.json's syncedCommit is whole-kit sync bookkeeping, not something CI reads to pick
+        # a ref, so it is free to advance past this pin on an unrelated /sync — see the
+        # 2026-08-30 and 2026-09-21 design/90-decisions.md entries.
         $script:WorkflowText | Should -Match '(?ms)- name: Checkout Decision\.StatedIn schema runtime\s+uses: actions/checkout@v4\s+with:\s+repository: The-Running-Dev/SubZeroDev\.AgentKit\s+ref: 6b32e7d142fabbb9cfc184e19edc9b5345695b39\s+path: \.agent-kit-stated-in(?:\s|$)'
         $script:WorkflowText | Should -Match '(?ms)- name: Materialize the compatible design-state tree.*?STATED_IN_KIT_ROOT: .*?/\.agent-kit-stated-in.*?Copy-Item -LiteralPath \(Join-Path \$env:STATED_IN_KIT_ROOT ''tools/Read-DesignState\.ps1''\) -Destination ''tools/Read-DesignState\.ps1'''
     }
