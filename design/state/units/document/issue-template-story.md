@@ -5,7 +5,7 @@ Anchor: .github/ISSUE_TEMPLATE/story.md
 Consumes:
 Exposes:
 Binds:
-Live:
+Live: decision/2026-09-21-sync-reconciliation-12-command-rename-pass-and-codex-profiles-md-taken-wholesale
 Archival:
 Questions:
 Work:
