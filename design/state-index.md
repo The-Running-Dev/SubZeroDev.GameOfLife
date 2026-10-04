@@ -195,6 +195,7 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 <!-- outstanding:start -->
 | Rank | Issue | Title | Criteria | Mirrored at |
 |---|---|---|---|---|
-| 20 | #113 | A design-state decision can't name where its terms landed | — | `4cfac4468993f13e0fba91a915817f2b1708f4e9` |
-| 44 | #44 | Three commands cite design/10-design.md § Record, which does not exist | — | `c97bb3bf808924068e35788b32a352f0e7cb3d64` |
+| 21 | #140 | Vehicle running cost: the used bicycle is never charged its weekly upkeep | — | `a22ef1fb277dc653cff59370785429493d710d77` |
+| 22 | #141 | Stop tracking the kit-owned commands and scripts, and separate kit design-state records | — | `a22ef1fb277dc653cff59370785429493d710d77` |
+| 23 | #142 | Adopt the current kit's design-state checker as the one this repository answers to | — | `a22ef1fb277dc653cff59370785429493d710d77` |
 <!-- outstanding:end -->
