@@ -60,6 +60,12 @@ only when it would have changed a decision.
   carried it, and only a full reconciliation found them. Same shape as the `contentNotice`
   enumeration that read "15 of 30 random events" through four merged slices — **name the
   thing that does not move, not the thing that does.**
+- **A gate that runs different code locally and in CI is not one gate.** `verify.yml`
+  materializes a pinned design-state runtime the local kit does not run, so a green CI and a
+  red local run are two checkers, not a contradiction. Cost: the 2026-10-03 `/next` and #138's
+  `/sync` each spent a session on 130 findings they could not attribute, because the CI
+  runtime had been switched silently inside an unrelated engine PR (#132). Before trusting
+  either result, check which runtime produced it.
 
 ## Open concerns & assumptions
 

@@ -177,6 +177,8 @@ This document is a navigation view generated from `design/state/`. Edit the reco
 | decision/2026-09-16-event-car-breakdown-s-id-named-vehicle-gate-is-pinned-to-the-catalog-s-vehicles-by-a-test | — |
 | decision/2026-09-16-the-vehicle-running-cost-108-closed-without-is-staged-in-open-not-tracked-by-reopening-108 | — |
 | decision/2026-09-21-sync-reconciliation-12-command-rename-pass-and-codex-profiles-md-taken-wholesale | `unit/document/agents-md`, `unit/document/codex-profiles-md`, `unit/document/issue-template-story` |
+| decision/2026-10-04-design-state-adopts-the-current-kit-s-checker-ci-s-pinned-runtime-is-the-interim | `unit/script/test-designstate` |
+| decision/2026-10-04-event-chains-are-declared-on-the-campaign-source-now-that-the-pin-carries-472-s-fix | — |
 | decision/2026-10-04-sync-reconciliation-to-6292aeb-pointer-resolved-at-read-time-kit-owned-copies-retained | `unit/document/agents-md`, `unit/document/issue-template-bug` |
 <!-- decision-affects:end -->
 
