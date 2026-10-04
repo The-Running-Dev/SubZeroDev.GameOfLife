@@ -1,7 +1,7 @@
 # Agent contract
 
 
-**Read [`AGENTS.shared.md`](C:/Users/Ben/.agent-kit/AGENTS.shared.md) completely before this file.** It holds the rules every repository using the kit shares.
+**Read `AGENTS.shared.md` completely before this file.** It holds the rules every repository using the kit shares, resolved from `$env:AGENTKIT_HOME` if set, else `$HOME/.agent-kit`.
 
 This file is binding for every agent session in this repo, regardless of tool or model.
 
