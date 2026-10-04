@@ -5,7 +5,7 @@ Anchor: .github/ISSUE_TEMPLATE/bug.md
 Consumes:
 Exposes:
 Binds:
-Live:
+Live: decision/2026-10-04-sync-reconciliation-to-6292aeb-pointer-resolved-at-read-time-kit-owned-copies-retained
 Archival:
 Questions:
 Work:
