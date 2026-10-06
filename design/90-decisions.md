@@ -7,6 +7,11 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-10-06 — Remove the per-repository SessionEnd cost hook
+Context: `.claude/settings.json` ran `pwsh … tools/Measure-Session.ps1` on `SessionEnd`, but that script no longer exists — it left this repository when the kit moved to a single home install, and the kit later ported it to Node as `measure-session.ts` — so the hook failed at the end of every session. The kit's setup installs one global `SessionEnd` hook in `~/.claude/settings.json` that logs every project.
+Chosen: remove this repository's `hooks.SessionEnd` entry, in the AgentKit sync to `v2026.10.06.1`. Nothing else in `settings.json` changes.
+Rejected: point it at `measure-session.ts` — the global hook already runs that script, so every session would be logged twice; leave it — it keeps failing at every session end.
+
 ### 2026-10-04 — Design state adopts the current kit's checker; CI's pinned runtime is the interim
 Context: CI's `verify` job rebuilds the kit-owned tools #130 removed from three pinned AgentKit commits — `5095a55` for the pre-S19 runtime, `6b32e7d`'s `Read-DesignState.ps1` over it, `fcde2c1` for `Test-Companion.ps1`. That materialization came in with #132 and #134 and no entry here. The kit's own checker at `6292aeb` reports 130 blocking findings against the same tree, which #138 left unattributed. /reconcile attributed all of them: 61 are records anchoring files #130 removed, 67 are the record-format change the 2026-08-30 S19 deferral held back (with 29 records the current reader cannot parse), and 2 are heading collisions in `design/10-design.md`. None is a tree defect; a green CI and a red local run were two different checkers.
 Chosen: The current kit's checker is the one this repository answers to. Until the adoption lands, CI's pinned runtime stays the gate and the 2026-08-30 deferral stays in force. The adoption is staged in `## Open` for `/track`; its contract amendment belongs to `/spec`.
