@@ -22,12 +22,6 @@ corpus's type claims and nothing else.** Numbers, prose, and intent are untouche
 says authoring closes the checkability gap; it closes the half a compiler can see, and *Failure
 modes* gives the other half its own entry.
 
-The repository's third contract path — the installed AgentKit design-state mechanism — is designed
-upstream in AgentKit and deliberately has no design document here. It appears in `20-contract.md`
-and nowhere in this one; that asymmetry is recorded in `90-decisions.md` (2026-08-30, *The
-game-content path enters `design/` through a design pass*), which is also why the content path does
-have one.
-
 ## Data model
 
 ### System 1 — the corpus and the checker's records
