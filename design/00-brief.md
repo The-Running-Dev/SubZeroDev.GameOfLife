@@ -80,8 +80,7 @@ is what a host fetches.
 Single author, Windows host under `D:\Dropbox\Projects\`. Two toolchains, deliberately
 separate:
 
-- **The spec set and its checker** — PowerShell Core, gated by `tools/Test-SpecSet.ps1` and
-  `tools/Test-DesignState.ps1`. The reader-facing deliverable is a Docusaurus site built from
+- **The spec set and its checker** — PowerShell Core, gated by `tools/Test-SpecSet.ps1`. The reader-facing deliverable is a Docusaurus site built from
   `docs/` via Docker (`docs.ps1`).
 - **The game content** — Node (`>=24`) and TypeScript, authored in `src/campaigns/` against
   `@the-running-dev/game-engine`, which is pinned as the `engine/` submodule and built from
