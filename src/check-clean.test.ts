@@ -99,24 +99,32 @@ describe("the export runs before the clean check, and the typecheck before both 
     expect(checkCleanAt).toBeGreaterThan(exportAt);
   });
 
-  it("orders the content job's typecheck step before the re-export step, sets submodules: recursive, and sets continue-on-error nowhere", async () => {
+  it("verify.yml's content job runs typecheck, then export:content, then check:clean, with submodules: recursive and no continue-on-error", async () => {
     const workflow = await readFile(
       path.join(projectRoot, ".github", "workflows", "verify.yml"),
       "utf8",
     );
 
+    // The job is the shared node-ci.yml; what it does with `scripts` (run in order, first
+    // failure stops the job) belongs to that library, so only this repository's choices are
+    // pinned here.
     const contentJobAt = workflow.indexOf("\n  content:\n");
     expect(contentJobAt).toBeGreaterThanOrEqual(0);
     const contentJob = workflow.slice(contentJobAt);
 
-    const typecheckStepAt = contentJob.indexOf("Typecheck the campaign sources");
-    const reExportStepAt = contentJob.indexOf(
-      "Re-export content and fail if the committed JSON is stale",
+    expect(contentJob).toContain(
+      "uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/node-ci.yml@v0",
     );
-    expect(typecheckStepAt).toBeGreaterThanOrEqual(0);
-    expect(reExportStepAt).toBeGreaterThan(typecheckStepAt);
+
+    const scripts = /^ {6}scripts: (.+)$/m.exec(contentJob)?.[1]?.split(/\s+/) ?? [];
+    const typecheckAt = scripts.indexOf("typecheck");
+    const exportAt = scripts.indexOf("export:content");
+    const checkCleanAt = scripts.indexOf("check:clean");
+    expect(typecheckAt).toBeGreaterThanOrEqual(0);
+    expect(exportAt).toBeGreaterThan(typecheckAt);
+    expect(checkCleanAt).toBeGreaterThan(exportAt);
 
     expect(contentJob).toContain("submodules: recursive");
-    expect(contentJob).not.toContain("continue-on-error");
+    expect(workflow).not.toContain("continue-on-error");
   });
 });

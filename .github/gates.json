@@ -1,0 +1,36 @@
+{
+  "gates": [
+    {
+      "name": "powershell / Pester tools",
+      "command": "pwsh -NoProfile -Command \"Invoke-Pester -Configuration @{ Run = @{ Path = @('tools'); Exit = [bool]1 } }\""
+    },
+    {
+      "name": "powershell / tools/Test-SpecSet.ps1",
+      "command": "pwsh -NoProfile -File ./tools/Test-SpecSet.ps1"
+    },
+    {
+      "name": "content / setup (setup)",
+      "command": "npm run setup"
+    },
+    {
+      "name": "content / install",
+      "command": "npm ci"
+    },
+    {
+      "name": "content / typecheck",
+      "command": "npm run typecheck"
+    },
+    {
+      "name": "content / test",
+      "command": "npm run test"
+    },
+    {
+      "name": "content / export:content",
+      "command": "npm run export:content"
+    },
+    {
+      "name": "content / check:clean",
+      "command": "npm run check:clean"
+    }
+  ]
+}
