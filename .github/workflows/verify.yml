@@ -1,75 +1,31 @@
 name: Verify
 
+# Pull requests and main run both jobs once. The jobs are the shared library's workflows; see
+# https://github.com/The-Running-Dev/GitHub-ActionTemplates.
 on:
   push:
+    branches: [main]
   pull_request:
 
+permissions: {}
+
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Pester
-        shell: pwsh
-        run: Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
-
-      # verification: true
-      - name: Parse-check PowerShell scripts
-        shell: pwsh
-        run: |
-          $parseErrors = Get-ChildItem -Path . -Recurse -Filter '*.ps1' | ForEach-Object {
-            $tokens = $null
-            $errors = $null
-            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref] $tokens, [ref] $errors) | Out-Null
-            $errors
-          }
-          if ($parseErrors) {
-            $parseErrors | Format-List | Out-String | Write-Error
-            exit 1
-          }
-
-      # verification: true
-      - name: Run Pester tests
-        shell: pwsh
-        run: Invoke-Pester -Path tools -Output Detailed
-
-      # verification: true
-      - name: Check the spec set
-        shell: pwsh
-        run: ./tools/Test-SpecSet.ps1
+  powershell:
+    permissions:
+      contents: read
+    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/pwsh-ci.yml@v0
+    with:
+      tests: tools
+      post-build: tools/Test-SpecSet.ps1
 
   content:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          # The engine is a pinned submodule and the campaign sources compile against it;
-          # without this the whole job resolves nothing.
-          submodules: recursive
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      # verification: true
-      - name: Build the pinned engine
-        run: npm run setup
-
-      - name: Install content dependencies
-        run: npm install
-
-      # verification: true
-      - name: Typecheck the campaign sources
-        run: npm run typecheck
-
-      # verification: true
-      - name: Test the campaign sources
-        run: npm test
-
-      # verification: true
-      - name: Re-export content and fail if the committed JSON is stale
-        run: npm run export:content && npm run check:clean
+    permissions:
+      contents: read
+    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/node-ci.yml@v0
+    with:
+      node-versions: '["24"]'
+      # The engine is a pinned submodule and the campaign sources compile against it; `setup`
+      # builds it before the install resolves the file: dependency on it.
+      submodules: recursive
+      setup: setup
+      scripts: typecheck test export:content check:clean
