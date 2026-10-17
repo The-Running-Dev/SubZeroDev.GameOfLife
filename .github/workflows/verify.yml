@@ -13,7 +13,7 @@ jobs:
   powershell:
     permissions:
       contents: read
-    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/pwsh-ci.yml@v0
+    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/pwsh-ci.yml@v1
     with:
       tests: tools
       post-build: tools/Test-SpecSet.ps1
@@ -21,7 +21,7 @@ jobs:
   content:
     permissions:
       contents: read
-    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/node-ci.yml@v0
+    uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/node-ci.yml@v1
     with:
       node-versions: '["24"]'
       # The engine is a pinned submodule and the campaign sources compile against it; `setup`
