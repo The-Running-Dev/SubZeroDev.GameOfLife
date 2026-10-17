@@ -36,14 +36,14 @@ Describe 'CI workflow: verify.yml calls the shared library workflows' {
 
     It 'the powershell job calls pwsh-ci.yml@v0, tests tools, and runs the spec-set check after the tests' {
         $body = Get-Job 'powershell'
-        $body | Should -Match 'uses: The-Running-Dev/GitHub-ActionTemplates/\.github/workflows/pwsh-ci\.yml@v0'
+        $body | Should -Match 'uses: The-Running-Dev/GitHub-ActionTemplates/\.github/workflows/pwsh-ci\.yml@v1'
         $body | Should -Match '(?m)^      tests: tools$'
         $body | Should -Match '(?m)^      post-build: tools/Test-SpecSet\.ps1$'
     }
 
     It 'the content job calls node-ci.yml@v0 on Node 24 with the engine submodule checked out recursively' {
         $body = Get-Job 'content'
-        $body | Should -Match 'uses: The-Running-Dev/GitHub-ActionTemplates/\.github/workflows/node-ci\.yml@v0'
+        $body | Should -Match 'uses: The-Running-Dev/GitHub-ActionTemplates/\.github/workflows/node-ci\.yml@v1'
         $body | Should -Match "(?m)^      node-versions: '\[""24""\]'$"
         $body | Should -Match '(?m)^      submodules: recursive$'
         $body | Should -Match '(?m)^      setup: setup$'

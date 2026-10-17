@@ -113,7 +113,7 @@ describe("the export runs before the clean check, and the typecheck before both 
     const contentJob = workflow.slice(contentJobAt);
 
     expect(contentJob).toContain(
-      "uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/node-ci.yml@v0",
+      "uses: The-Running-Dev/GitHub-ActionTemplates/.github/workflows/node-ci.yml@v1",
     );
 
     const scripts = /^ {6}scripts: (.+)$/m.exec(contentJob)?.[1]?.split(/\s+/) ?? [];
