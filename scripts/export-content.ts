@@ -129,9 +129,7 @@ export async function exportContent(
   const manifest: PortableManifest = {
     formatVersion: 2,
     campaigns: manifestEntries,
-    resolution: digestManifestResolution(
-      manifestEntries.map(({ id, version }) => ({ id, version })),
-    ),
+    resolution: digestManifestResolution(manifestEntries),
   };
   files.set("manifest.json", serialize(manifest));
 
