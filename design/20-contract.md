@@ -188,10 +188,11 @@ name, and the correct route for a host that needs it is the engine repository.
 
 **A campaign has three names and they answer different questions.** The file name is what a host
 can construct without reading anything; `(id, version)` is what it addresses and caches by; the
-digest is what the content actually is. They can disagree, and the disagreement is silent:
-editing a source without changing its version moves that campaign's digest, moves neither the
-address nor the manifest's resolution digest — which is computed over the `(id, version)` pairs —
-and a host caching on the address serves the old campaign with no way to learn otherwise.
+digest is what the content actually is. They can disagree, and at the address the disagreement is
+silent: editing a source without changing its version moves that campaign's digest and the
+manifest's resolution digest — which is computed over the ordered `(id, version, digest)` entries —
+but not the address, and a host caching on the address serves the old campaign unless it compares
+digests.
 
 **Nothing here prevents that, and this document may not settle it.** Whether a content change
 requires a version bump is a compatibility promise to an external consumer, so it is *Unresolved*

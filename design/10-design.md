@@ -138,7 +138,7 @@ is the most important thing in this section.
 | **String table** | The LocKeys the source authors, lifted by the builder | No, except as part of the portable form |
 | **Portable campaign JSON** | A built campaign plus its catalog card | **Yes, and committed** |
 | **Manifest** | The exported set | **Yes, and committed** |
-| **Digests** | The portable form, and the (id, version) pairs | Yes, inside the manifest |
+| **Digests** | The portable form, and the ordered (id, version, digest) entries | Yes, inside the manifest |
 
 **Everything under `content/` is derived, and it is committed anyway.** That is the exact opposite
 of system 1's central decision, in the same repository, and the two are reconcilable on one
@@ -164,9 +164,10 @@ in the engine becomes visible to a person.
 A campaign has three names and they answer different questions. The file name is what a host can
 construct without reading anything. `(id, version)` is what a host addresses and caches by. The
 digest is what the content actually is. The last two can disagree: editing a
-campaign source without changing its version produces a new digest under an unchanged address, and
-the manifest's resolution digest — computed over (id, version) pairs — does not move either. A host
-that caches on the address serves the old campaign and has no way to know.
+campaign source without changing its version produces a new digest under an unchanged address. The
+manifest's resolution digest — computed over the ordered (id, version, digest) entries — moves with
+it, but the address does not. A host that caches on the address serves the old campaign unless it
+compares digests.
 
 Nothing in the tree prevents that today. It is not a defect to fix by inference, because whether a
 version bump is required on every content change is a compatibility promise this document may not
@@ -810,9 +811,10 @@ Things that cannot be resolved without information the brief does not contain. E
 fork, and each carries a recommendation.
 
 **1. Does a change to a published campaign require its version to change?** The address a host
-caches by is `(id, version)`, and the manifest's resolution digest is computed over those pairs, so
-an edit that changes a campaign's content without changing its version is invisible to a host at
-both levels — while the per-campaign digest, which does move, is not what a resolver keys on. The
+caches by is `(id, version)`, so an edit that changes a campaign's content without changing its
+version is invisible at the address — while both digests, the per-campaign one and the manifest's
+resolution over the ordered (id, version, digest) entries, do move, and neither is what a resolver
+keys on. The
 options are: require a version bump on any content change and check it, which makes the address
 honest and makes every edit a release; or declare the digest the identity and the version merely
 descriptive, which costs nothing and means a host must compare digests to learn anything. This is a
