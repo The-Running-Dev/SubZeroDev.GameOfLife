@@ -62,9 +62,9 @@
  * exists yet to carry the requirement. A vehicle's "reduces travel time" and tools' "improve
  * maintenance checks" were deferred by that same decision and have no writable field; they
  * stay omitted rather than approximated, per CP10. A vehicle's fuel, insurance and repair
- * expenses are levied since engine W112 (`endOfWeek.ts` charges `ItemDefinition.weeklyCostCents`
- * for every owned item with condition above zero) and are content still owed — no item below
- * sets a nonzero `weeklyCostCents` yet.
+ * expenses are levied by engine W112 (`endOfWeek.ts` charges `ItemDefinition.weeklyCostCents`
+ * for every owned item with condition above zero); `item-used-bicycle` sets its figure below,
+ * justified at its site (#140).
  *
  * **§16.3's "Education: certificate or better" is now a scenario requirement.** Engine #500
  * closed #494 by adding `player.education.credentials` to `exists`/`count` collection resolution.
@@ -549,6 +549,12 @@ const items: SimulationCampaignSource["items"] = [
     category: "vehicles",
     purchasePriceCents: DOLLARS(180),
     baseResaleValueCents: DOLLARS(60),
+    // §10.2's running expenses, chosen rather than read: neither §16.4 nor the corpus states a
+    // figure (#140). A bicycle has no fuel or insurance, and its repairs are the 4-weekly $15
+    // maintenance below (~$3.75 a week), so this covers consumables only — tubes, brake pads,
+    // lights, a lock. $2 keeps its total upkeep (~$5.75) well under the $15 transport it
+    // waives (engine W113), so the $120 it nets after resale still pays back in about 13 weeks.
+    weeklyCostCents: DOLLARS(2),
     effects: [],
     stacking: "refresh",
     durability: 100,

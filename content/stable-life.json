@@ -870,6 +870,7 @@
           "category": "vehicles",
           "purchasePriceCents": 18000,
           "baseResaleValueCents": 6000,
+          "weeklyCostCents": 200,
           "effects": [],
           "stacking": "refresh",
           "durability": 100,
