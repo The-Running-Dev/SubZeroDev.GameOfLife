@@ -10,8 +10,11 @@
 import { describe, expect, it } from "vitest";
 import {
   buildValidatedContentRegistry,
+  createEngine,
   simulationKind,
   type BuiltCampaign,
+  type GameState,
+  type SimulationKindState,
   type Condition,
   type KindRegistry,
 } from "@the-running-dev/game-engine";
@@ -644,6 +647,45 @@ describe("Stable Life — purchasable items (S19)", () => {
     const registry = buildValidatedContentRegistry([built()], kinds);
     expect(registry.errors).toEqual([]);
     expect(registry.ok).toBe(true);
+  });
+
+  it("charges an owned, unbroken bicycle its weekly running cost every week (#140)", () => {
+    // §10.2 gives a vehicle running expenses; engine W112 levies `weeklyCostCents` at end of
+    // week. Run real weeks through the engine rather than reading the field, so a figure the
+    // engine never charges — the defect #140 found — fails here.
+    const bicycle = items.find((i) => i.id === "item-used-bicycle")!;
+    expect(bicycle.weeklyCostCents ?? 0).toBeGreaterThan(0);
+
+    const registry = buildValidatedContentRegistry([built()], kinds);
+    if (!registry.ok || !registry.value) throw new Error(JSON.stringify(registry.errors));
+    const engine = createEngine({ kinds, registry: registry.value });
+    const created = engine.createGame({ campaignId: STABLE_LIFE_CAMPAIGN_ID, seed: "issue-140" });
+    if (!created.ok || !created.value) throw new Error(JSON.stringify(created.errors));
+
+    const kindState = created.value.kindState as SimulationKindState;
+    let state: GameState = {
+      ...created.value,
+      kindState: {
+        ...kindState,
+        player: {
+          ...kindState.player,
+          inventory: [{
+            instanceId: "inv-bicycle", definitionId: bicycle.id, quantity: 1, acquiredWeek: 1,
+            purchasePriceCents: bicycle.purchasePriceCents, condition: 100,
+            weeksSinceMaintenance: 0, broken: false,
+          }],
+        },
+      },
+    };
+
+    for (let week = 1; week <= 3; week++) {
+      const result = engine.submitAction(state, "end_week");
+      if (!result.ok || !result.value) throw new Error(`week ${week}: ${JSON.stringify(result.errors)}`);
+      const charged = result.changes.filter((c) => c.reason === "item_cost_charged");
+      expect(charged, `week ${week}`).toHaveLength(1);
+      expect(charged[0]?.value, `week ${week}`).toBe(bicycle.weeklyCostCents);
+      state = result.value;
+    }
   });
 });
 
